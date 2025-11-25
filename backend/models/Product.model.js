@@ -1,0 +1,102 @@
+import mongoose from 'mongoose';
+import slugify from 'slugify';
+
+const variantSchema = new mongoose.Schema({
+  name: {
+    type: String,
+    required: true,
+  },
+  value: {
+    type: String,
+    required: true,
+  },
+  image: {
+    type: String,
+    default: '',
+  },
+  additionalPrice: {
+    type: Number,
+    default: 0,
+  },
+});
+
+const productSchema = new mongoose.Schema(
+  {
+    name: {
+      type: String,
+      required: [true, 'اسم المنتج مطلوب'],
+      trim: true,
+    },
+    slug: {
+      type: String,
+      unique: true,
+    },
+    category: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Category',
+      required: [true, 'الفئة مطلوبة'],
+    },
+    price: {
+      type: Number,
+      required: [true, 'السعر مطلوب'],
+      min: [0, 'السعر يجب أن يكون أكبر من أو يساوي 0'],
+    },
+    cost: {
+      type: Number,
+      default: 0,
+      min: [0, 'التكلفة يجب أن تكون أكبر من أو تساوي 0'],
+    },
+    stock: {
+      type: Number,
+      required: [true, 'الكمية المتوفرة مطلوبة'],
+      min: [0, 'الكمية يجب أن تكون أكبر من أو تساوي 0'],
+      default: 0,
+    },
+    unit: {
+      type: String,
+      required: [true, 'الوحدة مطلوبة'],
+      enum: ['kg', 'piece', 'meter', 'liter', 'box', 'set'],
+      default: 'piece',
+    },
+    wholesalePrice: {
+      type: Number,
+      default: 0,
+    },
+    wholesaleUnit: {
+      type: String,
+      default: 'piece',
+    },
+    images: [
+      {
+        type: String,
+      },
+    ],
+    description: {
+      type: String,
+      default: '',
+    },
+    status: {
+      type: String,
+      enum: ['visible', 'hidden'],
+      default: 'visible',
+    },
+    variants: [variantSchema],
+  },
+  {
+    timestamps: true,
+  }
+);
+
+// Generate slug before saving
+productSchema.pre('save', function (next) {
+  if (this.isModified('name')) {
+    this.slug = slugify(this.name, { lower: true, strict: true });
+  }
+  next();
+});
+
+// Index for search
+productSchema.index({ name: 'text', description: 'text' });
+
+export default mongoose.model('Product', productSchema);
+

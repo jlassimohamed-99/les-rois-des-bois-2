@@ -1,0 +1,30 @@
+{
+  "name": "les-rois-des-bois-backend",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "nodemon server.js",
+    "start": "node server.js",
+    "create-admin": "node scripts/createAdmin.js",
+    "seed-client": "node scripts/seedClientData.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "mongoose": "^8.0.3",
+    "dotenv": "^16.3.1",
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^1.4.5-lts.1",
+    "cors": "^2.8.5",
+    "express-validator": "^7.0.1",
+    "slugify": "^1.6.6",
+    "bullmq": "^5.0.0",
+    "ioredis": "^5.3.2",
+    "pdfkit": "^0.14.0",
+    "nodemailer": "^6.9.7"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  }
+}
+

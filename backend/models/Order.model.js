@@ -1,0 +1,180 @@
+import mongoose from 'mongoose';
+
+const orderItemSchema = new mongoose.Schema({
+  productId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Product',
+    required: true,
+  },
+  productType: {
+    type: String,
+    enum: ['regular', 'special'],
+    required: true,
+  },
+  productName: {
+    type: String,
+    required: true,
+  },
+  variantA: {
+    type: Object,
+  },
+  variantB: {
+    type: Object,
+  },
+  combinationId: {
+    type: String,
+  },
+  quantity: {
+    type: Number,
+    required: true,
+    min: 1,
+  },
+  unitPrice: {
+    type: Number,
+    required: true,
+    min: 0,
+  },
+  cost: {
+    type: Number,
+    default: 0,
+    min: 0,
+  },
+  discount: {
+    type: Number,
+    default: 0,
+    min: 0,
+  },
+  subtotal: {
+    type: Number,
+    required: true,
+    min: 0,
+  },
+  total: {
+    type: Number,
+    required: true,
+    min: 0,
+  },
+});
+
+const orderSchema = new mongoose.Schema(
+  {
+    orderNumber: {
+      type: String,
+      unique: true,
+      required: true,
+    },
+    clientId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+    },
+    clientName: {
+      type: String,
+      required: true,
+    },
+    clientPhone: {
+      type: String,
+    },
+    clientEmail: {
+      type: String,
+    },
+    clientAddress: {
+      type: String,
+    },
+    status: {
+      type: String,
+      enum: ['pending', 'preparing', 'ready', 'delivered', 'completed', 'canceled'],
+      default: 'pending',
+    },
+    storeId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Store',
+    },
+    commercialId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+    },
+    items: [orderItemSchema],
+    subtotal: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+    discount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    tax: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    total: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+    cost: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    profit: {
+      type: Number,
+      default: 0,
+    },
+    paymentMethod: {
+      type: String,
+      enum: ['cash', 'card', 'credit', 'mixed'],
+      default: 'cash',
+    },
+    paymentStatus: {
+      type: String,
+      enum: ['unpaid', 'partial', 'paid'],
+      default: 'unpaid',
+    },
+    notes: {
+      type: String,
+      default: '',
+    },
+    assignedTo: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+    },
+    completedAt: {
+      type: Date,
+    },
+    canceledAt: {
+      type: Date,
+    },
+    canceledBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+    },
+    cancelReason: {
+      type: String,
+    },
+  },
+  {
+    timestamps: true,
+  }
+);
+
+// Generate order number
+orderSchema.pre('save', async function (next) {
+  if (!this.orderNumber) {
+    const count = await mongoose.model('Order').countDocuments();
+    this.orderNumber = `ORD-${String(count + 1).padStart(6, '0')}`;
+  }
+  next();
+});
+
+// Indexes
+orderSchema.index({ orderNumber: 1 });
+orderSchema.index({ clientId: 1, createdAt: -1 });
+orderSchema.index({ status: 1, createdAt: -1 });
+orderSchema.index({ commercialId: 1, createdAt: -1 });
+orderSchema.index({ storeId: 1, createdAt: -1 });
+
+export default mongoose.model('Order', orderSchema);
+

@@ -1,0 +1,358 @@
+import Order from '../models/Order.model.js';
+import OrderActivity from '../models/OrderActivity.model.js';
+import { buildOrderItems, calculateOrderTotals } from '../utils/orderHelper.js';
+import { validateStock, adjustStock } from '../utils/inventoryHelper.js';
+import { createAuditLog } from '../utils/auditLogger.js';
+
+export const getOrders = async (req, res, next) => {
+  try {
+    const {
+      status,
+      clientId,
+      storeId,
+      commercialId,
+      startDate,
+      endDate,
+      page = 1,
+      limit = 50,
+    } = req.query;
+    const skip = (page - 1) * limit;
+
+    const query = {};
+    if (status) query.status = status;
+    if (clientId) query.clientId = clientId;
+    if (storeId) query.storeId = storeId;
+    if (commercialId) query.commercialId = commercialId;
+    if (startDate || endDate) {
+      query.createdAt = {};
+      if (startDate) query.createdAt.$gte = new Date(startDate);
+      if (endDate) query.createdAt.$lte = new Date(endDate);
+    }
+
+    const [orders, total] = await Promise.all([
+      Order.find(query)
+        .populate('clientId', 'name email phone')
+        .populate('commercialId', 'name email')
+        .populate('storeId', 'name code')
+        .populate('assignedTo', 'name email')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(parseInt(limit)),
+      Order.countDocuments(query),
+    ]);
+
+    res.status(200).json({
+      success: true,
+      data: orders,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        pages: Math.ceil(total / limit),
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getOrder = async (req, res, next) => {
+  try {
+    const order = await Order.findById(req.params.id)
+      .populate('clientId', 'name email phone address')
+      .populate('commercialId', 'name email')
+      .populate('storeId', 'name code address')
+      .populate('assignedTo', 'name email')
+      .populate('items.productId', 'name images');
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: 'الطلب غير موجود',
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: order,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const createOrder = async (req, res, next) => {
+  try {
+    const {
+      clientId,
+      clientName,
+      clientPhone,
+      clientEmail,
+      clientAddress,
+      items,
+      discount,
+      paymentMethod,
+      notes,
+      commercialId,
+      storeId,
+    } = req.body;
+
+    if (!items || items.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'يجب إضافة منتجات على الأقل',
+      });
+    }
+
+    // Validate stock
+    const stockIssues = await validateStock(items);
+    if (stockIssues.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'مشاكل في المخزون',
+        stockIssues,
+      });
+    }
+
+    // Build order items
+    const orderItems = await buildOrderItems(items);
+
+    // Calculate totals
+    const totals = calculateOrderTotals(orderItems, discount || 0);
+
+    // Create order
+    const order = await Order.create({
+      clientId,
+      clientName: clientName || 'عميل غير مسجل',
+      clientPhone,
+      clientEmail,
+      clientAddress,
+      items: orderItems,
+      subtotal: totals.subtotal,
+      discount: totals.discount,
+      tax: totals.tax,
+      total: totals.total,
+      cost: totals.cost,
+      profit: totals.profit,
+      paymentMethod: paymentMethod || 'cash',
+      notes,
+      commercialId,
+      storeId,
+      status: 'pending',
+    });
+
+    // Create activity log
+    await OrderActivity.create({
+      orderId: order._id,
+      action: 'created',
+      userId: req.user._id,
+      notes: 'تم إنشاء الطلب',
+    });
+
+    // Create audit log
+    await createAuditLog({
+      resourceType: 'order',
+      resourceId: order._id,
+      action: 'create',
+      userId: req.user._id,
+      userEmail: req.user.email,
+      after: { orderNumber: order.orderNumber, status: order.status, total: order.total },
+      ipAddress: req.ip,
+      userAgent: req.get('user-agent'),
+    });
+
+    const populatedOrder = await Order.findById(order._id)
+      .populate('clientId', 'name email')
+      .populate('commercialId', 'name email');
+
+    res.status(201).json({
+      success: true,
+      data: populatedOrder,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateOrder = async (req, res, next) => {
+  try {
+    const order = await Order.findById(req.params.id);
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: 'الطلب غير موجود',
+      });
+    }
+
+    const { items, discount, notes, commercialId, storeId } = req.body;
+
+    if (items && Array.isArray(items)) {
+      // Rebuild order items
+      const orderItems = await buildOrderItems(items);
+      order.items = orderItems;
+      
+      // Recalculate totals
+      const totals = calculateOrderTotals(orderItems, discount !== undefined ? discount : order.discount);
+      order.subtotal = totals.subtotal;
+      order.discount = totals.discount;
+      order.tax = totals.tax;
+      order.total = totals.total;
+      order.cost = totals.cost;
+      order.profit = totals.profit;
+    } else if (discount !== undefined) {
+      const totals = calculateOrderTotals(order.items, discount);
+      order.discount = totals.discount;
+      order.tax = totals.tax;
+      order.total = totals.total;
+      order.profit = totals.profit;
+    }
+
+    if (notes !== undefined) order.notes = notes;
+    if (commercialId) order.commercialId = commercialId;
+    if (storeId) order.storeId = storeId;
+
+    await order.save();
+
+    // Create activity log
+    await OrderActivity.create({
+      orderId: order._id,
+      action: 'updated',
+      userId: req.user._id,
+      notes: 'تم تحديث الطلب',
+    });
+
+    const populatedOrder = await Order.findById(order._id)
+      .populate('clientId', 'name email')
+      .populate('commercialId', 'name email');
+
+    res.status(200).json({
+      success: true,
+      data: populatedOrder,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateOrderStatus = async (req, res, next) => {
+  try {
+    const { status, notes } = req.body;
+    const order = await Order.findById(req.params.id);
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: 'الطلب غير موجود',
+      });
+    }
+
+    const oldStatus = order.status;
+    order.status = status;
+
+    if (status === 'completed') {
+      order.completedAt = new Date();
+      // Deduct stock when order is completed
+      for (const item of order.items) {
+        await adjustStock(
+          item.productId,
+          item.productType,
+          -item.quantity,
+          `Order ${order.orderNumber} completed`,
+          req.user._id,
+          { orderId: order._id }
+        );
+      }
+    }
+
+    await order.save();
+
+    // Create activity log
+    await OrderActivity.create({
+      orderId: order._id,
+      action: 'status_changed',
+      userId: req.user._id,
+      changes: { status: { before: oldStatus, after: status } },
+      notes: notes || `تم تغيير الحالة من ${oldStatus} إلى ${status}`,
+    });
+
+    // Create audit log
+    await createAuditLog({
+      resourceType: 'order',
+      resourceId: order._id,
+      action: 'status_change',
+      userId: req.user._id,
+      userEmail: req.user.email,
+      before: { status: oldStatus },
+      after: { status },
+      ipAddress: req.ip,
+      userAgent: req.get('user-agent'),
+    });
+
+    res.status(200).json({
+      success: true,
+      data: order,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getOrderActivity = async (req, res, next) => {
+  try {
+    const activities = await OrderActivity.find({ orderId: req.params.id })
+      .populate('userId', 'name email')
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      data: activities,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const cancelOrder = async (req, res, next) => {
+  try {
+    const { reason } = req.body;
+    const order = await Order.findById(req.params.id);
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: 'الطلب غير موجود',
+      });
+    }
+
+    if (order.status === 'canceled') {
+      return res.status(400).json({
+        success: false,
+        message: 'الطلب ملغي بالفعل',
+      });
+    }
+
+    order.status = 'canceled';
+    order.canceledAt = new Date();
+    order.canceledBy = req.user._id;
+    order.cancelReason = reason;
+
+    await order.save();
+
+    // Create activity log
+    await OrderActivity.create({
+      orderId: order._id,
+      action: 'canceled',
+      userId: req.user._id,
+      notes: reason || 'تم إلغاء الطلب',
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'تم إلغاء الطلب بنجاح',
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+

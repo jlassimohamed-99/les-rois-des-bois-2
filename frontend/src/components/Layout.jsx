@@ -1,0 +1,140 @@
+import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import { useAuth } from '../contexts/AuthContext';
+import { useTheme } from '../contexts/ThemeContext';
+import {
+  LayoutDashboard,
+  FolderTree,
+  Package,
+  Boxes,
+  LogOut,
+  Moon,
+  Sun,
+  ShoppingCart,
+  FileText,
+  Warehouse,
+  ClipboardList,
+  Receipt,
+  Activity,
+  BarChart3,
+  Settings,
+  Truck,
+  RotateCcw,
+  Briefcase,
+  DollarSign,
+  Menu,
+  X,
+} from 'lucide-react';
+
+const Layout = () => {
+  const { user, logout } = useAuth();
+  const { isDark, toggleTheme } = useTheme();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [open, setOpen] = useState(false);
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
+
+  const menuItems = [
+    { path: '/admin/dashboard', icon: LayoutDashboard, label: 'لوحة التحكم' },
+    { path: '/admin/categories', icon: FolderTree, label: 'الفئات' },
+    { path: '/admin/products', icon: Package, label: 'المنتجات' },
+    { path: '/admin/special-products', icon: Boxes, label: 'منتجات مركبة' },
+    { path: '/admin/inventory', icon: Warehouse, label: 'المخزون' },
+    { path: '/admin/orders', icon: ClipboardList, label: 'الطلبيات' },
+    { path: '/admin/invoices', icon: Receipt, label: 'الفواتير' },
+    { path: '/admin/pos', icon: ShoppingCart, label: 'نقطة البيع' },
+    { path: '/admin/suppliers', icon: Truck, label: 'الموردون' },
+    { path: '/admin/purchase-orders', icon: FileText, label: 'طلبات شراء' },
+    { path: '/admin/expenses', icon: DollarSign, label: 'المصاريف' },
+    { path: '/admin/returns', icon: RotateCcw, label: 'الإرجاعات' },
+    { path: '/admin/crm', icon: Briefcase, label: 'إدارة العملاء' },
+    { path: '/admin/analytics', icon: BarChart3, label: 'التحليلات' },
+    { path: '/admin/audit-logs', icon: Activity, label: 'سجل التدقيق' },
+    { path: '/admin/jobs', icon: Settings, label: 'المهام' },
+  ];
+
+  return (
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      {/* Sidebar */}
+      <aside
+        className={`fixed inset-y-0 right-0 w-64 bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 shadow-lg z-40 flex flex-col transform transition-transform ${
+          open ? 'translate-x-0' : 'translate-x-full md:translate-x-0'
+        }`}
+      >
+        <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex-shrink-0 flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gold-600">Les Rois Du Bois</h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">لوحة التحكم</p>
+          </div>
+          <button className="md:hidden" onClick={() => setOpen(false)}>
+            <X />
+          </button>
+        </div>
+
+        <nav className="p-4 space-y-2 overflow-y-auto flex-1 min-h-0">
+          {menuItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = location.pathname === item.path;
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                  isActive
+                    ? 'bg-gold-100 dark:bg-gold-900/30 text-gold-700 dark:text-gold-400'
+                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                }`}
+                onClick={() => setOpen(false)}
+              >
+                <Icon size={20} />
+                <span>{item.label}</span>
+              </Link>
+            );
+          })}
+        </nav>
+
+        <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex-shrink-0 bg-white dark:bg-gray-800">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{user?.name}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{user?.email}</p>
+            </div>
+            <button
+              onClick={toggleTheme}
+              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            >
+              {isDark ? <Sun size={20} /> : <Moon size={20} />}
+            </button>
+          </div>
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center gap-2 px-4 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+          >
+            <LogOut size={18} />
+            <span>تسجيل الخروج</span>
+          </button>
+        </div>
+      </aside>
+
+      {/* Main Content */}
+      <div className="w-full md:pr-64">
+        <header className="md:hidden flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 sticky top-0 z-30">
+          <button onClick={() => setOpen(true)}>
+            <Menu />
+          </button>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">لوحة التحكم</h2>
+          <button onClick={toggleTheme}>{isDark ? <Sun size={20} /> : <Moon size={20} />}</button>
+        </header>
+        <main className="p-4 md:p-8">
+          <Outlet />
+        </main>
+      </div>
+    </div>
+  );
+};
+
+export default Layout;

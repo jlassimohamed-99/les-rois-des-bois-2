@@ -115,3 +115,36 @@ export const getMe = async (req, res, next) => {
     next(error);
   }
 };
+
+export const changePassword = async (req, res, next) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'كلمة المرور الحالية والجديدة مطلوبة',
+      });
+    }
+
+    const user = await User.findById(req.user._id).select('+password');
+    const isMatch = await user.matchPassword(currentPassword);
+
+    if (!isMatch) {
+      return res.status(401).json({
+        success: false,
+        message: 'كلمة المرور الحالية غير صحيحة',
+      });
+    }
+
+    user.password = newPassword;
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'تم تحديث كلمة المرور بنجاح',
+    });
+  } catch (error) {
+    next(error);
+  }
+};

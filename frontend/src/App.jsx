@@ -12,9 +12,9 @@ import ClientCategories from './pages/client/Categories';
 import ClientProducts from './pages/client/Products';
 import ProductDetail from './pages/client/ProductDetail';
 import CategoryProducts from './pages/client/CategoryProducts';
-import SpecialProductConfigurator from './pages/client/SpecialProductConfigurator';
+import SpecialProductConfigurator from './pages/client/EnhancedSpecialProductConfigurator';
 import SpecialProductsList from './pages/client/SpecialProductsList';
-import Cart from './pages/client/Cart';
+import Cart from './pages/client/EnhancedCart';
 import Checkout from './pages/client/Checkout';
 import Profile from './pages/client/Profile';
 import OrderDetailClient from './pages/client/OrderDetail';
@@ -36,6 +36,8 @@ import ExpensesList from './pages/Expenses/ExpensesList';
 import ReturnsList from './pages/Returns/ReturnsList';
 import ClientsList from './pages/CRM/ClientsList';
 import JobQueue from './pages/Jobs/JobQueue';
+import UsersList from './pages/Users/UsersList';
+import Settings from './pages/Settings/Settings';
 import Layout from './components/Layout';
 import CommercialDashboard from './pages/CommercialDashboard';
 import PosLanding from './pages/PosLanding';
@@ -48,6 +50,8 @@ const redirectByRole = (role) => {
     case 'commercial':
       return '/commercial';
     case 'saler':
+    case 'store_cashier':
+    case 'cashier':
       return '/pos';
     default:
       return '/shop';
@@ -129,6 +133,8 @@ function App() {
                   <Route path="crm" element={<ClientsList />} />
                   <Route path="analytics" element={<AnalyticsDashboard />} />
                   <Route path="audit-logs" element={<AuditLogs />} />
+                  <Route path="users" element={<UsersList />} />
+                  <Route path="settings" element={<Settings />} />
                   <Route path="jobs" element={<JobQueue />} />
                 </Route>
 
@@ -141,10 +147,12 @@ function App() {
                     </RoleProtectedRoute>
                   }
                 />
+                
+                {/* POS Routes for Cashiers */}
                 <Route
                   path="/pos"
                   element={
-                    <RoleProtectedRoute allowedRoles={['saler', 'store_cashier']}>
+                    <RoleProtectedRoute allowedRoles={['saler', 'store_cashier', 'cashier', 'admin']}>
                       <PosLanding />
                     </RoleProtectedRoute>
                   }

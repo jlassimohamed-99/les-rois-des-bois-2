@@ -24,7 +24,7 @@ const Products = () => {
       const response = await api.get('/categories');
       setCategories(response.data.data || []);
     } catch (error) {
-      console.error('Error fetching categories:', error);
+      // Silent error handling
     }
   };
 

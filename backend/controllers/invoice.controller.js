@@ -138,3 +138,40 @@ export const getPayments = async (req, res, next) => {
   }
 };
 
+export const generatePDF = async (req, res, next) => {
+  try {
+    const invoice = await Invoice.findById(req.params.id).populate('orderId');
+    if (!invoice) {
+      return res.status(404).json({ success: false, message: 'الفاتورة غير موجودة' });
+    }
+
+    // Placeholder for PDF generation - will be implemented with PDFKit or similar
+    // For now, return a JSON response indicating PDF generation is queued
+    res.json({
+      success: true,
+      message: 'PDF generation is queued. This feature will be implemented with a job queue.',
+      invoiceNumber: invoice.invoiceNumber,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const sendEmail = async (req, res, next) => {
+  try {
+    const invoice = await Invoice.findById(req.params.id);
+    if (!invoice) {
+      return res.status(404).json({ success: false, message: 'الفاتورة غير موجودة' });
+    }
+
+    // Placeholder for email sending - will be implemented with nodemailer or similar
+    res.json({
+      success: true,
+      message: 'Email sending is queued. This feature will be implemented with a job queue.',
+      invoiceNumber: invoice.invoiceNumber,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+

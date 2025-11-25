@@ -44,7 +44,7 @@ export const ClientAuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
-      const response = await axios.post('/api/auth/login', { email, password });
+      const response = await clientApi.post('/auth/login', { email, password });
       const { token, user: loggedUser } = response.data;
       localStorage.setItem('token', token);
       clientApi.defaults.headers.common.Authorization = `Bearer ${token}`;

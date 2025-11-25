@@ -28,7 +28,7 @@ const AuditLogs = () => {
       const response = await api.get('/audit-logs', { params });
       setLogs(response.data.data || []);
     } catch (error) {
-      console.error('Error fetching logs:', error);
+      // Silent error handling
     } finally {
       setLoading(false);
     }

@@ -22,29 +22,31 @@ const Dashboard = () => {
 
   const fetchStats = async () => {
     try {
-      const [categoriesRes, productsRes, specialProductsRes, ordersRes, invoicesRes] = await Promise.all([
+      const [categoriesRes, productsRes, specialProductsRes, ordersRes, invoicesRes, usersRes] = await Promise.all([
         api.get('/categories'),
         api.get('/products'),
         api.get('/special-products'),
         api.get('/orders'),
         api.get('/invoices'),
+        api.get('/users').catch(() => ({ data: { data: [] } })),
       ]);
 
       const orders = ordersRes.data.data || [];
       const invoices = invoicesRes.data.data || [];
+      const users = usersRes.data.data || [];
 
       setStats({
         categories: categoriesRes.data.count || 0,
         products: productsRes.data.count || 0,
         specialProducts: specialProductsRes.data.count || 0,
-        users: 0, // Placeholder - requires user count endpoint
+        users: users.length || 0,
         orders: orders.length,
         pendingOrders: orders.filter((o) => o.status === 'pending').length,
         revenue: orders.reduce((sum, o) => sum + (o.total || 0), 0),
         creditInvoices: invoices.filter((i) => i.status === 'partial' || i.status === 'overdue').length,
       });
     } catch (error) {
-      console.error('Error fetching stats:', error);
+      // Silent error handling
     } finally {
       setLoading(false);
     }

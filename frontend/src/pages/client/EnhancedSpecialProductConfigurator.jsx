@@ -1,0 +1,407 @@
+import { useEffect, useMemo, useState } from 'react';
+import { useParams, Navigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Sparkles, ArrowRight, ImageOff, Check } from 'lucide-react';
+import clientApi from '../../utils/clientAxios';
+import { useCart } from '../../contexts/CartContext';
+import toast from 'react-hot-toast';
+import { withBase } from '../../utils/imageUrl';
+import LoadingSkeleton from '../../components/shared/LoadingSkeleton';
+import Button from '../../components/shared/Button';
+import { fadeIn, slideUp, scaleIn, staggerContainer } from '../../utils/animations';
+
+const EnhancedSpecialProductConfigurator = () => {
+  const { id } = useParams();
+  const [detail, setDetail] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [chooses, setChooses] = useState({ optionA: '', optionB: '' });
+  const [quantity, setQuantity] = useState(1);
+  const [currentStep, setCurrentStep] = useState(1);
+  const { addToCart } = useCart();
+
+  useEffect(() => {
+    if (!id) return;
+    const loadDetail = async () => {
+      setLoading(true);
+      try {
+        const res = await clientApi.get(`/special-products/${id}`);
+        const sp = res.data.data;
+        setDetail(sp);
+        const firstCombo = sp.combinations?.[0];
+        setChooses({
+          optionA: firstCombo?.optionA?.value || sp.baseProductA?.variants?.[0]?.value || '',
+          optionB: firstCombo?.optionB?.value || sp.baseProductB?.variants?.[0]?.value || '',
+        });
+        setQuantity(1);
+      } catch (error) {
+        setDetail(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadDetail();
+  }, [id]);
+
+  const activeCombination = useMemo(() => {
+    if (!detail) return null;
+    return (
+      detail.combinations?.find(
+        (c) => c.optionA?.value === chooses.optionA && c.optionB?.value === chooses.optionB
+      ) || detail.combinations?.[0] || null
+    );
+  }, [detail, chooses]);
+
+  const price = useMemo(() => {
+    if (!detail) return 0;
+    return detail.finalPrice + (activeCombination?.additionalPrice || 0);
+  }, [detail, activeCombination]);
+
+  const handleAddToCart = () => {
+    if (!detail || !activeCombination) {
+      toast.error('هذه التركيبة غير متاحة');
+      return;
+    }
+    const qty = Math.max(1, quantity || 1);
+    const item = {
+      productId: detail._id,
+      productType: 'special',
+      name: detail.name,
+      price,
+      image: withBase(activeCombination.finalImage),
+      quantity: qty,
+      combinationId: activeCombination._id,
+      selectedOptions: {
+        optionA: detail.baseProductA?.variants?.find((v) => v.value === chooses.optionA),
+        optionB: detail.baseProductB?.variants?.find((v) => v.value === chooses.optionB),
+      },
+      combinationImage: withBase(activeCombination.finalImage),
+    };
+    addToCart(item);
+    toast.success('تمت إضافة المنتج المركب للسلة');
+  };
+
+  if (!id) return <Navigate to="/shop/special-products" replace />;
+
+  if (loading && !detail) {
+    return (
+      <div className="bg-gray-50 dark:bg-gray-900 min-h-screen">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <LoadingSkeleton count={3} variant="card" className="mb-6" />
+        </div>
+      </div>
+    );
+  }
+
+  const steps = [
+    { number: 1, label: 'اختر الجزء الأول', completed: !!chooses.optionA },
+    { number: 2, label: 'اختر الجزء الثاني', completed: !!chooses.optionB },
+    { number: 3, label: 'راجع وأضف للسلة', completed: false },
+  ];
+
+  return (
+    <div className="bg-gray-50 dark:bg-gray-900 min-h-screen">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-10">
+        <motion.header
+          initial="hidden"
+          animate="visible"
+          variants={slideUp}
+          className="flex flex-col md:flex-row md:items-center md:justify-between gap-6"
+        >
+          <div>
+            <p className="text-sm uppercase tracking-wide text-gold-600 font-semibold">المكوّن</p>
+            <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-gray-100 mt-2">
+              اصنع منتجك المركب
+            </h1>
+            <p className="text-gray-600 dark:text-gray-400 mt-2">اختر كل جزء وشاهد النتيجة فوراً.</p>
+          </div>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="flex items-center gap-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 shadow-sm"
+          >
+            <Sparkles className="text-gold-600" size={20} />
+            <div>
+              <p className="text-sm text-gray-600 dark:text-gray-400">ابتداءً من</p>
+              <p className="text-xl font-bold text-gray-900 dark:text-gray-100">{detail?.finalPrice || 0} TND</p>
+            </div>
+          </motion.div>
+        </motion.header>
+
+        {/* Progress Steps */}
+        <motion.div
+          initial="hidden"
+          animate="visible"
+          variants={staggerContainer}
+          className="flex items-center justify-center gap-4 mb-8"
+        >
+          {steps.map((step, index) => (
+            <motion.div
+              key={step.number}
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.1 }}
+              className="flex items-center gap-2"
+            >
+              <div
+                className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold transition-all ${
+                  step.completed
+                    ? 'bg-gold-600 text-white'
+                    : currentStep === step.number
+                    ? 'bg-gold-100 dark:bg-gold-900/20 text-gold-600 border-2 border-gold-600'
+                    : 'bg-gray-200 dark:bg-gray-700 text-gray-500'
+                }`}
+              >
+                {step.completed ? <Check size={20} /> : step.number}
+              </div>
+              <span
+                className={`hidden sm:block text-sm font-medium ${
+                  currentStep === step.number ? 'text-gold-600' : 'text-gray-500'
+                }`}
+              >
+                {step.label}
+              </span>
+              {index < steps.length - 1 && (
+                <div
+                  className={`hidden sm:block w-12 h-0.5 mx-2 ${
+                    step.completed ? 'bg-gold-600' : 'bg-gray-300 dark:bg-gray-700'
+                  }`}
+                />
+              )}
+            </motion.div>
+          ))}
+        </motion.div>
+
+        <motion.div
+          initial="hidden"
+          animate="visible"
+          variants={fadeIn}
+          className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-sm p-6 space-y-8"
+        >
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Product A Selection */}
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.2 }}
+            >
+              <label className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4 block">
+                1) {detail?.baseProductA?.name || 'الجزء الأول'}
+              </label>
+              <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {detail?.baseProductA?.variants?.map((variant, idx) => (
+                  <motion.button
+                    key={variant.value}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.1 * idx }}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => {
+                      setChooses((prev) => ({ ...prev, optionA: variant.value }));
+                      setCurrentStep(2);
+                    }}
+                    className={`p-3 rounded-xl border-2 text-right transition-all ${
+                      chooses.optionA === variant.value
+                        ? 'border-gold-500 bg-gold-50 dark:bg-gold-900/20 text-gold-700 shadow-md'
+                        : 'border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-200 hover:border-gold-300'
+                    }`}
+                  >
+                    {variant.image && (
+                      <motion.img
+                        src={withBase(variant.image)}
+                        alt={variant.value}
+                        className="h-20 w-full object-cover rounded-lg mb-2"
+                        whileHover={{ scale: 1.05 }}
+                        transition={{ duration: 0.2 }}
+                      />
+                    )}
+                    <div className="font-semibold">{variant.value}</div>
+                    <div className="text-xs text-gray-500">
+                      {variant.additionalPrice ? `+${variant.additionalPrice} TND` : 'بدون زيادة'}
+                    </div>
+                    {chooses.optionA === variant.value && (
+                      <motion.div
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        className="absolute top-2 right-2 bg-gold-600 text-white rounded-full p-1"
+                      >
+                        <Check size={12} />
+                      </motion.div>
+                    )}
+                  </motion.button>
+                ))}
+              </div>
+            </motion.div>
+
+            {/* Product B Selection */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.3 }}
+            >
+              <label className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4 block">
+                2) {detail?.baseProductB?.name || 'الجزء الثاني'}
+              </label>
+              <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {detail?.baseProductB?.variants?.map((variant, idx) => (
+                  <motion.button
+                    key={variant.value}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.1 * idx }}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => {
+                      setChooses((prev) => ({ ...prev, optionB: variant.value }));
+                      setCurrentStep(3);
+                    }}
+                    disabled={!chooses.optionA}
+                    className={`p-3 rounded-xl border-2 text-right transition-all relative ${
+                      !chooses.optionA
+                        ? 'opacity-50 cursor-not-allowed'
+                        : chooses.optionB === variant.value
+                        ? 'border-gold-500 bg-gold-50 dark:bg-gold-900/20 text-gold-700 shadow-md'
+                        : 'border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-200 hover:border-gold-300'
+                    }`}
+                  >
+                    {variant.image && (
+                      <motion.img
+                        src={withBase(variant.image)}
+                        alt={variant.value}
+                        className="h-20 w-full object-cover rounded-lg mb-2"
+                        whileHover={{ scale: 1.05 }}
+                        transition={{ duration: 0.2 }}
+                      />
+                    )}
+                    <div className="font-semibold">{variant.value}</div>
+                    <div className="text-xs text-gray-500">
+                      {variant.additionalPrice ? `+${variant.additionalPrice} TND` : 'بدون زيادة'}
+                    </div>
+                    {chooses.optionB === variant.value && (
+                      <motion.div
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        className="absolute top-2 right-2 bg-gold-600 text-white rounded-full p-1"
+                      >
+                        <Check size={12} />
+                      </motion.div>
+                    )}
+                  </motion.button>
+                ))}
+              </div>
+            </motion.div>
+          </div>
+
+          {/* Preview and Summary */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center"
+          >
+            <motion.div
+              key={activeCombination?._id}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.3 }}
+              className="bg-gray-50 dark:bg-gray-900 rounded-2xl border border-dashed border-gray-300 dark:border-gray-700 min-h-[320px] flex items-center justify-center overflow-hidden"
+            >
+              <AnimatePresence mode="wait">
+                {activeCombination?.finalImage ? (
+                  <motion.img
+                    key={activeCombination.finalImage}
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.8 }}
+                    transition={{ duration: 0.3 }}
+                    src={withBase(activeCombination.finalImage)}
+                    alt="Preview"
+                    className="w-full h-full object-cover rounded-2xl"
+                    loading="lazy"
+                  />
+                ) : (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="flex flex-col items-center text-gray-500 dark:text-gray-400"
+                  >
+                    <ImageOff size={36} />
+                    <p className="mt-3 text-sm">اختر الخيارات لعرض المعاينة</p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.5 }}
+              className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-6 space-y-4 shadow-sm"
+            >
+              <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">الملخص</h3>
+              <div className="space-y-2 text-gray-700 dark:text-gray-300">
+                <p>
+                  <span className="font-semibold">{detail?.baseProductA?.name || 'الجزء الأول'}:</span>{' '}
+                  {chooses.optionA || 'اختر خياراً'}
+                </p>
+                <p>
+                  <span className="font-semibold">{detail?.baseProductB?.name || 'الجزء الثاني'}:</span>{' '}
+                  {chooses.optionB || 'اختر خياراً'}
+                </p>
+                <motion.p
+                  key={price}
+                  initial={{ scale: 1.1 }}
+                  animate={{ scale: 1 }}
+                  className="text-lg font-bold text-gold-600 pt-2 border-t border-gray-200 dark:border-gray-700"
+                >
+                  الإجمالي: {price} TND
+                </motion.p>
+              </div>
+              <div className="flex items-center gap-3">
+                <label className="text-sm text-gray-600 dark:text-gray-400">الكمية</label>
+                <div className="flex items-center bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                    className="px-3 py-2 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600"
+                  >
+                    -
+                  </motion.button>
+                  <motion.span
+                    key={quantity}
+                    initial={{ scale: 1.2 }}
+                    animate={{ scale: 1 }}
+                    className="px-4 text-gray-900 dark:text-gray-100 font-medium"
+                  >
+                    {quantity}
+                  </motion.span>
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => setQuantity(quantity + 1)}
+                    className="px-3 py-2 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600"
+                  >
+                    +
+                  </motion.button>
+                </div>
+              </div>
+              <Button
+                onClick={handleAddToCart}
+                disabled={!activeCombination || !chooses.optionA || !chooses.optionB}
+                className="w-full"
+                size="lg"
+              >
+                أضف المنتج المركب
+                <ArrowRight size={18} className="mr-2" />
+              </Button>
+            </motion.div>
+          </motion.div>
+        </motion.div>
+      </div>
+    </div>
+  );
+};
+
+export default EnhancedSpecialProductConfigurator;
+

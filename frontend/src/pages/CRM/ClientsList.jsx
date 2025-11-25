@@ -15,7 +15,7 @@ const ClientsList = () => {
       const response = await api.get('/crm/clients');
       setClients(response.data.data || []);
     } catch (error) {
-      console.error('Error:', error);
+      // Silent error handling
     } finally {
       setLoading(false);
     }

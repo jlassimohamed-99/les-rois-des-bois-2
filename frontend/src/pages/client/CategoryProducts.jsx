@@ -19,7 +19,7 @@ const CategoryProducts = () => {
         setCategory(res.data.data?.category);
         setProducts(res.data.data?.products || []);
       } catch (error) {
-        console.error('Failed to load category', error);
+        // Silent error handling
       } finally {
         setLoading(false);
       }

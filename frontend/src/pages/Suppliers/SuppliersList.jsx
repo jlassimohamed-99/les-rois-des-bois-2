@@ -2,10 +2,13 @@ import { useState, useEffect } from 'react';
 import api from '../../utils/axios';
 import toast from 'react-hot-toast';
 import { Truck, Plus, Edit, Trash2 } from 'lucide-react';
+import SupplierModal from '../../components/SupplierModal';
 
 const SuppliersList = () => {
   const [suppliers, setSuppliers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingSupplier, setEditingSupplier] = useState(null);
 
   useEffect(() => {
     fetchSuppliers();
@@ -16,10 +19,36 @@ const SuppliersList = () => {
       const response = await api.get('/suppliers');
       setSuppliers(response.data.data || []);
     } catch (error) {
-      toast.error('حدث خطأ');
+      toast.error('حدث خطأ أثناء جلب الموردين');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('هل أنت متأكد من حذف هذا المورد؟')) {
+      return;
+    }
+
+    try {
+      await api.delete(`/suppliers/${id}`);
+      toast.success('تم حذف المورد بنجاح');
+      fetchSuppliers();
+    } catch (error) {
+      const message = error.response?.data?.message || 'حدث خطأ أثناء حذف المورد';
+      toast.error(message);
+    }
+  };
+
+  const handleEdit = (supplier) => {
+    setEditingSupplier(supplier);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setEditingSupplier(null);
+    fetchSuppliers();
   };
 
   return (
@@ -29,7 +58,10 @@ const SuppliersList = () => {
           <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">الموردون</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">إدارة الموردين</p>
         </div>
-        <button className="btn-primary flex items-center gap-2">
+        <button
+          onClick={() => setIsModalOpen(true)}
+          className="btn-primary flex items-center gap-2"
+        >
           <Plus size={20} />
           <span>إضافة مورد</span>
         </button>
@@ -69,10 +101,16 @@ const SuppliersList = () => {
                     <td className="py-3 px-4">{supplier.phone || '-'}</td>
                     <td className="py-3 px-4">
                       <div className="flex gap-2">
-                        <button className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg">
+                        <button
+                          onClick={() => handleEdit(supplier)}
+                          className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                        >
                           <Edit size={18} />
                         </button>
-                        <button className="p-2 text-red-600 hover:bg-red-50 rounded-lg">
+                        <button
+                          onClick={() => handleDelete(supplier._id)}
+                          className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                        >
                           <Trash2 size={18} />
                         </button>
                       </div>
@@ -84,6 +122,13 @@ const SuppliersList = () => {
           </div>
         )}
       </div>
+
+      {isModalOpen && (
+        <SupplierModal
+          supplier={editingSupplier}
+          onClose={handleCloseModal}
+        />
+      )}
     </div>
   );
 };

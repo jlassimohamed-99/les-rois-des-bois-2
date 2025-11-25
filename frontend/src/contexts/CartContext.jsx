@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 
 const CartContext = createContext();
 
@@ -12,6 +12,7 @@ export const useCart = () => {
 
 export const CartProvider = ({ children }) => {
   const [cartItems, setCartItems] = useState([]);
+  const [lastAddedItem, setLastAddedItem] = useState(null);
 
   // Load cart from localStorage on mount
   useEffect(() => {
@@ -20,7 +21,7 @@ export const CartProvider = ({ children }) => {
       try {
         setCartItems(JSON.parse(savedCart));
       } catch (error) {
-        console.error('Error loading cart from localStorage:', error);
+        // Silent error handling
       }
     }
   }, []);
@@ -30,7 +31,7 @@ export const CartProvider = ({ children }) => {
     localStorage.setItem('cart', JSON.stringify(cartItems));
   }, [cartItems]);
 
-  const addToCart = (item) => {
+  const addToCart = useCallback((item, triggerAnimation = true) => {
     setCartItems((prevItems) => {
       const existingItem = prevItems.find(
         (i) =>
@@ -40,24 +41,34 @@ export const CartProvider = ({ children }) => {
       );
 
       if (existingItem) {
-        return prevItems.map((i) =>
+        const updated = prevItems.map((i) =>
           i.productId === item.productId &&
           i.productType === item.productType &&
           JSON.stringify(i.selectedOptions) === JSON.stringify(item.selectedOptions)
             ? { ...i, quantity: i.quantity + (item.quantity || 1) }
             : i
         );
+        if (triggerAnimation) {
+          setLastAddedItem({ ...item, action: 'updated' });
+          setTimeout(() => setLastAddedItem(null), 500);
+        }
+        return updated;
       }
 
-      return [...prevItems, { ...item, quantity: item.quantity || 1 }];
+      const newItems = [...prevItems, { ...item, quantity: item.quantity || 1 }];
+      if (triggerAnimation) {
+        setLastAddedItem({ ...item, action: 'added' });
+        setTimeout(() => setLastAddedItem(null), 500);
+      }
+      return newItems;
     });
-  };
+  }, []);
 
-  const removeFromCart = (index) => {
+  const removeFromCart = useCallback((index) => {
     setCartItems((prevItems) => prevItems.filter((_, i) => i !== index));
-  };
+  }, []);
 
-  const updateQuantity = (index, quantity) => {
+  const updateQuantity = useCallback((index, quantity) => {
     if (quantity <= 0) {
       removeFromCart(index);
       return;
@@ -65,21 +76,21 @@ export const CartProvider = ({ children }) => {
     setCartItems((prevItems) =>
       prevItems.map((item, i) => (i === index ? { ...item, quantity } : item))
     );
-  };
+  }, [removeFromCart]);
 
-  const clearCart = () => {
+  const clearCart = useCallback(() => {
     setCartItems([]);
-  };
+  }, []);
 
-  const getCartTotal = () => {
+  const getCartTotal = useCallback(() => {
     return cartItems.reduce((total, item) => {
       return total + item.price * item.quantity;
     }, 0);
-  };
+  }, [cartItems]);
 
-  const getCartItemsCount = () => {
+  const getCartItemsCount = useCallback(() => {
     return cartItems.reduce((count, item) => count + item.quantity, 0);
-  };
+  }, [cartItems]);
 
   const value = {
     cartItems,
@@ -89,6 +100,7 @@ export const CartProvider = ({ children }) => {
     clearCart,
     getCartTotal,
     getCartItemsCount,
+    lastAddedItem,
   };
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

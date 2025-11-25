@@ -109,3 +109,15 @@ export const restockItems = async (req, res, next) => {
   }
 };
 
+export const updateReturn = async (req, res, next) => {
+  try {
+    const returnDoc = await Return.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    if (!returnDoc) {
+      return res.status(404).json({ success: false, message: 'المرتجع غير موجود' });
+    }
+    res.json({ success: true, data: returnDoc });
+  } catch (error) {
+    next(error);
+  }
+};
+

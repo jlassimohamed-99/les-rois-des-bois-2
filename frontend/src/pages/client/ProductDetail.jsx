@@ -30,7 +30,7 @@ const ProductDetail = () => {
           setSimilar(similarRes.data.data?.filter((p) => p._id !== id) || []);
         }
       } catch (error) {
-        console.error('Failed to load product', error);
+        // Silent error handling
       } finally {
         setLoading(false);
       }

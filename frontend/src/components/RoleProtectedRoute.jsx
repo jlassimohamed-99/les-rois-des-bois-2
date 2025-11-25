@@ -10,6 +10,7 @@ const getRedirectPath = (role) => {
       return '/commercial';
     case 'saler':
     case 'store_cashier':
+    case 'cashier':
       return '/pos';
     default:
       return '/shop';

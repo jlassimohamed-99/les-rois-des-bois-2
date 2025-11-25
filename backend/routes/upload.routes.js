@@ -18,6 +18,8 @@ const storage = multer.diskStorage({
       uploadPath = path.join(uploadPath, 'products');
     } else if (req.path.includes('/special-product')) {
       uploadPath = path.join(uploadPath, 'special-products');
+    } else if (req.path.includes('/settings')) {
+      uploadPath = path.join(uploadPath, 'settings');
     } else {
       uploadPath = path.join(uploadPath, 'general');
     }
@@ -126,6 +128,25 @@ router.post('/special-product', protect, upload.single('image'), (req, res) => {
     data: {
       filename: req.file.filename,
       path: `/uploads/special-products/${req.file.filename}`,
+      originalName: req.file.originalname,
+    },
+  });
+});
+
+// Settings logo upload
+router.post('/settings/logo', protect, upload.single('image'), (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({
+      success: false,
+      message: 'لم يتم رفع أي ملف',
+    });
+  }
+
+  res.status(200).json({
+    success: true,
+    data: {
+      filename: req.file.filename,
+      path: `/uploads/settings/${req.file.filename}`,
       originalName: req.file.originalname,
     },
   });

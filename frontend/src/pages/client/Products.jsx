@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
 import { Filter, SlidersHorizontal, ArrowLeft, RefreshCcw } from 'lucide-react';
 import clientApi from '../../utils/clientAxios';
-import ProductCard from '../../components/client/ProductCard';
+import ProductCard from '../../components/client/EnhancedProductCard';
 import { useCart } from '../../contexts/CartContext';
 import toast from 'react-hot-toast';
 import { withBase } from '../../utils/imageUrl';
+import LoadingSkeleton from '../../components/shared/LoadingSkeleton';
+import { staggerContainer } from '../../utils/animations';
 
 const Products = () => {
   const [products, setProducts] = useState([]);
@@ -29,7 +32,7 @@ const Products = () => {
         const res = await clientApi.get('/categories');
         setCategories(res.data.data || []);
       } catch (error) {
-        console.error('Failed to load categories', error);
+        // Silent error handling
       }
     };
     fetchCategories();
@@ -49,7 +52,7 @@ const Products = () => {
         setProducts(res.data.data || []);
         setTotalPages(res.data.pagination?.pages || 1);
       } catch (error) {
-        console.error('Failed to load products', error);
+        // Silent error handling
       } finally {
         setLoading(false);
       }
@@ -195,19 +198,24 @@ const Products = () => {
             {loading ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {[...Array(6)].map((_, idx) => (
-                  <div key={idx} className="h-80 bg-white dark:bg-gray-800 rounded-xl animate-pulse" />
+                  <LoadingSkeleton key={idx} variant="card" className="h-80" />
                 ))}
               </div>
             ) : (
               <>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {products.map((product) => (
-                    <ProductCard key={product._id} product={product} onAdd={() => handleAddToCart(product)} />
+                <motion.div
+                  variants={staggerContainer}
+                  initial="hidden"
+                  animate="visible"
+                  className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
+                >
+                  {products.map((product, index) => (
+                    <ProductCard key={product._id} product={product} index={index} onAdd={() => handleAddToCart(product)} />
                   ))}
                   {!products.length && (
                     <div className="col-span-full text-center text-gray-500 dark:text-gray-400 py-10">لا توجد منتجات.</div>
                   )}
-                </div>
+                </motion.div>
 
                 {totalPages > 1 && (
                   <div className="flex items-center justify-center gap-3 mt-8">

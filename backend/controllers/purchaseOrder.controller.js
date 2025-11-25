@@ -67,6 +67,18 @@ export const createPurchaseOrder = async (req, res, next) => {
   }
 };
 
+export const updatePurchaseOrder = async (req, res, next) => {
+  try {
+    const po = await PurchaseOrder.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    if (!po) {
+      return res.status(404).json({ success: false, message: 'أمر الشراء غير موجود' });
+    }
+    res.json({ success: true, data: po });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const updatePOStatus = async (req, res, next) => {
   try {
     const { status } = req.body;

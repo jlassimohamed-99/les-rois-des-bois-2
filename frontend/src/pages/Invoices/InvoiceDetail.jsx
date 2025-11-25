@@ -35,7 +35,7 @@ const InvoiceDetail = () => {
       const response = await api.get(`/invoices/${id}/payments`);
       setPayments(response.data.data || []);
     } catch (error) {
-      console.error('Error fetching payments:', error);
+      // Silent error handling
     }
   };
 
@@ -61,11 +61,38 @@ const InvoiceDetail = () => {
           <h1 className="text-3xl font-bold">فاتورة #{invoice.invoiceNumber}</h1>
         </div>
         <div className="flex gap-2">
-          <button className="btn-secondary flex items-center gap-2">
+          <button
+            onClick={async () => {
+              try {
+                const response = await api.get(`/invoices/${id}/pdf`, { responseType: 'blob' });
+                const url = window.URL.createObjectURL(new Blob([response.data]));
+                const link = document.createElement('a');
+                link.href = url;
+                link.setAttribute('download', `invoice-${invoice.invoiceNumber}.pdf`);
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+                toast.success('تم تحميل الفاتورة');
+              } catch (error) {
+                toast.error('حدث خطأ أثناء تحميل الفاتورة');
+              }
+            }}
+            className="btn-secondary flex items-center gap-2"
+          >
             <Download size={18} />
             <span>تحميل PDF</span>
           </button>
-          <button className="btn-secondary flex items-center gap-2">
+          <button
+            onClick={async () => {
+              try {
+                await api.post(`/invoices/${id}/send-email`);
+                toast.success('تم إرسال الفاتورة بالبريد الإلكتروني');
+              } catch (error) {
+                toast.error('حدث خطأ أثناء إرسال البريد');
+              }
+            }}
+            className="btn-secondary flex items-center gap-2"
+          >
             <Mail size={18} />
             <span>إرسال بالبريد</span>
           </button>

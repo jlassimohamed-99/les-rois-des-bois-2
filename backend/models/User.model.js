@@ -28,7 +28,7 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ['admin', 'commercial', 'store_manager', 'store_cashier', 'accountant', 'inventory_manager', 'user'],
+      enum: ['admin', 'commercial', 'store_manager', 'store_cashier', 'accountant', 'inventory_manager', 'user', 'client'],
       default: 'user',
     },
     // CRM fields

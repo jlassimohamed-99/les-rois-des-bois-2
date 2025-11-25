@@ -1,0 +1,97 @@
+import { motion } from 'framer-motion';
+import { Link } from 'react-router-dom';
+import { ShoppingCart, Eye } from 'lucide-react';
+import { hoverScale, hoverLift, fadeIn } from '../../utils/animations';
+import { withBase } from '../../utils/imageUrl';
+
+/**
+ * Enhanced Product Card with animations
+ */
+const EnhancedProductCard = ({ product, onAdd, index = 0 }) => {
+  const imageUrl = product.images?.[0] ? withBase(product.images[0]) : null;
+
+  return (
+    <motion.div
+      initial="hidden"
+      animate="visible"
+      variants={fadeIn}
+      transition={{ delay: index * 0.1 }}
+      className="group bg-white dark:bg-gray-800 rounded-2xl shadow-sm hover:shadow-xl border border-gray-100 dark:border-gray-700 overflow-hidden transition-all duration-300"
+    >
+      <Link to={`/shop/products/${product._id}`} className="block">
+        <motion.div
+          className="relative h-64 bg-gray-100 dark:bg-gray-700 overflow-hidden"
+          whileHover="hover"
+          variants={{
+            hover: { scale: 1.05 },
+          }}
+          transition={{ duration: 0.3 }}
+        >
+          {imageUrl ? (
+            <img
+              src={imageUrl}
+              alt={product.name}
+              className="w-full h-full object-cover"
+              loading="lazy"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-gray-400">
+              لا توجد صورة
+            </div>
+          )}
+          <motion.div
+            className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors"
+            initial={false}
+          />
+        </motion.div>
+      </Link>
+
+      <div className="p-4 space-y-3">
+        <Link to={`/shop/products/${product._id}`}>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 line-clamp-2 group-hover:text-gold-600 transition-colors">
+            {product.name}
+          </h3>
+        </Link>
+
+        {product.description && (
+          <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
+            {product.description}
+          </p>
+        )}
+
+        <div className="flex items-center justify-between pt-2">
+          <span className="text-xl font-bold text-gold-600">{product.price} TND</span>
+          
+          <div className="flex items-center gap-2">
+            <motion.button
+              whileHover={hoverScale}
+              whileTap={{ scale: 0.9 }}
+              onClick={(e) => {
+                e.preventDefault();
+                if (onAdd) onAdd(product);
+              }}
+              className="p-2 bg-gold-600 text-white rounded-lg hover:bg-gold-700 transition-colors"
+              aria-label="Add to cart"
+            >
+              <ShoppingCart size={18} />
+            </motion.button>
+            
+            <Link to={`/shop/products/${product._id}`}>
+              <motion.button
+                whileHover={hoverScale}
+                whileTap={{ scale: 0.9 }}
+                className="p-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                aria-label="View details"
+              >
+                <Eye size={18} />
+              </motion.button>
+            </Link>
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
+export default EnhancedProductCard;
+

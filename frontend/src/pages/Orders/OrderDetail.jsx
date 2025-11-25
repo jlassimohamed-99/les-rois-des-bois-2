@@ -33,7 +33,7 @@ const OrderDetail = () => {
       const response = await api.get(`/orders/${id}/activity`);
       setActivities(response.data.data || []);
     } catch (error) {
-      console.error('Error fetching activities:', error);
+      // Silent error handling
     }
   };
 

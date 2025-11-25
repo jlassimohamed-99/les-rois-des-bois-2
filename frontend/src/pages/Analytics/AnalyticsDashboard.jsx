@@ -37,7 +37,6 @@ const AnalyticsDashboard = () => {
       setRevenueByCategory(categoryRes.data.data || []);
       setTopProducts(productsRes.data.data || []);
     } catch (error) {
-      console.error('Error fetching analytics:', error);
       // Fallback to placeholder data
       setSalesData([
         { date: '2024-01', sales: 120, revenue: 50000 },

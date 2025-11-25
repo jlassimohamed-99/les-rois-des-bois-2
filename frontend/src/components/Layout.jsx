@@ -24,6 +24,8 @@ import {
   DollarSign,
   Menu,
   X,
+  Users,
+  UserCog,
 } from 'lucide-react';
 
 const Layout = () => {
@@ -52,8 +54,10 @@ const Layout = () => {
     { path: '/admin/expenses', icon: DollarSign, label: 'المصاريف' },
     { path: '/admin/returns', icon: RotateCcw, label: 'الإرجاعات' },
     { path: '/admin/crm', icon: Briefcase, label: 'إدارة العملاء' },
+    { path: '/admin/users', icon: UserCog, label: 'المستخدمون' },
     { path: '/admin/analytics', icon: BarChart3, label: 'التحليلات' },
     { path: '/admin/audit-logs', icon: Activity, label: 'سجل التدقيق' },
+    { path: '/admin/settings', icon: Settings, label: 'الإعدادات' },
     { path: '/admin/jobs', icon: Settings, label: 'المهام' },
   ];
 

@@ -50,3 +50,27 @@ export const createExpense = async (req, res, next) => {
   }
 };
 
+export const updateExpense = async (req, res, next) => {
+  try {
+    const expense = await Expense.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    if (!expense) {
+      return res.status(404).json({ success: false, message: 'المصروف غير موجود' });
+    }
+    res.json({ success: true, data: expense });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const deleteExpense = async (req, res, next) => {
+  try {
+    const expense = await Expense.findByIdAndDelete(req.params.id);
+    if (!expense) {
+      return res.status(404).json({ success: false, message: 'المصروف غير موجود' });
+    }
+    res.json({ success: true, message: 'تم حذف المصروف بنجاح' });
+  } catch (error) {
+    next(error);
+  }
+};
+

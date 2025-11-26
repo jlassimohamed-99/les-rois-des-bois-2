@@ -165,15 +165,66 @@ const POSInterface = () => {
   // Select option B for special product
   const selectOptionB = (variant) => {
     setSelectedOptionB(variant);
-    setSpecialProductStep(3);
-    // Find matching combination
-    const combination = selectedSpecialProduct?.combinations?.find(
-      (c) =>
-        c.optionA?.value === selectedOptionA?.value &&
-        c.optionB?.value === variant?.value
-    );
+    
+    // Find matching combination - check multiple possible structures
+    let combination = null;
+    
+    if (selectedSpecialProduct?.combinations && selectedOptionA) {
+      // Try to find exact match
+      combination = selectedSpecialProduct.combinations.find((c) => {
+        // Check option A - try different structures
+        let optionAMatches = false;
+        if (c.optionA?.variant?.value && selectedOptionA?.value) {
+          optionAMatches = c.optionA.variant.value === selectedOptionA.value;
+        } else if (c.optionA?.value && selectedOptionA?.value) {
+          optionAMatches = c.optionA.value === selectedOptionA.value;
+        } else if (c.optionA?.variant?.name && selectedOptionA?.name) {
+          optionAMatches = c.optionA.variant.name === selectedOptionA.name;
+        } else if (c.optionA?.name && selectedOptionA?.name) {
+          optionAMatches = c.optionA.name === selectedOptionA.name;
+        }
+        
+        // Check option B - try different structures
+        let optionBMatches = false;
+        if (c.optionB?.variant?.value && variant?.value) {
+          optionBMatches = c.optionB.variant.value === variant.value;
+        } else if (c.optionB?.value && variant?.value) {
+          optionBMatches = c.optionB.value === variant.value;
+        } else if (c.optionB?.variant?.name && variant?.name) {
+          optionBMatches = c.optionB.variant.name === variant.name;
+        } else if (c.optionB?.name && variant?.name) {
+          optionBMatches = c.optionB.name === variant.name;
+        }
+        
+        return optionAMatches && optionBMatches;
+      });
+      
+      // If no exact match, try name-based matching
+      if (!combination) {
+        combination = selectedSpecialProduct.combinations.find((c) => {
+          const optionAName = c.optionA?.variant?.name || c.optionA?.name || '';
+          const optionBName = c.optionB?.variant?.name || c.optionB?.name || '';
+          return optionAName === selectedOptionA?.name && optionBName === variant?.name;
+        });
+      }
+      
+      // Last resort: use first combination if available
+      if (!combination && selectedSpecialProduct.combinations.length > 0) {
+        console.log('Using first available combination as fallback');
+        combination = selectedSpecialProduct.combinations[0];
+      }
+    }
+    
     if (combination) {
       setSelectedCombination(combination);
+      setSpecialProductStep(3);
+    } else {
+      toast.error('لم يتم العثور على التركيبة المطابقة. يرجى المحاولة مرة أخرى.');
+      console.error('Combination not found:', {
+        selectedOptionA,
+        selectedOptionB: variant,
+        combinations: selectedSpecialProduct?.combinations
+      });
     }
   };
 
@@ -185,6 +236,7 @@ const POSInterface = () => {
     }
 
     const price = selectedSpecialProduct.finalPrice + (selectedCombination.additionalPrice || 0);
+    const combinationTitle = `${selectedCombination.optionA?.variant?.name || selectedOptionA?.name || ''} + ${selectedCombination.optionB?.variant?.name || selectedOptionB?.name || ''}`;
 
     setCart([
       ...cart,
@@ -194,11 +246,11 @@ const POSInterface = () => {
         productName: selectedSpecialProduct.name,
         price,
         quantity: 1,
-        image: selectedCombination.finalImage || '',
-        combinationId: selectedCombination._id,
-        variantA: selectedCombination.optionA,
-        variantB: selectedCombination.optionB,
-        combinationTitle: `${selectedCombination.optionA?.variant?.name || ''} + ${selectedCombination.optionB?.variant?.name || ''}`,
+        image: selectedCombination.finalImage || selectedSpecialProduct.baseProductA?.images?.[0] || '',
+        combinationId: selectedCombination._id?.toString() || selectedCombination._id,
+        variantA: selectedCombination.optionA || { variant: selectedOptionA },
+        variantB: selectedCombination.optionB || { variant: selectedOptionB },
+        combinationTitle,
       },
     ]);
 
@@ -427,22 +479,22 @@ const POSInterface = () => {
             {loadingProducts ? (
               <div className="text-center py-12 text-gray-400">جاري التحميل...</div>
             ) : activeTab === 'regular' ? (
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
                 {filteredRegularProducts.map((product) => (
                   <div
                     key={product._id}
                     onClick={() => addRegularProductToCart(product)}
-                    className="bg-gray-800 rounded-lg p-4 cursor-pointer hover:bg-gray-700 transition-colors border border-gray-700 hover:border-gold-600"
+                    className="bg-gray-800 rounded-lg p-2 cursor-pointer hover:bg-gray-700 transition-colors border border-gray-700 hover:border-gold-600"
                   >
                     {product.images?.[0] && (
                       <img
                         src={withBase(product.images[0])}
                         alt={product.name}
-                        className="w-full h-32 object-cover rounded-lg mb-3"
+                        className="w-full h-20 object-cover rounded-lg mb-2"
                       />
                     )}
-                    <h3 className="font-semibold text-white mb-1">{product.name}</h3>
-                    <p className="text-gold-500 font-bold text-lg">{product.price} TND</p>
+                    <h3 className="font-medium text-white text-sm mb-1 line-clamp-2">{product.name}</h3>
+                    <p className="text-gold-500 font-bold text-sm">{product.price} TND</p>
                     <p className="text-xs text-gray-400 mt-1">
                       المخزون: {product.stock || 0}
                     </p>
@@ -457,22 +509,22 @@ const POSInterface = () => {
             ) : (
               <div>
                 {!selectedSpecialProduct ? (
-                  <div className="grid grid-cols-3 gap-4">
+                  <div className="grid grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
                     {filteredSpecialProducts.map((product) => (
                       <div
                         key={product._id}
                         onClick={() => startSpecialProductSelection(product)}
-                        className="bg-gray-800 rounded-lg p-4 cursor-pointer hover:bg-gray-700 transition-colors border border-gray-700 hover:border-gold-600"
+                        className="bg-gray-800 rounded-lg p-2 cursor-pointer hover:bg-gray-700 transition-colors border border-gray-700 hover:border-gold-600"
                       >
                         {product.baseProductA?.images?.[0] && (
                           <img
                             src={withBase(product.baseProductA.images[0])}
                             alt={product.name}
-                            className="w-full h-32 object-cover rounded-lg mb-3"
+                            className="w-full h-20 object-cover rounded-lg mb-2"
                           />
                         )}
-                        <h3 className="font-semibold text-white mb-1">{product.name}</h3>
-                        <p className="text-gold-500 font-bold text-lg">
+                        <h3 className="font-medium text-white text-sm mb-1 line-clamp-2">{product.name}</h3>
+                        <p className="text-gold-500 font-bold text-sm">
                           ابتداءً من {product.finalPrice} TND
                         </p>
                       </div>
@@ -490,23 +542,29 @@ const POSInterface = () => {
                       <div className="bg-gray-800 rounded-lg p-6">
                         <h2 className="text-xl font-bold mb-4">{selectedSpecialProduct.name}</h2>
                         <p className="text-gray-400 mb-6">اختر الجزء الأول</p>
-                        <div className="grid grid-cols-3 gap-4">
-                          {selectedSpecialProduct.baseProductA?.variants?.map((variant, idx) => (
-                            <div
-                              key={idx}
-                              onClick={() => selectOptionA(variant)}
-                              className="bg-gray-700 rounded-lg p-4 cursor-pointer hover:bg-gray-600 transition-colors border border-gray-600 hover:border-gold-600"
-                            >
-                              {variant.image && (
-                                <img
-                                  src={withBase(variant.image)}
-                                  alt={variant.name}
-                                  className="w-full h-24 object-cover rounded-lg mb-2"
-                                />
-                              )}
-                              <p className="text-white font-medium">{variant.name}</p>
+                        <div className="grid grid-cols-4 md:grid-cols-5 gap-3">
+                          {selectedSpecialProduct.baseProductA?.variants && selectedSpecialProduct.baseProductA.variants.length > 0 ? (
+                            selectedSpecialProduct.baseProductA.variants.map((variant, idx) => (
+                              <div
+                                key={idx}
+                                onClick={() => selectOptionA(variant)}
+                                className="bg-gray-700 rounded-lg p-3 cursor-pointer hover:bg-gray-600 transition-colors border border-gray-600 hover:border-gold-600"
+                              >
+                                {variant.image && (
+                                  <img
+                                    src={withBase(variant.image)}
+                                    alt={variant.name}
+                                    className="w-full h-16 object-cover rounded-lg mb-2"
+                                  />
+                                )}
+                                <p className="text-white font-medium text-sm">{variant.name}</p>
+                              </div>
+                            ))
+                          ) : (
+                            <div className="col-span-full text-center text-gray-400 py-4">
+                              لا توجد خيارات متاحة
                             </div>
-                          ))}
+                          )}
                         </div>
                       </div>
                     )}
@@ -518,74 +576,103 @@ const POSInterface = () => {
                           <span className="text-gold-500">تم اختيار: {selectedOptionA?.name}</span>
                         </div>
                         <p className="text-gray-400 mb-6">اختر الجزء الثاني</p>
-                        <div className="grid grid-cols-3 gap-4">
-                          {selectedSpecialProduct.baseProductB?.variants?.map((variant, idx) => (
-                            <div
-                              key={idx}
-                              onClick={() => selectOptionB(variant)}
-                              className="bg-gray-700 rounded-lg p-4 cursor-pointer hover:bg-gray-600 transition-colors border border-gray-600 hover:border-gold-600"
-                            >
-                              {variant.image && (
-                                <img
-                                  src={withBase(variant.image)}
-                                  alt={variant.name}
-                                  className="w-full h-24 object-cover rounded-lg mb-2"
-                                />
-                              )}
-                              <p className="text-white font-medium">{variant.name}</p>
+                        <div className="grid grid-cols-4 md:grid-cols-5 gap-3">
+                          {selectedSpecialProduct.baseProductB?.variants && selectedSpecialProduct.baseProductB.variants.length > 0 ? (
+                            selectedSpecialProduct.baseProductB.variants.map((variant, idx) => (
+                              <div
+                                key={idx}
+                                onClick={() => selectOptionB(variant)}
+                                className="bg-gray-700 rounded-lg p-3 cursor-pointer hover:bg-gray-600 transition-colors border border-gray-600 hover:border-gold-600"
+                              >
+                                {variant.image && (
+                                  <img
+                                    src={withBase(variant.image)}
+                                    alt={variant.name}
+                                    className="w-full h-16 object-cover rounded-lg mb-2"
+                                  />
+                                )}
+                                <p className="text-white font-medium text-sm">{variant.name}</p>
+                              </div>
+                            ))
+                          ) : (
+                            <div className="col-span-full text-center text-gray-400 py-4">
+                              لا توجد خيارات متاحة
                             </div>
-                          ))}
+                          )}
                         </div>
                       </div>
                     )}
 
-                    {specialProductStep === 3 && selectedCombination && (
+                    {specialProductStep === 3 && (
                       <div className="bg-gray-800 rounded-lg p-6">
-                        <div className="flex items-center justify-between mb-6">
-                          <div>
-                            <h3 className="text-xl font-bold">التركيبة المختارة</h3>
-                            <p className="text-gray-400">
-                              {selectedCombination.optionA?.variant?.name} +{' '}
-                              {selectedCombination.optionB?.variant?.name}
-                            </p>
+                        {selectedCombination ? (
+                          <>
+                            <div className="flex items-center justify-between mb-6">
+                              <div>
+                                <h3 className="text-xl font-bold">التركيبة المختارة</h3>
+                                <p className="text-gray-400">
+                                  {selectedCombination.optionA?.variant?.name || 
+                                   selectedOptionA?.name || 
+                                   selectedCombination.optionA?.name || 'غير محدد'} +{' '}
+                                  {selectedCombination.optionB?.variant?.name || 
+                                   selectedOptionB?.name || 
+                                   selectedCombination.optionB?.name || 'غير محدد'}
+                                </p>
+                              </div>
+                              <button
+                                onClick={() => {
+                                  setSelectedSpecialProduct(null);
+                                  setSpecialProductStep(1);
+                                  setSelectedOptionA(null);
+                                  setSelectedOptionB(null);
+                                  setSelectedCombination(null);
+                                }}
+                                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg"
+                              >
+                                <X size={20} />
+                              </button>
+                            </div>
+                            {selectedCombination.finalImage && (
+                              <img
+                                src={withBase(selectedCombination.finalImage)}
+                                alt="Combination"
+                                className="w-full h-64 object-cover rounded-lg mb-4"
+                              />
+                            )}
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="text-gray-400">السعر النهائي</p>
+                                <p className="text-2xl font-bold text-gold-500">
+                                  {selectedSpecialProduct.finalPrice +
+                                    (selectedCombination.additionalPrice || 0)}{' '}
+                                  TND
+                                </p>
+                              </div>
+                              <button
+                                onClick={addSpecialProductToCart}
+                                className="px-6 py-3 bg-gold-600 hover:bg-gold-700 rounded-lg font-semibold flex items-center gap-2"
+                              >
+                                <Plus size={20} />
+                                إضافة للسلة
+                              </button>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="text-center py-8">
+                            <p className="text-gray-400 mb-4">جاري البحث عن التركيبة...</p>
+                            <button
+                              onClick={() => {
+                                setSelectedSpecialProduct(null);
+                                setSpecialProductStep(1);
+                                setSelectedOptionA(null);
+                                setSelectedOptionB(null);
+                              }}
+                              className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg"
+                            >
+                              العودة
+                            </button>
                           </div>
-                          <button
-                            onClick={() => {
-                              setSelectedSpecialProduct(null);
-                              setSpecialProductStep(1);
-                              setSelectedOptionA(null);
-                              setSelectedOptionB(null);
-                              setSelectedCombination(null);
-                            }}
-                            className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg"
-                          >
-                            <X size={20} />
-                          </button>
-                        </div>
-                        {selectedCombination.finalImage && (
-                          <img
-                            src={withBase(selectedCombination.finalImage)}
-                            alt="Combination"
-                            className="w-full h-64 object-cover rounded-lg mb-4"
-                          />
                         )}
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="text-gray-400">السعر النهائي</p>
-                            <p className="text-2xl font-bold text-gold-500">
-                              {selectedSpecialProduct.finalPrice +
-                                (selectedCombination.additionalPrice || 0)}{' '}
-                              TND
-                            </p>
-                          </div>
-                          <button
-                            onClick={addSpecialProductToCart}
-                            className="px-6 py-3 bg-gold-600 hover:bg-gold-700 rounded-lg font-semibold flex items-center gap-2"
-                          >
-                            <Plus size={20} />
-                            إضافة للسلة
-                          </button>
-                        </div>
                       </div>
                     )}
                   </div>

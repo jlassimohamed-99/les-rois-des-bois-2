@@ -267,8 +267,27 @@ export const createPOSOrder = async (req, res, next) => {
     const taxAmount = ((subtotal - discountAmount) * vatRate) / 100;
     const finalTotal = subtotal - discountAmount + taxAmount;
 
+    // Generate unique order number
+    let orderNumber;
+    let attempts = 0;
+    const maxAttempts = 10;
+    
+    do {
+      const orderCount = await Order.countDocuments();
+      orderNumber = `ORD-${String(orderCount + 1).padStart(6, '0')}`;
+      const existingOrder = await Order.findOne({ orderNumber });
+      if (!existingOrder) break;
+      attempts++;
+      if (attempts >= maxAttempts) {
+        // Fallback: use timestamp if all attempts fail
+        orderNumber = `ORD-${Date.now()}`;
+        break;
+      }
+    } while (attempts < maxAttempts);
+
     // Create order
     const order = await Order.create({
+      orderNumber,
       clientName: 'عميل مباشر',
       clientPhone: '',
       status: 'completed',
@@ -322,8 +341,30 @@ export const createPOSOrder = async (req, res, next) => {
       }
     }
 
+    // Generate unique invoice number
+    const year = new Date().getFullYear();
+    let invoiceNumber;
+    let invoiceAttempts = 0;
+    const maxInvoiceAttempts = 10;
+    
+    do {
+      const invoiceCount = await Invoice.countDocuments({
+        invoiceNumber: new RegExp(`^INV-${year}`),
+      });
+      invoiceNumber = `INV-${year}-${String(invoiceCount + 1).padStart(6, '0')}`;
+      const existingInvoice = await Invoice.findOne({ invoiceNumber });
+      if (!existingInvoice) break;
+      invoiceAttempts++;
+      if (invoiceAttempts >= maxInvoiceAttempts) {
+        // Fallback: use timestamp if all attempts fail
+        invoiceNumber = `INV-${year}-${Date.now()}`;
+        break;
+      }
+    } while (invoiceAttempts < maxInvoiceAttempts);
+
     // Create invoice automatically
     const invoice = await Invoice.create({
+      invoiceNumber,
       orderId: order._id,
       clientName: order.clientName,
       clientAddress: order.clientAddress || '',
@@ -374,8 +415,29 @@ export const generatePOSInvoice = async (req, res, next) => {
 
     let invoice = await Invoice.findOne({ orderId });
     if (!invoice) {
+      // Generate unique invoice number
+      const year = new Date().getFullYear();
+      let invoiceNumber;
+      let attempts = 0;
+      const maxAttempts = 10;
+      
+      do {
+        const invoiceCount = await Invoice.countDocuments({
+          invoiceNumber: new RegExp(`^INV-${year}`),
+        });
+        invoiceNumber = `INV-${year}-${String(invoiceCount + 1).padStart(6, '0')}`;
+        const existingInvoice = await Invoice.findOne({ invoiceNumber });
+        if (!existingInvoice) break;
+        attempts++;
+        if (attempts >= maxAttempts) {
+          invoiceNumber = `INV-${year}-${Date.now()}`;
+          break;
+        }
+      } while (attempts < maxAttempts);
+
       // Create invoice if it doesn't exist
       invoice = await Invoice.create({
+        invoiceNumber,
         orderId: order._id,
         clientName: order.clientName,
         clientAddress: order.clientAddress || '',

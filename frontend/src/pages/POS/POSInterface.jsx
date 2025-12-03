@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import api from '../../utils/axios';
 import toast from 'react-hot-toast';
 import {
@@ -18,13 +18,97 @@ import {
   CheckCircle2,
   Printer,
   Download,
+  Users,
+  Search as SearchIcon,
+  ArrowLeft,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useTheme } from '../../contexts/ThemeContext';
 import { withBase } from '../../utils/imageUrl';
 
+// Helper function to get redirect path based on role
+const getBackPath = (role) => {
+  switch (role) {
+    case 'admin':
+      return '/admin/dashboard';
+    case 'commercial':
+      return '/commercial';
+    case 'cashier':
+    case 'store_cashier':
+    case 'saler':
+      return '/pos'; // Cashiers stay on POS
+    default:
+      return '/pos';
+  }
+};
+
 const POSInterface = () => {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
+  const { isDark } = useTheme();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  // Protect POS route - redirect if not authenticated or not authorized
+  useEffect(() => {
+    // Only redirect after auth has finished loading
+    if (!authLoading) {
+      const token = localStorage.getItem('token');
+      
+      // If no token at all and no user, redirect to login
+      if (!token && !user) {
+        navigate('/login', { replace: true });
+        return;
+      }
+      
+      // If we have a user, check their role
+      if (user) {
+        const allowedRoles = ['cashier', 'store_cashier', 'saler', 'admin', 'commercial'];
+        if (!allowedRoles.includes(user.role)) {
+          // If not authorized, redirect based on role
+          if (user.role === 'commercial') {
+            navigate('/commercial', { replace: true });
+          } else if (user.role === 'client' || user.role === 'user') {
+            navigate('/shop', { replace: true });
+          } else {
+            navigate('/login', { replace: true });
+          }
+        }
+        // If user is authorized, they're allowed - stay on POS
+      } else if (token) {
+        // We have a token but no user - backend might be down
+        // Don't redirect to login immediately - keep token and stay on POS
+        // This allows user to continue working if backend comes back online
+        // Only redirect if we're absolutely sure the token is invalid
+        console.log('Token exists but user not loaded - backend might be unavailable');
+        return;
+      }
+      // If no token and no user, redirect will happen above
+    }
+    // If still loading, don't do anything
+  }, [user, authLoading, navigate]);
+
+  // Block browser back button - keep cashiers on POS
+  useEffect(() => {
+    // Push current route to history to have control
+    if (window.location.pathname !== '/pos') {
+      window.history.pushState(null, '', '/pos');
+    }
+    
+    const handlePopState = (e) => {
+      const currentPath = window.location.pathname;
+      // If trying to go back to /shop or any non-POS route, redirect to /pos
+      if (!currentPath.startsWith('/pos')) {
+        window.history.pushState(null, '', '/pos');
+        navigate('/pos', { replace: true });
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [navigate]);
 
   // State
   const [products, setProducts] = useState({ regularProducts: [], specialProducts: [], categories: [] });
@@ -34,9 +118,19 @@ const POSInterface = () => {
   const [activeTab, setActiveTab] = useState('regular'); // 'regular' or 'special'
   const [discount, setDiscount] = useState(0);
   const [notes, setNotes] = useState('');
-  const [vat, setVat] = useState(19);
+  const [vat, setVat] = useState(0);
   const [loading, setLoading] = useState(false);
   const [loadingProducts, setLoadingProducts] = useState(true);
+  const [priceType, setPriceType] = useState('retail'); // 'retail' or 'wholesale'
+  
+  // Commercial/Admin mode - client selection
+  const isCommercial = user?.role === 'commercial';
+  const isAdmin = user?.role === 'admin';
+  const canSelectClient = isCommercial || isAdmin;
+  const [clients, setClients] = useState([]);
+  const [selectedClient, setSelectedClient] = useState(null);
+  const [loadingClients, setLoadingClients] = useState(false);
+  const [showClientModal, setShowClientModal] = useState(false);
 
   // Special product selection state
   const [selectedSpecialProduct, setSelectedSpecialProduct] = useState(null);
@@ -45,19 +139,82 @@ const POSInterface = () => {
   const [selectedOptionB, setSelectedOptionB] = useState(null);
   const [selectedCombination, setSelectedCombination] = useState(null);
 
+  // Regular product variant selection state
+  const [selectedProductForVariant, setSelectedProductForVariant] = useState(null);
+  const [selectedVariant, setSelectedVariant] = useState(null);
+  const [quantityToAdd, setQuantityToAdd] = useState(1); // Quantity to add to cart
+
+  // Product quantity modal (for products without variants)
+  const [showQuantityModal, setShowQuantityModal] = useState(false);
+  const [productForQuantity, setProductForQuantity] = useState(null);
+
   // Success modal
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [lastOrder, setLastOrder] = useState(null);
 
+  // Client search filter for modal
+  const [clientSearchTerm, setClientSearchTerm] = useState('');
+
   useEffect(() => {
     fetchProducts();
     fetchSettings();
-  }, []);
+    if (canSelectClient) {
+      fetchClients();
+    }
+  }, [canSelectClient]);
+  
+  // Load client from URL params if provided
+  useEffect(() => {
+    if (canSelectClient) {
+      const clientIdFromUrl = searchParams.get('clientId');
+      if (clientIdFromUrl && clients.length > 0 && !selectedClient) {
+        const client = clients.find((c) => c._id === clientIdFromUrl);
+        if (client) {
+          setSelectedClient(client);
+        }
+      }
+    }
+  }, [canSelectClient, clients, searchParams, selectedClient]);
+  
+  // Fetch clients for commercial/admin mode
+  const fetchClients = async () => {
+    try {
+      setLoadingClients(true);
+      // Admin can see all clients, commercial only sees their assigned clients
+      const endpoint = isAdmin ? '/crm/clients' : '/commercial/clients';
+      // For admin, increase limit to get all clients
+      const params = isAdmin ? { limit: 1000 } : {};
+      const response = await api.get(endpoint, { params });
+      if (response.data.success) {
+        setClients(response.data.data || []);
+      }
+    } catch (error) {
+      console.error('Error fetching clients:', error);
+      toast.error('حدث خطأ أثناء جلب العملاء');
+    } finally {
+      setLoadingClients(false);
+    }
+  };
+
+  // Filter clients based on search
+  const filteredClients = useMemo(() => {
+    if (!clientSearchTerm) return clients;
+    const search = clientSearchTerm.toLowerCase();
+    return clients.filter(
+      (client) =>
+        client.name?.toLowerCase().includes(search) ||
+        client.email?.toLowerCase().includes(search) ||
+        client.phone?.includes(search) ||
+        client.companyName?.toLowerCase().includes(search)
+    );
+  }, [clients, clientSearchTerm]);
 
   const fetchProducts = async () => {
     try {
       setLoadingProducts(true);
-      const response = await api.get('/pos/products');
+      // Use commercial route if user is commercial, otherwise use POS route
+      const endpoint = user?.role === 'commercial' ? '/commercial/products' : '/pos/products';
+      const response = await api.get(endpoint);
       setProducts(response.data.data || { regularProducts: [], specialProducts: [], categories: [] });
     } catch (error) {
       toast.error('حدث خطأ أثناء جلب المنتجات');
@@ -108,25 +265,73 @@ const POSInterface = () => {
   }, [products.specialProducts, searchTerm]);
 
   // Add regular product to cart
-  const addRegularProductToCart = (product) => {
+  const addRegularProductToCart = (product, variant = null, quantity = null) => {
     if (!product.stock || product.stock <= 0) {
       toast.error('المنتج غير متوفر في المخزون');
       return;
     }
 
-    const existingItem = cart.find(
-      (item) => item.productId === product._id && item.productType === 'regular'
-    );
+    // Si une quantité est spécifiée, on ajoute directement (depuis le modal)
+    // Sinon, on vérifie si on doit ouvrir un modal
+    
+    const hasVariants = product.variants && Array.isArray(product.variants) && product.variants.length > 0;
+
+    // Si le produit a des variants et qu'on n'a pas encore sélectionné de variant, ouvrir le modal de variant
+    if (hasVariants && variant === null && quantity === null) {
+      setSelectedProductForVariant(product);
+      setSelectedVariant(null);
+      setQuantityToAdd(1);
+      return;
+    }
+
+    // Si le produit n'a pas de variants et qu'aucune quantité n'est spécifiée, ouvrir le modal de quantité
+    if (!hasVariants && quantity === null) {
+      setProductForQuantity(product);
+      setShowQuantityModal(true);
+      setQuantityToAdd(1);
+      return;
+    }
+
+    // Si on arrive ici, c'est qu'on a une quantité spécifiée (depuis le modal) ou un variant sélectionné
+    // Utiliser la quantité fournie ou 1 par défaut
+    const finalQuantity = quantity !== null ? quantity : 1;
+
+    const variantPrice = variant?.additionalPrice || 0;
+    const basePrice = priceType === 'wholesale' && product.wholesalePrice > 0 
+      ? product.wholesalePrice 
+      : product.price;
+    const finalPrice = basePrice + variantPrice;
+    const variantValue = variant?.value || null;
+
+    // Helper function to compare variants
+    const variantsMatch = (v1, v2) => {
+      if (!v1 && !v2) return true;
+      if (!v1 || !v2) return false;
+      return v1.value === v2.value || (v1.name === v2.name && v1.value === v2.value);
+    };
+
+    const existingItem = cart.find((item) => {
+      if (item.productId !== product._id || item.productType !== 'regular') {
+        return false;
+      }
+      // Check if variants match
+      return variantsMatch(item.variant, variant);
+    });
+
+    // Check stock availability for the quantity
+    const totalQuantity = existingItem ? existingItem.quantity + finalQuantity : finalQuantity;
+    if (totalQuantity > product.stock) {
+      toast.error(`الكمية المتاحة في المخزون: ${product.stock}`);
+      return;
+    }
 
     if (existingItem) {
-      if (existingItem.quantity >= product.stock) {
-        toast.error('الكمية المطلوبة غير متوفرة في المخزون');
-        return;
-      }
       setCart(
         cart.map((item) =>
-          item.productId === product._id && item.productType === 'regular'
-            ? { ...item, quantity: item.quantity + 1 }
+          item.productId === product._id &&
+          item.productType === 'regular' &&
+          variantsMatch(item.variant, variant)
+            ? { ...item, quantity: item.quantity + finalQuantity }
             : item
         )
       );
@@ -137,14 +342,49 @@ const POSInterface = () => {
           productId: product._id,
           productType: 'regular',
           productName: product.name,
-          price: product.price,
-          quantity: 1,
-          image: product.images?.[0] || '',
+          price: finalPrice,
+          quantity: finalQuantity,
+          image: variant?.image || product.images?.[0] || '',
           stock: product.stock,
+          variant: variant ? {
+            name: variant.name,
+            value: variant.value,
+            image: variant.image,
+            additionalPrice: variant.additionalPrice || 0,
+          } : undefined,
         },
       ]);
     }
-    toast.success('تمت الإضافة إلى السلة');
+
+    toast.success(`تمت الإضافة ${finalQuantity} ${finalQuantity > 1 ? 'عناصر' : 'عنصر'} إلى السلة`);
+    setSelectedProductForVariant(null);
+    setSelectedVariant(null);
+    setQuantityToAdd(1);
+  };
+
+  // Handle adding product with quantity from modal
+  const confirmAddToCart = () => {
+    if (!productForQuantity) {
+      toast.error('لم يتم العثور على المنتج');
+      return;
+    }
+    
+    if (!quantityToAdd || quantityToAdd < 1) {
+      toast.error('يرجى تحديد كمية صحيحة');
+      return;
+    }
+
+    // Save product and quantity before closing modal
+    const productToAdd = productForQuantity;
+    const qtyToAdd = quantityToAdd;
+
+    // Close modal first
+    setShowQuantityModal(false);
+    setProductForQuantity(null);
+    setQuantityToAdd(1);
+
+    // Then add to cart with the selected quantity
+    addRegularProductToCart(productToAdd, null, qtyToAdd);
   };
 
   // Start special product selection
@@ -154,6 +394,7 @@ const POSInterface = () => {
     setSelectedOptionA(null);
     setSelectedOptionB(null);
     setSelectedCombination(null);
+    setQuantityToAdd(1); // Reset quantity to 1
   };
 
   // Select option A for special product
@@ -229,7 +470,7 @@ const POSInterface = () => {
   };
 
   // Add special product combination to cart
-  const addSpecialProductToCart = () => {
+  const addSpecialProductToCart = (quantity = 1) => {
     if (!selectedCombination || !selectedSpecialProduct) {
       toast.error('يرجى اختيار التركيبة كاملة');
       return;
@@ -245,7 +486,7 @@ const POSInterface = () => {
         productType: 'special',
         productName: selectedSpecialProduct.name,
         price,
-        quantity: 1,
+        quantity: quantity,
         image: selectedCombination.finalImage || selectedSpecialProduct.baseProductA?.images?.[0] || '',
         combinationId: selectedCombination._id?.toString() || selectedCombination._id,
         variantA: selectedCombination.optionA || { variant: selectedOptionA },
@@ -254,13 +495,14 @@ const POSInterface = () => {
       },
     ]);
 
-    toast.success('تمت الإضافة إلى السلة');
+    toast.success(`تمت الإضافة ${quantity} ${quantity > 1 ? 'عناصر' : 'عنصر'} إلى السلة`);
     // Reset special product selection
     setSelectedSpecialProduct(null);
     setSpecialProductStep(1);
     setSelectedOptionA(null);
     setSelectedOptionB(null);
     setSelectedCombination(null);
+    setQuantityToAdd(1);
     setActiveTab('regular');
   };
 
@@ -305,17 +547,15 @@ const POSInterface = () => {
   const calculations = useMemo(() => {
     const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
     const discountAmount = discount || 0;
-    const subtotalAfterDiscount = subtotal - discountAmount;
-    const vatAmount = (subtotalAfterDiscount * vat) / 100;
-    const total = subtotalAfterDiscount + vatAmount;
+    const total = subtotal - discountAmount;
 
     return {
       subtotal,
       discount: discountAmount,
-      vat: vatAmount,
+      vat: 0,
       total,
     };
-  }, [cart, discount, vat]);
+  }, [cart, discount]);
 
   // Handle checkout
   const handleCheckout = async () => {
@@ -324,32 +564,76 @@ const POSInterface = () => {
       return;
     }
 
+    // For commercial/admin mode, client selection is optional (but recommended)
+    // Only show warning for commercial (required), admin can proceed without client
+    if (isCommercial && !selectedClient) {
+      toast.error('يرجى اختيار عميل قبل إتمام البيع');
+      setShowClientModal(true);
+      return;
+    }
+
     try {
       setLoading(true);
 
-      const items = cart.map((item) => ({
-        productId: item.productId,
-        combinationId: item.combinationId,
-        quantity: item.quantity,
-        unitPrice: item.price,
-        discount: 0,
-      }));
+      // Use commercial order creation if in commercial/admin mode and client is selected
+      const shouldUseCommercialOrder = (isCommercial || isAdmin) && selectedClient;
+      const endpoint = shouldUseCommercialOrder ? '/commercial/orders' : '/pos/order';
+      
+      // Map cart items to the format expected by backend
+      const items = cart.map((item) => {
+        const itemData = {
+          productId: item.productId,
+          productType: item.productType || 'regular',
+          quantity: item.quantity,
+          unitPrice: item.price,
+          discount: 0,
+        };
+        
+        // Add variant info for regular products
+        if (item.variant && item.productType === 'regular') {
+          itemData.variant = item.variant;
+        }
+        
+        // Add combinationId for special products
+        if (item.combinationId && item.productType === 'special') {
+          itemData.combinationId = item.combinationId;
+        }
+        
+        return itemData;
+      });
 
-      const response = await api.post('/pos/order', {
+      const orderData = shouldUseCommercialOrder ? {
+        clientId: selectedClient._id,
         items,
         discount,
-        vat,
+        notes,
+        paymentMethod: isAdmin && selectedClient ? 'credit' : 'cash',
+        status: 'pending',
+      } : {
+        items,
+        discount,
+        vat: 0,
         total: calculations.total,
         notes,
         paymentMethod: 'cash',
-      });
+      };
 
-      setLastOrder(response.data.data);
+      const response = await api.post(endpoint, orderData);
+
+      // Handle response format - commercial/admin returns order directly, POS returns {order, invoice}
+      const orderResponse = shouldUseCommercialOrder
+        ? { order: response.data.data }
+        : response.data.data;
+      
+      setLastOrder(orderResponse);
       setShowSuccessModal(true);
       setCart([]);
       setDiscount(0);
       setNotes('');
       setSearchTerm('');
+      if (canSelectClient) {
+        setSelectedClient(null);
+      }
       
       // Refresh products to update stock
       fetchProducts();
@@ -380,37 +664,42 @@ const POSInterface = () => {
   };
 
   return (
-    <div className="h-screen flex flex-col bg-gray-900 text-white overflow-hidden">
+    <div className="h-screen flex flex-col bg-white dark:bg-gray-900 text-gray-900 dark:text-white overflow-hidden">
       {/* Header */}
-      <div className="bg-gray-800 border-b border-gray-700 px-6 py-4 flex items-center justify-between">
+      <div className="bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">نقطة البيع (POS)</h1>
-          <p className="text-gray-400 text-sm mt-1">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">نقطة البيع (POS)</h1>
+          <p className="text-gray-600 dark:text-gray-400 text-sm mt-1">
             {user?.name || 'Caissier'} • {new Date().toLocaleDateString('ar-TN')}
           </p>
         </div>
         <button
-          onClick={() => navigate('/pos')}
-          className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors flex items-center gap-2"
+          onClick={() => {
+            const backPath = getBackPath(user?.role);
+            if (backPath && backPath !== window.location.pathname) {
+              navigate(backPath, { replace: true });
+            }
+          }}
+          className="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-lg transition-colors flex items-center gap-2 text-gray-900 dark:text-white"
         >
-          <X size={20} />
+          <ArrowLeft size={20} />
           <span>العودة</span>
         </button>
       </div>
 
       <div className="flex-1 flex overflow-hidden">
         {/* LEFT PANEL - Product Browser */}
-        <div className="w-2/3 flex flex-col border-r border-gray-700 bg-gray-900">
+        <div className="w-2/3 flex flex-col border-r border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
           {/* Search and Filters */}
-          <div className="p-4 bg-gray-800 border-b border-gray-700 space-y-4">
+          <div className="p-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 space-y-4">
             <div className="relative">
-              <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+              <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500" size={20} />
               <input
                 type="text"
                 placeholder="ابحث عن منتج..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pr-10 pl-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gold-500"
+                className="w-full pr-10 pl-4 py-3 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gold-500"
               />
             </div>
 
@@ -422,7 +711,7 @@ const POSInterface = () => {
                   className={`px-4 py-2 rounded-lg whitespace-nowrap transition-colors ${
                     selectedCategory === 'all'
                       ? 'bg-gold-600 text-white'
-                      : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                      : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
                   }`}
                 >
                   الكل
@@ -434,7 +723,7 @@ const POSInterface = () => {
                     className={`px-4 py-2 rounded-lg whitespace-nowrap transition-colors ${
                       selectedCategory === cat._id
                         ? 'bg-gold-600 text-white'
-                        : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                        : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
                     }`}
                   >
                     {cat.name}
@@ -442,6 +731,33 @@ const POSInterface = () => {
                 ))}
               </div>
             )}
+
+            {/* Price Type Toggle */}
+            <div className="flex items-center gap-4">
+              <span className="text-gray-700 dark:text-gray-300 text-sm">نوع السعر:</span>
+              <div className="flex gap-2 bg-gray-200 dark:bg-gray-700 rounded-lg p-1">
+                <button
+                  onClick={() => setPriceType('retail')}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    priceType === 'retail'
+                      ? 'bg-gold-600 text-white'
+                      : 'text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
+                  }`}
+                >
+                  السعر بالتجزئة
+                </button>
+                <button
+                  onClick={() => setPriceType('wholesale')}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    priceType === 'wholesale'
+                      ? 'bg-gold-600 text-white'
+                      : 'text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
+                  }`}
+                >
+                  السعر بالجملة
+                </button>
+              </div>
+            </div>
 
             {/* Tabs */}
             <div className="flex gap-2">
@@ -454,7 +770,7 @@ const POSInterface = () => {
                 className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${
                   activeTab === 'regular'
                     ? 'bg-gold-600 text-white'
-                    : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
                 }`}
               >
                 <Package size={18} className="inline ml-2" />
@@ -465,7 +781,7 @@ const POSInterface = () => {
                 className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${
                   activeTab === 'special'
                     ? 'bg-gold-600 text-white'
-                    : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
                 }`}
               >
                 <Sparkles size={18} className="inline ml-2" />
@@ -477,31 +793,45 @@ const POSInterface = () => {
           {/* Products List */}
           <div className="flex-1 overflow-y-auto p-4">
             {loadingProducts ? (
-              <div className="text-center py-12 text-gray-400">جاري التحميل...</div>
+              <div className="text-center py-12 text-gray-600 dark:text-gray-400">جاري التحميل...</div>
             ) : activeTab === 'regular' ? (
-              <div className="grid grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
+              <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                 {filteredRegularProducts.map((product) => (
                   <div
                     key={product._id}
                     onClick={() => addRegularProductToCart(product)}
-                    className="bg-gray-800 rounded-lg p-2 cursor-pointer hover:bg-gray-700 transition-colors border border-gray-700 hover:border-gold-600"
+                    className="bg-white dark:bg-gray-800 rounded-lg p-4 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors border border-gray-200 dark:border-gray-700 hover:border-gold-600"
                   >
                     {product.images?.[0] && (
                       <img
                         src={withBase(product.images[0])}
                         alt={product.name}
-                        className="w-full h-20 object-cover rounded-lg mb-2"
+                        className="w-full h-40 object-cover rounded-lg mb-3"
                       />
                     )}
-                    <h3 className="font-medium text-white text-sm mb-1 line-clamp-2">{product.name}</h3>
-                    <p className="text-gold-500 font-bold text-sm">{product.price} TND</p>
-                    <p className="text-xs text-gray-400 mt-1">
+                    <h3 className="font-medium text-gray-900 dark:text-white text-base mb-2 line-clamp-2">{product.name}</h3>
+                    <p className="text-gold-500 font-bold text-base">
+                      {priceType === 'wholesale' && product.wholesalePrice > 0 
+                        ? product.wholesalePrice 
+                        : product.price} TND
+                      {priceType === 'wholesale' && product.wholesalePrice > 0 && (
+                        <span className="text-xs text-gray-600 dark:text-gray-400 block mt-1">
+                          (جملة)
+                        </span>
+                      )}
+                      {priceType === 'wholesale' && (!product.wholesalePrice || product.wholesalePrice === 0) && (
+                        <span className="text-xs text-gray-600 dark:text-gray-400 block mt-1">
+                          (لا يوجد سعر جملة)
+                        </span>
+                      )}
+                    </p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
                       المخزون: {product.stock || 0}
                     </p>
                   </div>
                 ))}
                 {filteredRegularProducts.length === 0 && (
-                  <div className="col-span-3 text-center py-12 text-gray-400">
+                  <div className="col-span-3 text-center py-12 text-gray-600 dark:text-gray-400">
                     لا توجد منتجات
                   </div>
                 )}
@@ -509,22 +839,22 @@ const POSInterface = () => {
             ) : (
               <div>
                 {!selectedSpecialProduct ? (
-                  <div className="grid grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
+                  <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                     {filteredSpecialProducts.map((product) => (
                       <div
                         key={product._id}
                         onClick={() => startSpecialProductSelection(product)}
-                        className="bg-gray-800 rounded-lg p-2 cursor-pointer hover:bg-gray-700 transition-colors border border-gray-700 hover:border-gold-600"
+                        className="bg-white dark:bg-gray-800 rounded-lg p-4 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors border border-gray-200 dark:border-gray-700 hover:border-gold-600"
                       >
                         {product.baseProductA?.images?.[0] && (
                           <img
                             src={withBase(product.baseProductA.images[0])}
                             alt={product.name}
-                            className="w-full h-20 object-cover rounded-lg mb-2"
+                            className="w-full h-40 object-cover rounded-lg mb-3"
                           />
                         )}
-                        <h3 className="font-medium text-white text-sm mb-1 line-clamp-2">{product.name}</h3>
-                        <p className="text-gold-500 font-bold text-sm">
+                        <h3 className="font-medium text-gray-900 dark:text-white text-base mb-2 line-clamp-2">{product.name}</h3>
+                        <p className="text-gold-500 font-bold text-base">
                           ابتداءً من {product.finalPrice} TND
                         </p>
                       </div>
@@ -554,7 +884,7 @@ const POSInterface = () => {
                                   <img
                                     src={withBase(variant.image)}
                                     alt={variant.name}
-                                    className="w-full h-16 object-cover rounded-lg mb-2"
+                                    className="w-full h-32 object-cover rounded-lg mb-3"
                                   />
                                 )}
                                 <p className="text-white font-medium text-sm">{variant.name}</p>
@@ -588,7 +918,7 @@ const POSInterface = () => {
                                   <img
                                     src={withBase(variant.image)}
                                     alt={variant.name}
-                                    className="w-full h-16 object-cover rounded-lg mb-2"
+                                    className="w-full h-32 object-cover rounded-lg mb-3"
                                   />
                                 )}
                                 <p className="text-white font-medium text-sm">{variant.name}</p>
@@ -633,23 +963,65 @@ const POSInterface = () => {
                               </button>
                             </div>
                             {selectedCombination.finalImage && (
-                              <img
-                                src={withBase(selectedCombination.finalImage)}
-                                alt="Combination"
-                                className="w-full h-64 object-cover rounded-lg mb-4"
-                              />
+                              <div className="w-full h-64 bg-gray-700 rounded-lg mb-4 flex items-center justify-center overflow-hidden">
+                                <img
+                                  src={withBase(selectedCombination.finalImage)}
+                                  alt="Combination"
+                                  className="max-w-full max-h-full object-contain rounded-lg"
+                                />
+                              </div>
                             )}
+                            {/* Quantity Selector */}
+                            <div className="bg-gray-700 rounded-lg p-4 mb-4">
+                              <label className="block text-sm font-semibold text-white mb-3">
+                                الكمية:
+                              </label>
+                              <div className="flex items-center gap-4">
+                                <button
+                                  onClick={() => setQuantityToAdd(Math.max(1, quantityToAdd - 1))}
+                                  className="w-10 h-10 bg-gray-600 hover:bg-gray-500 rounded-lg flex items-center justify-center text-white font-bold"
+                                >
+                                  <Minus size={20} />
+                                </button>
+                                <input
+                                  type="number"
+                                  min="1"
+                                  max="999"
+                                  value={quantityToAdd}
+                                  onChange={(e) => {
+                                    const val = parseInt(e.target.value) || 1;
+                                    setQuantityToAdd(Math.max(1, Math.min(val, 999)));
+                                  }}
+                                  className="w-20 text-center bg-gray-600 text-white rounded-lg py-2 px-3 font-bold text-lg focus:outline-none focus:ring-2 focus:ring-gold-500"
+                                />
+                                <button
+                                  onClick={() => setQuantityToAdd(Math.min(999, quantityToAdd + 1))}
+                                  className="w-10 h-10 bg-gray-600 hover:bg-gray-500 rounded-lg flex items-center justify-center text-white font-bold"
+                                >
+                                  <Plus size={20} />
+                                </button>
+                              </div>
+                            </div>
+                            
                             <div className="flex items-center justify-between">
                               <div>
-                                <p className="text-gray-400">السعر النهائي</p>
+                                <p className="text-gray-400">السعر للقطعة الواحدة</p>
                                 <p className="text-2xl font-bold text-gold-500">
                                   {selectedSpecialProduct.finalPrice +
                                     (selectedCombination.additionalPrice || 0)}{' '}
                                   TND
                                 </p>
+                                {quantityToAdd > 1 && (
+                                  <p className="text-sm text-gray-400 mt-1">
+                                    الإجمالي ({quantityToAdd} {quantityToAdd > 1 ? 'قطعة' : 'قطعة'}): {' '}
+                                    <span className="text-gold-500 font-bold">
+                                      {(selectedSpecialProduct.finalPrice + (selectedCombination.additionalPrice || 0)) * quantityToAdd} TND
+                                    </span>
+                                  </p>
+                                )}
                               </div>
                               <button
-                                onClick={addSpecialProductToCart}
+                                onClick={() => addSpecialProductToCart(quantityToAdd)}
                                 className="px-6 py-3 bg-gold-600 hover:bg-gold-700 rounded-lg font-semibold flex items-center gap-2"
                               >
                                 <Plus size={20} />
@@ -683,9 +1055,9 @@ const POSInterface = () => {
         </div>
 
         {/* RIGHT PANEL - Cart */}
-        <div className="w-1/3 flex flex-col bg-gray-800 border-l border-gray-700">
-          <div className="p-4 border-b border-gray-700">
-            <h2 className="text-xl font-bold flex items-center gap-2">
+        <div className="w-1/3 flex flex-col bg-gray-100 dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700">
+          <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+            <h2 className="text-xl font-bold flex items-center gap-2 text-gray-900 dark:text-white">
               <ShoppingCart size={24} />
               السلة ({cart.length})
             </h2>
@@ -693,7 +1065,7 @@ const POSInterface = () => {
 
           <div className="flex-1 overflow-y-auto p-4 space-y-3">
             {cart.length === 0 ? (
-              <div className="text-center py-12 text-gray-400">
+              <div className="text-center py-12 text-gray-500 dark:text-gray-400">
                 <ShoppingCart size={48} className="mx-auto mb-4 opacity-50" />
                 <p>السلة فارغة</p>
               </div>
@@ -701,38 +1073,46 @@ const POSInterface = () => {
               cart.map((item, index) => (
                 <div
                   key={index}
-                  className="bg-gray-700 rounded-lg p-3 flex gap-3"
+                  className="bg-white dark:bg-gray-700 rounded-lg p-3 flex gap-3 border border-gray-200 dark:border-gray-600"
                 >
                   {item.image && (
                     <img
                       src={withBase(item.image)}
                       alt={item.productName}
-                      className="w-16 h-16 object-cover rounded-lg"
+                      className="w-20 h-20 object-cover rounded-lg"
                     />
                   )}
                   <div className="flex-1">
-                    <p className="font-medium text-white">{item.productName}</p>
-                    {item.combinationTitle && (
-                      <p className="text-xs text-gray-400">{item.combinationTitle}</p>
+                    <p className="font-medium text-gray-900 dark:text-white">{item.productName}</p>
+                    {item.variant && (
+                      <p className="text-xs text-[#fda63a] dark:text-gold-400 font-medium">
+                        المتغير: {item.variant.name || item.variant.value}
+                        {item.variant.additionalPrice > 0 && (
+                          <span className="text-gray-400 dark:text-gray-400"> (+{item.variant.additionalPrice} TND)</span>
+                        )}
+                      </p>
                     )}
-                    <p className="text-gold-500 font-bold">{item.price} TND</p>
+                    {item.combinationTitle && (
+                      <p className="text-xs text-gray-600 dark:text-gray-400">{item.combinationTitle}</p>
+                    )}
+                    <p className="text-gold-600 dark:text-gold-500 font-bold">{item.price} TND</p>
                     <div className="flex items-center gap-2 mt-2">
                       <button
                         onClick={() => updateQuantity(index, -1)}
-                        className="w-8 h-8 flex items-center justify-center bg-gray-600 hover:bg-gray-500 rounded"
+                        className="w-8 h-8 flex items-center justify-center bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 rounded text-gray-900 dark:text-white"
                       >
                         <Minus size={16} />
                       </button>
-                      <span className="w-8 text-center font-medium">{item.quantity}</span>
+                      <span className="w-8 text-center font-medium text-gray-900 dark:text-white">{item.quantity}</span>
                       <button
                         onClick={() => updateQuantity(index, 1)}
-                        className="w-8 h-8 flex items-center justify-center bg-gray-600 hover:bg-gray-500 rounded"
+                        className="w-8 h-8 flex items-center justify-center bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 rounded text-gray-900 dark:text-white"
                       >
                         <Plus size={16} />
                       </button>
                       <button
                         onClick={() => removeFromCart(index)}
-                        className="ml-auto p-1 text-red-400 hover:text-red-300"
+                        className="ml-auto p-1 text-[#fda63a] dark:text-gold-400 hover:text-[#e8952d] dark:hover:text-gold-300"
                       >
                         <Trash2 size={16} />
                       </button>
@@ -744,39 +1124,77 @@ const POSInterface = () => {
           </div>
 
           {cart.length > 0 && (
-            <div className="p-4 border-t border-gray-700 space-y-4 bg-gray-900">
+            <div className="p-4 border-t border-gray-200 dark:border-gray-700 space-y-4 bg-white dark:bg-gray-900">
               <div className="space-y-2">
-                <div className="flex justify-between text-gray-400">
+                <div className="flex justify-between text-gray-600 dark:text-gray-400">
                   <span>المجموع الفرعي:</span>
                   <span>{calculations.subtotal.toFixed(2)} TND</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-400">الخصم:</span>
+                  <span className="text-gray-600 dark:text-gray-400">الخصم:</span>
                   <input
                     type="number"
                     value={discount}
                     onChange={(e) => setDiscount(Math.max(0, parseFloat(e.target.value) || 0))}
-                    className="w-24 px-2 py-1 bg-gray-700 border border-gray-600 rounded text-right text-white"
+                    className="w-24 px-2 py-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-right text-gray-900 dark:text-white"
                     min="0"
                     step="0.01"
                   />
                 </div>
-                <div className="flex justify-between text-gray-400">
-                  <span>ضريبة القيمة المضافة ({vat}%):</span>
-                  <span>{calculations.vat.toFixed(2)} TND</span>
-                </div>
-                <div className="flex justify-between text-xl font-bold text-gold-500 pt-2 border-t border-gray-700">
+                <div className="flex justify-between text-xl font-bold text-gold-600 dark:text-gold-500 pt-2 border-t border-gray-200 dark:border-gray-700">
                   <span>الإجمالي:</span>
                   <span>{calculations.total.toFixed(2)} TND</span>
                 </div>
               </div>
 
+              {/* Client Selection for Commercial/Admin Mode */}
+              {canSelectClient && (
+                <div>
+                  <label className="block text-sm text-gray-600 dark:text-gray-400 mb-2">العميل:</label>
+                  {selectedClient ? (
+                    <div className="flex items-center justify-between p-3 bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
+                      <div>
+                        <p className="text-gray-900 dark:text-white font-medium">{selectedClient.name}</p>
+                        {selectedClient.phone && (
+                          <p className="text-xs text-gray-600 dark:text-gray-400">{selectedClient.phone}</p>
+                        )}
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => {
+                            setSelectedClient(null);
+                            setClientSearchTerm('');
+                          }}
+                          className="px-3 py-1 text-sm bg-red-100 dark:bg-red-900/30 hover:bg-red-200 dark:hover:bg-red-900/50 rounded text-red-700 dark:text-red-400"
+                        >
+                          إلغاء
+                        </button>
+                        <button
+                          onClick={() => setShowClientModal(true)}
+                          className="px-3 py-1 text-sm bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 rounded text-gray-900 dark:text-white"
+                        >
+                          تغيير
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setShowClientModal(true)}
+                      className="w-full px-4 py-3 bg-white dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-gold-500 rounded-lg text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors flex items-center justify-center gap-2"
+                    >
+                      <Users size={20} />
+                      اختر عميل
+                    </button>
+                  )}
+                </div>
+              )}
+
               <div>
-                <label className="block text-sm text-gray-400 mb-2">ملاحظات:</label>
+                <label className="block text-sm text-gray-600 dark:text-gray-400 mb-2">ملاحظات:</label>
                 <textarea
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gold-500"
+                  className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gold-500"
                   rows="2"
                   placeholder="ملاحظات إضافية..."
                 />
@@ -785,7 +1203,7 @@ const POSInterface = () => {
               <div className="flex gap-2">
                 <button
                   onClick={clearCart}
-                  className="flex-1 px-4 py-3 bg-gray-700 hover:bg-gray-600 rounded-lg font-semibold transition-colors"
+                  className="flex-1 px-4 py-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-lg font-semibold transition-colors text-gray-900 dark:text-white"
                 >
                   إفراغ السلة
                 </button>
@@ -812,21 +1230,21 @@ const POSInterface = () => {
       {/* Success Modal */}
       {showSuccessModal && lastOrder && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
             <div className="text-center mb-6">
-              <CheckCircle2 className="mx-auto text-gold-500 mb-4" size={64} />
-              <h3 className="text-2xl font-bold text-white mb-2">تمت العملية بنجاح!</h3>
-              <p className="text-gray-400">
-                رقم الطلب: {lastOrder.order?.orderNumber || 'N/A'}
+              <CheckCircle2 className="mx-auto text-gold-600 dark:text-gold-500 mb-4" size={64} />
+              <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">تمت العملية بنجاح!</h3>
+              <p className="text-gray-600 dark:text-gray-400">
+                رقم الطلب: {lastOrder.order?.orderNumber || lastOrder.orderNumber || 'N/A'}
               </p>
-              <p className="text-2xl font-bold text-gold-500 mt-4">
-                {lastOrder.order?.total?.toFixed(2) || calculations.total.toFixed(2)} TND
+              <p className="text-2xl font-bold text-gold-600 dark:text-gold-500 mt-4">
+                {(lastOrder.order?.total || lastOrder.total || calculations.total).toFixed(2)} TND
               </p>
             </div>
             <div className="flex gap-2">
               <button
                 onClick={generateInvoice}
-                className="flex-1 px-4 py-3 bg-gray-700 hover:bg-gray-600 rounded-lg font-semibold flex items-center justify-center gap-2"
+                className="flex-1 px-4 py-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-lg font-semibold flex items-center justify-center gap-2 text-gray-900 dark:text-white"
               >
                 <Printer size={20} />
                 طباعة
@@ -836,10 +1254,389 @@ const POSInterface = () => {
                   setShowSuccessModal(false);
                   setLastOrder(null);
                 }}
-                className="flex-1 px-4 py-3 bg-gold-600 hover:bg-gold-700 rounded-lg font-semibold"
+                className="flex-1 px-4 py-3 bg-gold-600 hover:bg-gold-700 rounded-lg font-semibold text-white"
               >
                 إغلاق
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Variant Selection Modal */}
+      {selectedProductForVariant && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white">{selectedProductForVariant.name}</h3>
+              <button
+                onClick={() => {
+                  setSelectedProductForVariant(null);
+                  setSelectedVariant(null);
+                }}
+                className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {/* Product Image */}
+              <div className="w-full h-72 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden flex items-center justify-center">
+                {(selectedVariant?.image || selectedProductForVariant.images?.[0]) ? (
+                  <img
+                    src={withBase(selectedVariant?.image || selectedProductForVariant.images[0])}
+                    alt={selectedProductForVariant.name}
+                    className="max-w-full max-h-full object-contain"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-gray-600 dark:text-gray-400">
+                    لا توجد صورة
+                  </div>
+                )}
+              </div>
+
+              {/* Variants Selection */}
+              {selectedProductForVariant.variants && selectedProductForVariant.variants.length > 0 && (
+                <div>
+                  <label className="block text-sm font-semibold text-gray-900 dark:text-white mb-3">
+                    اختر المتغير:
+                  </label>
+                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+                    {selectedProductForVariant.variants.map((variant, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => {
+                          setSelectedVariant(variant);
+                        }}
+                        className={`p-3 rounded-lg border-2 transition-all ${
+                          selectedVariant?.value === variant.value
+                            ? 'border-gold-600 dark:border-gold-500 bg-gold-50 dark:bg-gold-900/20'
+                            : 'border-gray-300 dark:border-gray-600 hover:border-gold-600 dark:hover:border-gold-500'
+                        }`}
+                      >
+                        {variant.image ? (
+                          <img
+                            src={withBase(variant.image)}
+                            alt={variant.name || variant.value}
+                            className="w-full h-20 object-contain rounded mb-2"
+                          />
+                        ) : (
+                          <div className="w-full h-20 bg-gray-100 dark:bg-gray-700 rounded mb-2 flex items-center justify-center text-xs text-gray-600 dark:text-gray-400">
+                            {variant.name || variant.value}
+                          </div>
+                        )}
+                        <div className="text-sm font-medium text-gray-900 dark:text-white text-center">
+                          {variant.name || variant.value}
+                        </div>
+                        {variant.additionalPrice > 0 && (
+                          <div className="text-xs text-gold-600 dark:text-gold-500 text-center mt-1">
+                            +{variant.additionalPrice} TND
+                          </div>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                  {!selectedVariant && (
+                    <p className="text-sm text-gold-600 dark:text-gold-400 mt-2 text-center">
+                      ⚠️ يرجى اختيار متغير قبل الإضافة
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* Quantity Selector */}
+              <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-4">
+                <label className="block text-sm font-semibold text-gray-900 dark:text-white mb-3">
+                  الكمية:
+                </label>
+                <div className="flex items-center gap-4">
+                  <button
+                    onClick={() => setQuantityToAdd(Math.max(1, quantityToAdd - 1))}
+                    className="w-10 h-10 bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 rounded-lg flex items-center justify-center text-gray-900 dark:text-white font-bold"
+                  >
+                    <Minus size={20} />
+                  </button>
+                  <input
+                    type="number"
+                    min="1"
+                    max={selectedProductForVariant.stock || 999}
+                    value={quantityToAdd}
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value) || 1;
+                      setQuantityToAdd(Math.max(1, Math.min(val, selectedProductForVariant.stock || 999)));
+                    }}
+                    className="w-20 text-center bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-lg py-2 px-3 font-bold text-lg focus:outline-none focus:ring-2 focus:ring-gold-500"
+                  />
+                  <button
+                    onClick={() => setQuantityToAdd(Math.min(selectedProductForVariant.stock || 999, quantityToAdd + 1))}
+                    className="w-10 h-10 bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 rounded-lg flex items-center justify-center text-gray-900 dark:text-white font-bold"
+                  >
+                    <Plus size={20} />
+                  </button>
+                  <span className="text-gray-600 dark:text-gray-400 text-sm">
+                    متوفر: {selectedProductForVariant.stock || 0}
+                  </span>
+                </div>
+              </div>
+
+              {/* Price Display */}
+              <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600 dark:text-gray-400">السعر الأساسي:</span>
+                  <span className="text-gray-900 dark:text-white font-medium">
+                    {priceType === 'wholesale' && selectedProductForVariant.wholesalePrice > 0 
+                      ? selectedProductForVariant.wholesalePrice 
+                      : selectedProductForVariant.price} TND
+                    {priceType === 'wholesale' && selectedProductForVariant.wholesalePrice > 0 && (
+                      <span className="text-xs text-gray-500 dark:text-gray-400 mr-2">(جملة)</span>
+                    )}
+                  </span>
+                </div>
+                {selectedVariant?.additionalPrice > 0 && (
+                  <div className="flex justify-between items-center mt-2">
+                    <span className="text-gray-600 dark:text-gray-400">
+                      {selectedVariant.name || selectedVariant.value}:
+                    </span>
+                    <span className="text-gold-600 dark:text-gold-500 font-medium">
+                      +{selectedVariant.additionalPrice} TND
+                    </span>
+                  </div>
+                )}
+                <div className="flex justify-between items-center pt-2 mt-2 border-t border-gray-300 dark:border-gray-600">
+                  <span className="text-lg font-bold text-gray-900 dark:text-white">السعر للقطعة الواحدة:</span>
+                  <span className="text-xl font-bold text-gold-600 dark:text-gold-500">
+                    {(priceType === 'wholesale' && selectedProductForVariant.wholesalePrice > 0 
+                      ? selectedProductForVariant.wholesalePrice 
+                      : selectedProductForVariant.price) + (selectedVariant?.additionalPrice || 0)} TND
+                  </span>
+                </div>
+                {quantityToAdd > 1 && (
+                  <div className="flex justify-between items-center pt-2 mt-2 border-t border-gold-600 dark:border-gold-600">
+                    <span className="text-lg font-bold text-gray-900 dark:text-white">الإجمالي ({quantityToAdd} {quantityToAdd > 1 ? 'قطعة' : 'قطعة'}):</span>
+                    <span className="text-2xl font-bold text-gold-600 dark:text-gold-500">
+                      {((priceType === 'wholesale' && selectedProductForVariant.wholesalePrice > 0 
+                        ? selectedProductForVariant.wholesalePrice 
+                        : selectedProductForVariant.price) + (selectedVariant?.additionalPrice || 0)) * quantityToAdd} TND
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => {
+                  setSelectedProductForVariant(null);
+                  setSelectedVariant(null);
+                  setQuantityToAdd(1);
+                }}
+                className="flex-1 px-4 py-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-lg font-semibold text-gray-900 dark:text-white"
+              >
+                إلغاء
+              </button>
+              <button
+                onClick={() => {
+                  if (!selectedVariant && selectedProductForVariant.variants?.length > 0) {
+                    toast.error('يرجى اختيار متغير');
+                    return;
+                  }
+                  addRegularProductToCart(selectedProductForVariant, selectedVariant, quantityToAdd);
+                }}
+                disabled={selectedProductForVariant.variants?.length > 0 && !selectedVariant}
+                className="flex-1 px-4 py-3 bg-gold-600 hover:bg-gold-700 disabled:bg-gray-300 dark:disabled:bg-gray-600 disabled:cursor-not-allowed disabled:text-gray-500 dark:disabled:text-gray-400 rounded-lg font-semibold flex items-center justify-center gap-2 text-white"
+              >
+                <ShoppingCart size={20} />
+                أضف إلى السلة
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Quantity Modal for products without variants */}
+      {showQuantityModal && productForQuantity && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white">اختر الكمية</h3>
+              <button
+                onClick={() => {
+                  setShowQuantityModal(false);
+                  setProductForQuantity(null);
+                  setQuantityToAdd(1);
+                }}
+                className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {/* Product Image */}
+              {productForQuantity.images?.[0] && (
+                <div className="w-full h-72 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden flex items-center justify-center">
+                  <img
+                    src={withBase(productForQuantity.images[0])}
+                    alt={productForQuantity.name}
+                    className="max-w-full max-h-full object-contain"
+                  />
+                </div>
+              )}
+
+              {/* Product Name */}
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{productForQuantity.name}</h3>
+
+              {/* Quantity Selector */}
+              <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-4">
+                <label className="block text-sm font-semibold text-gray-900 dark:text-white mb-3">
+                  الكمية:
+                </label>
+                <div className="flex items-center gap-4">
+                  <button
+                    onClick={() => setQuantityToAdd(Math.max(1, quantityToAdd - 1))}
+                    className="w-12 h-12 bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 rounded-lg flex items-center justify-center text-gray-900 dark:text-white font-bold"
+                  >
+                    <Minus size={24} />
+                  </button>
+                  <input
+                    type="number"
+                    min="1"
+                    max={productForQuantity.stock || 999}
+                    value={quantityToAdd}
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value) || 1;
+                      setQuantityToAdd(Math.max(1, Math.min(val, productForQuantity.stock || 999)));
+                    }}
+                    className="w-24 text-center bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-lg py-3 px-4 font-bold text-xl focus:outline-none focus:ring-2 focus:ring-gold-500"
+                  />
+                  <button
+                    onClick={() => setQuantityToAdd(Math.min(productForQuantity.stock || 999, quantityToAdd + 1))}
+                    className="w-12 h-12 bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 rounded-lg flex items-center justify-center text-gray-900 dark:text-white font-bold"
+                  >
+                    <Plus size={24} />
+                  </button>
+                  <span className="text-gray-600 dark:text-gray-400 text-sm">
+                    متوفر: {productForQuantity.stock || 0}
+                  </span>
+                </div>
+              </div>
+
+              {/* Price Display */}
+              <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600 dark:text-gray-400">السعر للقطعة:</span>
+                  <span className="text-gray-900 dark:text-white font-medium text-lg">
+                    {priceType === 'wholesale' && productForQuantity.wholesalePrice > 0 
+                      ? productForQuantity.wholesalePrice 
+                      : productForQuantity.price} TND
+                    {priceType === 'wholesale' && productForQuantity.wholesalePrice > 0 && (
+                      <span className="text-xs text-gray-500 dark:text-gray-400 mr-2">(جملة)</span>
+                    )}
+                  </span>
+                </div>
+                {quantityToAdd > 1 && (
+                  <div className="flex justify-between items-center pt-2 mt-2 border-t border-gold-600 dark:border-gold-600">
+                    <span className="text-lg font-bold text-gray-900 dark:text-white">الإجمالي ({quantityToAdd} {quantityToAdd > 1 ? 'قطعة' : 'قطعة'}):</span>
+                    <span className="text-2xl font-bold text-gold-600 dark:text-gold-500">
+                      {(priceType === 'wholesale' && productForQuantity.wholesalePrice > 0 
+                        ? productForQuantity.wholesalePrice 
+                        : productForQuantity.price) * quantityToAdd} TND
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => {
+                  setShowQuantityModal(false);
+                  setProductForQuantity(null);
+                  setQuantityToAdd(1);
+                }}
+                className="flex-1 px-4 py-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-lg font-semibold text-gray-900 dark:text-white"
+              >
+                إلغاء
+              </button>
+              <button
+                onClick={confirmAddToCart}
+                className="flex-1 px-4 py-3 bg-gold-600 hover:bg-gold-700 rounded-lg font-semibold flex items-center justify-center gap-2"
+              >
+                <ShoppingCart size={20} />
+                أضف إلى السلة
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Client Selection Modal for Commercial/Admin Mode */}
+      {canSelectClient && showClientModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[80vh] overflow-hidden flex flex-col">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white">اختر عميل</h3>
+              <button
+                onClick={() => setShowClientModal(false)}
+                className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+              >
+                <X size={24} />
+              </button>
+            </div>
+            
+            <div className="mb-4">
+              <div className="relative">
+                <SearchIcon className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500" size={20} />
+                <input
+                  type="text"
+                  placeholder="ابحث عن عميل..."
+                  value={clientSearchTerm}
+                  onChange={(e) => setClientSearchTerm(e.target.value)}
+                  className="w-full pr-10 pl-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gold-500"
+                />
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto space-y-2">
+              {loadingClients ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gold-600 mx-auto"></div>
+                  <p className="text-gray-400 mt-2">جاري التحميل...</p>
+                </div>
+              ) : filteredClients.length > 0 ? (
+                filteredClients.map((client) => (
+                  <button
+                    key={client._id}
+                    onClick={() => {
+                      setSelectedClient(client);
+                      setShowClientModal(false);
+                      setClientSearchTerm('');
+                    }}
+                    className={`w-full p-4 rounded-lg text-right transition-colors ${
+                      selectedClient?._id === client._id
+                        ? 'bg-gold-600 hover:bg-gold-700 text-white'
+                        : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600'
+                    }`}
+                  >
+                    <p className={`font-medium ${selectedClient?._id === client._id ? 'text-white' : 'text-gray-900 dark:text-white'}`}>{client.name}</p>
+                    {client.phone && (
+                      <p className={`text-sm mt-1 ${selectedClient?._id === client._id ? 'text-gray-100' : 'text-gray-600 dark:text-gray-300'}`}>{client.phone}</p>
+                    )}
+                    {client.email && (
+                      <p className={`text-xs mt-1 ${selectedClient?._id === client._id ? 'text-gray-200' : 'text-gray-500 dark:text-gray-400'}`}>{client.email}</p>
+                    )}
+                  </button>
+                ))
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-gray-600 dark:text-gray-400">
+                    {clientSearchTerm ? 'لا توجد نتائج للبحث' : 'لا يوجد عملاء'}
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </div>

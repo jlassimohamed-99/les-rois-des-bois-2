@@ -7,8 +7,21 @@ export const getClients = async (req, res, next) => {
     const { commercialId, status, page = 1, limit = 50 } = req.query;
     const skip = (page - 1) * limit;
 
-    const query = { clientType: { $exists: true } };
-    if (commercialId) query.commercialId = commercialId;
+    // For admin: get all clients (users with role 'client' or 'user', or with clientType)
+    // For commercial: only get clients assigned to them
+    const query = {
+      $or: [
+        { role: { $in: ['client', 'user'] } },
+        { clientType: { $exists: true } }
+      ]
+    };
+    
+    // Only filter by commercialId if specified (for filtering purposes)
+    // Admin can see all clients, commercial only sees assigned ones
+    if (commercialId) {
+      query.commercialId = commercialId;
+    }
+    
     if (status) query.clientStatus = status;
 
     const [clients, total] = await Promise.all([

@@ -20,7 +20,7 @@ const Button = ({
     primary: 'bg-gold-600 text-white hover:bg-gold-700 focus:ring-gold-500',
     secondary: 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-300 dark:hover:bg-gray-600',
     outline: 'border-2 border-gold-600 text-gold-600 hover:bg-gold-50 dark:hover:bg-gold-900/20',
-    danger: 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500',
+    danger: 'bg-gold-600 text-white hover:bg-gold-700 focus:ring-gold-500',
   };
 
   const sizes = {

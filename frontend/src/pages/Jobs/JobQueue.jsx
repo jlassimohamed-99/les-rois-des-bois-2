@@ -58,7 +58,7 @@ const JobQueue = () => {
                     <td className="py-3 px-4">{job.name || job.id}</td>
                     <td className="py-3 px-4">{job.type || '-'}</td>
                     <td className="py-3 px-4">
-                      <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs">
+                      <span className="px-2 py-1 bg-gold-100 text-gold-800 rounded-full text-xs">
                         {job.status}
                       </span>
                     </td>

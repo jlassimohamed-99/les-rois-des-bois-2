@@ -1,14 +1,43 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { ShoppingCart, Eye } from 'lucide-react';
 import { hoverScale, hoverLift, fadeIn } from '../../utils/animations';
 import { withBase } from '../../utils/imageUrl';
+import VariantSelectionModal from './VariantSelectionModal';
 
 /**
- * Enhanced Product Card with animations
+ * Enhanced Product Card with animations and variants display
  */
 const EnhancedProductCard = ({ product, onAdd, index = 0 }) => {
+  const [showVariantModal, setShowVariantModal] = useState(false);
+
   const imageUrl = product.images?.[0] ? withBase(product.images[0]) : null;
+
+  const handleAddToCart = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // Si le produit a des variants, afficher le modal
+    if (product.variants && product.variants.length > 0) {
+      setShowVariantModal(true);
+    } else {
+      // Sinon, ajouter directement au panier
+      if (onAdd) {
+        onAdd({
+          ...product,
+          quantity: 1,
+        });
+      }
+    }
+  };
+
+  const handleModalAddToCart = (productWithVariant) => {
+    if (onAdd) {
+      onAdd(productWithVariant);
+    }
+    setShowVariantModal(false);
+  };
 
   return (
     <motion.div
@@ -53,6 +82,19 @@ const EnhancedProductCard = ({ product, onAdd, index = 0 }) => {
           </h3>
         </Link>
 
+        {/* Variants Indicator */}
+        {product.variants && product.variants.length > 0 && (
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-medium text-gray-600 dark:text-gray-400">
+              {product.variants.length} متغير متاح
+            </span>
+            <span className="text-xs text-gold-600">•</span>
+            <span className="text-xs text-gold-600 cursor-pointer hover:underline" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowVariantModal(true); }}>
+              اختر المتغير
+            </span>
+          </div>
+        )}
+
         {product.description && (
           <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
             {product.description}
@@ -60,16 +102,15 @@ const EnhancedProductCard = ({ product, onAdd, index = 0 }) => {
         )}
 
         <div className="flex items-center justify-between pt-2">
-          <span className="text-xl font-bold text-gold-600">{product.price} TND</span>
+          <span className="text-xl font-bold text-gold-600">
+            {product.price} TND
+          </span>
           
           <div className="flex items-center gap-2">
             <motion.button
               whileHover={hoverScale}
               whileTap={{ scale: 0.9 }}
-              onClick={(e) => {
-                e.preventDefault();
-                if (onAdd) onAdd(product);
-              }}
+              onClick={handleAddToCart}
               className="p-2 bg-gold-600 text-white rounded-lg hover:bg-gold-700 transition-colors"
               aria-label="Add to cart"
             >
@@ -89,6 +130,14 @@ const EnhancedProductCard = ({ product, onAdd, index = 0 }) => {
           </div>
         </div>
       </div>
+
+      {/* Variant Selection Modal */}
+      <VariantSelectionModal
+        isOpen={showVariantModal}
+        onClose={() => setShowVariantModal(false)}
+        product={product}
+        onAddToCart={handleModalAddToCart}
+      />
     </motion.div>
   );
 };

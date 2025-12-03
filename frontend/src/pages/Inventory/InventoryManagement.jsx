@@ -71,7 +71,7 @@ const InventoryManagement = () => {
                 {products.length}
               </p>
             </div>
-            <Package className="text-blue-500" size={32} />
+            <Package className="text-gold-500" size={32} />
           </div>
         </div>
 
@@ -79,11 +79,11 @@ const InventoryManagement = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400">منتجات منخفضة</p>
-              <p className="text-2xl font-bold text-red-600 dark:text-red-400 mt-2">
+              <p className="text-2xl font-bold text-gold-600 dark:text-gold-400 mt-2">
                 {lowStockProducts.length}
               </p>
             </div>
-            <AlertTriangle className="text-red-500" size={32} />
+            <AlertTriangle className="text-gold-500" size={32} />
           </div>
         </div>
 
@@ -95,7 +95,7 @@ const InventoryManagement = () => {
                 {totalValue.toLocaleString()} TND
               </p>
             </div>
-            <TrendingUp className="text-green-500" size={32} />
+            <TrendingUp className="text-gold-500" size={32} />
           </div>
         </div>
 
@@ -191,10 +191,10 @@ const InventoryManagement = () => {
                     <span
                       className={`px-2 py-1 rounded-full text-sm font-medium ${
                         (product.stock || 0) <= 10
-                          ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+                          ? 'bg-gold-100 text-gold-800 dark:bg-gold-900/30 dark:text-gold-400'
                           : (product.stock || 0) <= 50
-                          ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
-                          : 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                          ? 'bg-gold-100 text-gold-800 dark:bg-gold-900/30 dark:text-gold-400'
+                          : 'bg-gold-100 text-gold-800 dark:bg-gold-900/30 dark:text-gold-400'
                       }`}
                     >
                       {product.stock || 0} قطعة

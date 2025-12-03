@@ -6,7 +6,9 @@
     "dev": "nodemon server.js",
     "start": "node server.js",
     "create-admin": "node scripts/createAdmin.js",
-    "seed-client": "node scripts/seedClientData.js"
+    "seed-client": "node scripts/seedClientData.js",
+    "seed": "node scripts/seedDatabase.js",
+    "init-commercial-expenses": "node scripts/initCommercialExpenseCategory.js"
   },
   "dependencies": {
     "express": "^4.18.2",
@@ -21,7 +23,9 @@
     "bullmq": "^5.0.0",
     "ioredis": "^5.3.2",
     "pdfkit": "^0.14.0",
-    "nodemailer": "^6.9.7"
+    "nodemailer": "^6.9.7",
+    "puppeteer": "^21.6.1",
+    "handlebars": "^4.7.8"
   },
   "devDependencies": {
     "nodemon": "^3.0.2"

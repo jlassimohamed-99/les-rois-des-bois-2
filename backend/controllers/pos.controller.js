@@ -210,12 +210,8 @@ export const createPOSOrder = async (req, res, next) => {
       });
     }
 
-    // Get settings for VAT if not provided
-    let vatRate = vat;
-    if (!vatRate) {
-      const settings = await Setting.findOne();
-      vatRate = settings?.vat || 19;
-    }
+    // VAT is now 0
+    let vatRate = 0;
 
     // Build order items - handle special products with combinations
     const orderItems = [];
@@ -251,8 +247,14 @@ export const createPOSOrder = async (req, res, next) => {
           item.variantA = combination.optionA;
           item.variantB = combination.optionB;
           item.combinationId = itemData.combinationId.toString();
+          item.combinationImage = combination.finalImage; // Store the combination image
           item.unitPrice = product.finalPrice + (combination.additionalPrice || 0);
         }
+      }
+
+      // Handle regular product variants
+      if (productType === 'regular' && itemData.variant) {
+        item.variant = itemData.variant; // Store variant info including image
       }
 
       item.subtotal = item.unitPrice * item.quantity;
@@ -264,8 +266,8 @@ export const createPOSOrder = async (req, res, next) => {
     // Calculate totals
     const subtotal = orderItems.reduce((sum, item) => sum + item.subtotal, 0);
     const discountAmount = discount || 0;
-    const taxAmount = ((subtotal - discountAmount) * vatRate) / 100;
-    const finalTotal = subtotal - discountAmount + taxAmount;
+    const taxAmount = 0;
+    const finalTotal = subtotal - discountAmount;
 
     // Generate unique order number
     let orderNumber;
@@ -285,7 +287,7 @@ export const createPOSOrder = async (req, res, next) => {
       }
     } while (attempts < maxAttempts);
 
-    // Create order
+    // Create POS order
     const order = await Order.create({
       orderNumber,
       clientName: 'عميل مباشر',
@@ -299,6 +301,9 @@ export const createPOSOrder = async (req, res, next) => {
       paymentMethod: paymentMethod || 'cash',
       paymentStatus: 'paid',
       notes: notes || '',
+      source: 'pos', // POS orders from store cashiers
+      cashierId: req.user._id, // Track who created the sale
+      storeId: req.user.storeId, // Store where sale was made
       completedAt: new Date(),
     });
 

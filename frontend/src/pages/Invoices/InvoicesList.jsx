@@ -46,11 +46,11 @@ const InvoicesList = () => {
 
   const statusColors = {
     draft: 'bg-gray-100 text-gray-800',
-    sent: 'bg-blue-100 text-blue-800',
-    paid: 'bg-green-100 text-green-800',
-    partial: 'bg-yellow-100 text-yellow-800',
-    overdue: 'bg-red-100 text-red-800',
-    canceled: 'bg-red-100 text-red-800',
+    sent: 'bg-gold-100 text-gold-800',
+    paid: 'bg-gold-100 text-gold-800',
+    partial: 'bg-gold-100 text-gold-800',
+    overdue: 'bg-gold-100 text-gold-800',
+    canceled: 'bg-gold-100 text-gold-800',
   };
 
   return (
@@ -137,7 +137,7 @@ const InvoicesList = () => {
                       <div className="flex gap-2">
                         <button
                           onClick={() => navigate(`/invoices/${invoice._id}`)}
-                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
+                          className="p-2 text-gold-600 hover:bg-gold-50 rounded-lg"
                         >
                           <Eye size={18} />
                         </button>

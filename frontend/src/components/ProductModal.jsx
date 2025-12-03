@@ -324,7 +324,7 @@ const ProductModal = ({ product, categories, onClose }) => {
                       <button
                         type="button"
                         onClick={() => handleRemoveImage(index)}
-                        className="absolute top-2 left-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600"
+                        className="absolute top-2 left-2 p-1 bg-gold-500 text-white rounded-full hover:bg-gold-600"
                       >
                         <Trash2 size={16} />
                       </button>
@@ -400,7 +400,7 @@ const ProductModal = ({ product, categories, onClose }) => {
                   <button
                     type="button"
                     onClick={() => handleRemoveVariant(index)}
-                    className="btn-secondary text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                    className="btn-secondary text-gold-600 hover:bg-gold-50 dark:hover:bg-gold-900/20"
                   >
                     <Trash2 size={18} />
                   </button>
@@ -420,7 +420,7 @@ const ProductModal = ({ product, categories, onClose }) => {
                         <button
                           type="button"
                           onClick={() => handleVariantChange(index, 'image', '')}
-                          className="absolute -top-2 -right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600"
+                          className="absolute -top-2 -right-2 p-1 bg-gold-500 text-white rounded-full hover:bg-gold-600"
                         >
                           <Trash2 size={14} />
                         </button>

@@ -274,8 +274,8 @@ const SpecialProductModal = ({ product, onClose }) => {
               </div>
 
               {formData.baseProductA && formData.baseProductB && (
-                <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                  <p className="text-sm text-blue-800 dark:text-blue-300">
+                <div className="p-4 bg-gold-50 dark:bg-gold-900/20 rounded-lg">
+                  <p className="text-sm text-gold-800 dark:text-gold-300">
                     سيتم إنشاء جميع التركيبات الممكنة من متغيرات المنتجين المختارين
                   </p>
                 </div>
@@ -473,8 +473,8 @@ const SpecialProductModal = ({ product, onClose }) => {
                 />
               </div>
 
-              <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                <p className="text-sm text-green-800 dark:text-green-300">
+              <div className="p-4 bg-gold-50 dark:bg-gold-900/20 rounded-lg">
+                <p className="text-sm text-gold-800 dark:text-gold-300">
                   عدد التركيبات: {formData.combinations.length}
                 </p>
               </div>

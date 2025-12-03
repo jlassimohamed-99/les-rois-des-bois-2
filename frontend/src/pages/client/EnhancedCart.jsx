@@ -5,15 +5,11 @@ import { useCart } from '../../contexts/CartContext';
 import Button from '../../components/shared/Button';
 import { staggerContainer, fadeIn, slideUp } from '../../utils/animations';
 
-const TAX_RATE = 0.19;
-
 const EnhancedCart = () => {
   const { cartItems, removeFromCart, updateQuantity, getCartTotal } = useCart();
   const navigate = useNavigate();
 
-  const subtotal = getCartTotal();
-  const tax = subtotal * TAX_RATE;
-  const total = subtotal + tax;
+  const total = getCartTotal();
 
   return (
     <div className="bg-gray-50 dark:bg-gray-900 min-h-screen">
@@ -61,7 +57,7 @@ const EnhancedCart = () => {
                 <AnimatePresence>
                   {cartItems.map((item, idx) => (
                     <motion.div
-                      key={`${item.productId}-${idx}`}
+                      key={`${item.productId}-${item.variant?.value || 'no-variant'}-${idx}`}
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       exit={{ opacity: 0, x: 20, transition: { duration: 0.2 } }}
@@ -93,6 +89,14 @@ const EnhancedCart = () => {
                         <p className="text-sm text-gray-500 dark:text-gray-400 capitalize">
                           {item.productType}
                         </p>
+                        {item.variant && (
+                          <p className="text-sm text-gold-600 dark:text-gold-400 font-medium">
+                            المتغير: {item.variant.name || item.variant.value}
+                            {item.variant.additionalPrice > 0 && (
+                              <span className="text-gray-500"> (+{item.variant.additionalPrice} TND)</span>
+                            )}
+                          </p>
+                        )}
                         {item.selectedOptions && (
                           <p className="text-sm text-gray-600 dark:text-gray-400">
                             {item.selectedOptions.optionA?.value} + {item.selectedOptions.optionB?.value}
@@ -134,7 +138,7 @@ const EnhancedCart = () => {
                         whileHover={{ scale: 1.1, rotate: 5 }}
                         whileTap={{ scale: 0.9 }}
                         onClick={() => removeFromCart(idx)}
-                        className="text-red-500 hover:text-red-600 p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                        className="text-gold-500 hover:text-gold-600 p-2 rounded-lg hover:bg-gold-50 dark:hover:bg-gold-900/20 transition-colors"
                         aria-label="Remove"
                       >
                         <Trash2 size={18} />
@@ -154,14 +158,6 @@ const EnhancedCart = () => {
           >
             <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">ملخص الطلب</h3>
             <div className="space-y-2 text-sm text-gray-700 dark:text-gray-300">
-              <div className="flex justify-between">
-                <span>المجموع الفرعي</span>
-                <span>{subtotal.toFixed(2)} TND</span>
-              </div>
-              <div className="flex justify-between">
-                <span>الضريبة (19%)</span>
-                <span>{tax.toFixed(2)} TND</span>
-              </div>
               <div className="flex justify-between font-semibold text-lg text-gray-900 dark:text-gray-100 pt-2 border-t border-gray-200 dark:border-gray-700">
                 <span>الإجمالي</span>
                 <motion.span

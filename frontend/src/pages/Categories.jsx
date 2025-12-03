@@ -137,13 +137,13 @@ const Categories = () => {
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => handleEdit(category)}
-                          className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                          className="p-2 text-gold-600 hover:bg-gold-50 dark:hover:bg-gold-900/20 rounded-lg transition-colors"
                         >
                           <Edit size={18} />
                         </button>
                         <button
                           onClick={() => handleDelete(category._id)}
-                          className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                          className="p-2 text-gold-600 hover:bg-gold-50 dark:hover:bg-gold-900/20 rounded-lg transition-colors"
                         >
                           <Trash2 size={18} />
                         </button>

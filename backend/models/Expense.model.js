@@ -7,14 +7,30 @@ const expenseSchema = new mongoose.Schema(
       unique: true,
       required: true,
     },
+    categoryId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'ExpenseCategory',
+      required: true,
+    },
+    // Legacy field - kept for backward compatibility during migration
     category: {
       type: String,
       enum: ['supplies', 'utilities', 'rent', 'salaries', 'marketing', 'other'],
-      required: true,
+      required: false,
     },
+    label: {
+      type: String,
+      required: [true, 'الوصف مطلوب'],
+      trim: true,
+    },
+    // Legacy field - kept for backward compatibility
     description: {
       type: String,
-      required: true,
+      required: false,
+    },
+    notes: {
+      type: String,
+      default: '',
     },
     amount: {
       type: Number,
@@ -24,17 +40,37 @@ const expenseSchema = new mongoose.Schema(
     supplierId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Supplier',
+      default: null,
     },
     paymentMethod: {
       type: String,
     },
-    expenseDate: {
+    date: {
       type: Date,
       required: true,
       default: Date.now,
     },
+    expenseDate: {
+      type: Date,
+      required: false,
+      default: Date.now,
+    },
     receiptPath: {
       type: String,
+    },
+    commercialId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null,
+    },
+    subcategory: {
+      type: String,
+      enum: ['fuel', 'toll', 'transport', 'other'],
+      default: null,
+    },
+    customSubcategory: {
+      type: String,
+      default: null,
     },
     recordedBy: {
       type: mongoose.Schema.Types.ObjectId,
@@ -47,22 +83,13 @@ const expenseSchema = new mongoose.Schema(
   }
 );
 
-// Generate expense number
-expenseSchema.pre('save', async function (next) {
-  if (!this.expenseNumber) {
-    const year = new Date().getFullYear();
-    const count = await mongoose.model('Expense').countDocuments({
-      expenseNumber: new RegExp(`^EXP-${year}`),
-    });
-    this.expenseNumber = `EXP-${year}-${String(count + 1).padStart(6, '0')}`;
-  }
-  next();
-});
-
 // Indexes
 expenseSchema.index({ expenseNumber: 1 });
-expenseSchema.index({ category: 1, expenseDate: -1 });
+expenseSchema.index({ categoryId: 1, expenseDate: -1 });
 expenseSchema.index({ expenseDate: -1 });
+expenseSchema.index({ category: 1, expenseDate: -1 }); // Legacy index
+expenseSchema.index({ commercialId: 1, date: -1 });
+expenseSchema.index({ commercialId: 1, subcategory: 1 });
 
 export default mongoose.model('Expense', expenseSchema);
 

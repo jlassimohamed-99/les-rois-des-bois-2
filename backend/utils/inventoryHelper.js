@@ -91,31 +91,45 @@ export const validateStock = async (items) => {
 
   for (const item of items) {
     let product;
+    let productType = 'regular';
     
-    if (item.productType === 'regular') {
-      product = await Product.findById(item.productId);
-    } else {
+    // Try to determine product type from item or by trying to find it
+    if (item.productType) {
+      productType = item.productType;
+    }
+    
+    // Try regular product first
+    product = await Product.findById(item.productId);
+    
+    if (!product) {
+      // Try special product
       product = await SpecialProduct.findById(item.productId);
+      productType = 'special';
     }
 
     if (!product) {
       stockIssues.push({
         productId: item.productId,
-        productName: item.productName,
+        productName: item.productName || 'Unknown',
         error: 'Product not found',
       });
       continue;
     }
 
-    if ((product.stock || 0) < item.quantity) {
-      stockIssues.push({
-        productId: item.productId,
-        productName: item.productName || product.name,
-        requested: item.quantity,
-        available: product.stock || 0,
-        error: 'Insufficient stock',
-      });
+    // For regular products, check stock directly
+    if (productType === 'regular') {
+      if ((product.stock || 0) < item.quantity) {
+        stockIssues.push({
+          productId: item.productId,
+          productName: item.productName || product.name,
+          requested: item.quantity,
+          available: product.stock || 0,
+          error: 'Insufficient stock',
+        });
+      }
     }
+    // For special products, stock validation will be done during stock deduction
+    // based on base products
   }
 
   return stockIssues;

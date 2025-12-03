@@ -20,9 +20,12 @@ import orderRoutes from './routes/order.routes.js';
 import invoiceRoutes from './routes/invoice.routes.js';
 import auditLogRoutes from './routes/auditLog.routes.js';
 import analyticsRoutes from './routes/analytics.routes.js';
+import commercialAnalyticsRoutes from './routes/commercialAnalytics.routes.js';
+import advancedCommercialAnalyticsRoutes from './routes/advancedCommercialAnalytics.routes.js';
 import supplierRoutes from './routes/supplier.routes.js';
 import purchaseOrderRoutes from './routes/purchaseOrder.routes.js';
 import expenseRoutes from './routes/expense.routes.js';
+import expenseCategoryRoutes from './routes/expenseCategory.routes.js';
 import returnRoutes from './routes/return.routes.js';
 import crmRoutes from './routes/crm.routes.js';
 import posRoutes from './routes/pos.routes.js';
@@ -32,6 +35,7 @@ import clientRoutes from './routes/client.routes.js';
 import clientOrderRoutes from './routes/clientOrder.routes.js';
 import userRoutes from './routes/user.routes.js';
 import settingsRoutes from './routes/settings.routes.js';
+import commercialRoutes from './routes/commercial.routes.js';
 
 // Import error handler
 import { errorHandler } from './middleware/errorHandler.middleware.js';
@@ -84,14 +88,18 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/invoices', invoiceRoutes);
 app.use('/api/audit-logs', auditLogRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/analytics/commercials', commercialAnalyticsRoutes);
+app.use('/api/analytics/commercials/advanced', advancedCommercialAnalyticsRoutes);
 app.use('/api/suppliers', supplierRoutes);
 app.use('/api/purchase-orders', purchaseOrderRoutes);
 app.use('/api/expenses', expenseRoutes);
+app.use('/api/expense-categories', expenseCategoryRoutes);
 app.use('/api/returns', returnRoutes);
 app.use('/api/crm', crmRoutes);
 app.use('/api/pos', posRoutes);
 app.use('/api/jobs', jobRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/commercial', commercialRoutes);
 
 // Client routes (public and authenticated)
 app.use('/api/client/auth', clientAuthRoutes);

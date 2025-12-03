@@ -2,15 +2,11 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Trash2, Minus, Plus } from 'lucide-react';
 import { useCart } from '../../contexts/CartContext';
 
-const TAX_RATE = 0.19;
-
 const Cart = () => {
   const { cartItems, removeFromCart, updateQuantity, getCartTotal } = useCart();
   const navigate = useNavigate();
 
-  const subtotal = getCartTotal();
-  const tax = subtotal * TAX_RATE;
-  const total = subtotal + tax;
+  const total = getCartTotal();
 
   return (
     <div className="bg-gray-50 dark:bg-gray-900 min-h-screen">
@@ -38,7 +34,7 @@ const Cart = () => {
             ) : (
               <div className="divide-y divide-gray-200 dark:divide-gray-700">
                 {cartItems.map((item, idx) => (
-                  <div key={`${item.productId}-${idx}`} className="p-4 flex gap-4 items-center">
+                  <div key={`${item.productId}-${item.variant?.value || 'no-variant'}-${idx}`} className="p-4 flex gap-4 items-center">
                     <div className="w-24 h-24 rounded-xl bg-gray-100 dark:bg-gray-700 overflow-hidden">
                       {item.image ? (
                         <img src={item.image} alt={item.name} className="w-full h-full object-cover" loading="lazy" />
@@ -49,6 +45,14 @@ const Cart = () => {
                     <div className="flex-1 space-y-1">
                       <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{item.name}</h3>
                       <p className="text-sm text-gray-500 dark:text-gray-400 capitalize">{item.productType}</p>
+                        {item.variant && (
+                          <p className="text-sm text-gold-600 dark:text-gold-400 font-medium">
+                            المتغير: {item.variant.name || item.variant.value}
+                            {item.variant.additionalPrice > 0 && (
+                              <span className="text-gray-500"> (+{item.variant.additionalPrice} TND)</span>
+                            )}
+                          </p>
+                        )}
                         {item.selectedOptions && (
                           <p className="text-sm text-gray-600 dark:text-gray-400">
                             {item.selectedOptions.optionA?.value} + {item.selectedOptions.optionB?.value}
@@ -77,7 +81,7 @@ const Cart = () => {
                     </div>
                     <button
                       onClick={() => removeFromCart(idx)}
-                      className="text-red-500 hover:text-red-600"
+                      className="text-gold-500 hover:text-gold-600"
                       aria-label="Remove"
                     >
                       <Trash2 size={18} />
@@ -94,10 +98,6 @@ const Cart = () => {
               <div className="flex justify-between">
                 <span>المجموع الفرعي</span>
                 <span>{subtotal.toFixed(2)} TND</span>
-              </div>
-              <div className="flex justify-between">
-                <span>الضريبة (19%)</span>
-                <span>{tax.toFixed(2)} TND</span>
               </div>
               <div className="flex justify-between font-semibold text-lg text-gray-900 dark:text-gray-100 pt-2 border-t border-gray-200 dark:border-gray-700">
                 <span>الإجمالي</span>

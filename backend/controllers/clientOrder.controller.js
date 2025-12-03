@@ -47,13 +47,43 @@ export const createClientOrder = async (req, res, next) => {
     // Get user info
     const user = req.user;
 
-    // Create order
+    // Format shipping address as string
+    let formattedAddress = '';
+    if (typeof shippingAddress === 'object' && shippingAddress !== null) {
+      const parts = [];
+      if (shippingAddress.street) parts.push(shippingAddress.street);
+      if (shippingAddress.city) parts.push(shippingAddress.city);
+      if (shippingAddress.zip) parts.push(shippingAddress.zip);
+      formattedAddress = parts.join(', ');
+    } else if (typeof shippingAddress === 'string') {
+      formattedAddress = shippingAddress;
+    }
+
+    // Generate unique order number
+    let orderNumber;
+    let attempts = 0;
+    const maxAttempts = 10;
+    
+    do {
+      const orderCount = await Order.countDocuments();
+      orderNumber = `ORD-${String(orderCount + 1).padStart(6, '0')}`;
+      const existingOrder = await Order.findOne({ orderNumber });
+      if (!existingOrder) break;
+      attempts++;
+      if (attempts >= maxAttempts) {
+        orderNumber = `ORD-${Date.now()}`;
+        break;
+      }
+    } while (attempts < maxAttempts);
+
+    // Create order from catalog
     const order = await Order.create({
+      orderNumber,
       clientId: user._id,
       clientName: user.name,
-      clientPhone: user.phone,
-      clientEmail: user.email,
-      clientAddress: shippingAddress,
+      clientPhone: user.phone || shippingAddress?.phone || '',
+      clientEmail: user.email || shippingAddress?.email || '',
+      clientAddress: formattedAddress,
       items: orderItems,
       subtotal: totals.subtotal,
       discount: totals.discount,
@@ -63,6 +93,7 @@ export const createClientOrder = async (req, res, next) => {
       profit: totals.profit,
       paymentMethod: paymentMethod || 'cash',
       notes,
+      source: 'catalog', // Catalog orders from e-commerce
       status: 'pending',
     });
 

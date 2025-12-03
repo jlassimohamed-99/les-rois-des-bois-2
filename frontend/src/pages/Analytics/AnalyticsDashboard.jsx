@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '../../utils/axios';
 import toast from 'react-hot-toast';
-import { BarChart3, TrendingUp, DollarSign, Package } from 'lucide-react';
+import { BarChart3, TrendingUp, DollarSign, Package, Users } from 'lucide-react';
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 const AnalyticsDashboard = () => {
+  const navigate = useNavigate();
   const [dateRange, setDateRange] = useState({
     startDate: new Date(new Date().setMonth(new Date().getMonth() - 1)).toISOString().split('T')[0],
     endDate: new Date().toISOString().split('T')[0],
@@ -66,6 +68,13 @@ const AnalyticsDashboard = () => {
           <p className="text-gray-600 dark:text-gray-400 mt-1">تحليل شامل للأداء</p>
         </div>
         <div className="flex gap-4">
+          <button
+            onClick={() => navigate('/admin/analytics/commercials')}
+            className="btn-secondary flex items-center gap-2"
+          >
+            <Users size={20} />
+            <span>تحليلات المندوبين</span>
+          </button>
           <input
             type="date"
             value={dateRange.startDate}
@@ -89,7 +98,7 @@ const AnalyticsDashboard = () => {
               <p className="text-sm text-gray-600">إجمالي المبيعات</p>
               <p className="text-2xl font-bold mt-2">450</p>
             </div>
-            <TrendingUp className="text-green-500" size={32} />
+            <TrendingUp className="text-gold-500" size={32} />
           </div>
         </div>
         <div className="card">
@@ -107,7 +116,7 @@ const AnalyticsDashboard = () => {
               <p className="text-sm text-gray-600">متوسط الطلب</p>
               <p className="text-2xl font-bold mt-2">433 TND</p>
             </div>
-            <BarChart3 className="text-blue-500" size={32} />
+            <BarChart3 className="text-gold-500" size={32} />
           </div>
         </div>
         <div className="card">
@@ -116,7 +125,7 @@ const AnalyticsDashboard = () => {
               <p className="text-sm text-gray-600">المنتجات المباعة</p>
               <p className="text-2xl font-bold mt-2">1,200</p>
             </div>
-            <Package className="text-purple-500" size={32} />
+            <Package className="text-gold-500" size={32} />
           </div>
         </div>
       </div>
@@ -132,7 +141,7 @@ const AnalyticsDashboard = () => {
               <YAxis />
               <Tooltip />
               <Legend />
-              <Line type="monotone" dataKey="sales" stroke="#c08a25" name="المبيعات" />
+              <Line type="monotone" dataKey="sales" stroke="#3b82f6" name="المبيعات" />
               <Line type="monotone" dataKey="revenue" stroke="#10b981" name="الإيرادات" />
             </LineChart>
           </ResponsiveContainer>
@@ -153,7 +162,10 @@ const AnalyticsDashboard = () => {
                 dataKey="revenue"
               >
                 {revenueByCategory.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={['#c08a25', '#10b981', '#3b82f6'][index % 3]} />
+                  <Cell
+                    key={`cell-${index}`}
+                    fill={['#3b82f6', '#10b981', '#FFD700', '#ef4444', '#8b5cf6'][index % 5]}
+                  />
                 ))}
               </Pie>
               <Tooltip />
@@ -170,7 +182,7 @@ const AnalyticsDashboard = () => {
               <YAxis />
               <Tooltip />
               <Legend />
-              <Bar dataKey="sales" fill="#c08a25" name="المبيعات" />
+              <Bar dataKey="sales" fill="#3b82f6" name="المبيعات" />
               <Bar dataKey="revenue" fill="#10b981" name="الإيرادات" />
             </BarChart>
           </ResponsiveContainer>

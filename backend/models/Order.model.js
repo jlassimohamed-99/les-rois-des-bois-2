@@ -24,6 +24,12 @@ const orderItemSchema = new mongoose.Schema({
   combinationId: {
     type: String,
   },
+  combinationImage: {
+    type: String,
+  },
+  variant: {
+    type: Object,
+  },
   quantity: {
     type: Number,
     required: true,
@@ -92,6 +98,22 @@ const orderSchema = new mongoose.Schema(
     commercialId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
+    },
+    // Order source to track origin
+    source: {
+      type: String,
+      enum: ['catalog', 'pos', 'commercial_pos', 'admin'],
+      default: 'catalog',
+    },
+    // For POS orders - track cashier who created the sale
+    cashierId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+    },
+    // For POS orders - sale mode
+    saleMode: {
+      type: String,
+      enum: ['gros', 'detail'],
     },
     items: [orderItemSchema],
     subtotal: {
@@ -175,6 +197,9 @@ orderSchema.index({ clientId: 1, createdAt: -1 });
 orderSchema.index({ status: 1, createdAt: -1 });
 orderSchema.index({ commercialId: 1, createdAt: -1 });
 orderSchema.index({ storeId: 1, createdAt: -1 });
+orderSchema.index({ source: 1, createdAt: -1 });
+orderSchema.index({ cashierId: 1, createdAt: -1 });
+orderSchema.index({ commercialId: 1, source: 1, createdAt: -1 });
 
 export default mongoose.model('Order', orderSchema);
 

@@ -21,6 +21,11 @@ export const ClientAuthProvider = ({ children }) => {
   const location = useLocation();
 
   useEffect(() => {
+    // Don't check auth for POS routes - cashiers should use AuthContext only
+    if (location.pathname.startsWith('/pos') || location.pathname.startsWith('/admin')) {
+      setLoading(false);
+      return;
+    }
     checkAuth();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.pathname]);
@@ -33,11 +38,21 @@ export const ClientAuthProvider = ({ children }) => {
         axios.defaults.headers.common.Authorization = `Bearer ${token}`;
         const response = await clientApi.get('/auth/me');
         const u = response.data.user || {};
-        setUser({ ...u, role: u.role || 'client' });
+        const role = u.role || 'client';
+        
+        // Don't store cashiers/staff in ClientAuthContext - they should use AuthContext only
+        const cashierRoles = ['cashier', 'store_cashier', 'saler', 'admin', 'commercial'];
+        if (cashierRoles.includes(role)) {
+          setUser(null);
+        } else {
+          setUser({ ...u, role });
+        }
       } catch (error) {
-        localStorage.removeItem('token');
-        delete clientApi.defaults.headers.common.Authorization;
+        // Don't clear token - might be needed for other contexts
+        setUser(null);
       }
+    } else {
+      setUser(null);
     }
     setLoading(false);
   };

@@ -1,10 +1,18 @@
 import { Outlet, Navigate } from 'react-router-dom';
 import { useClientAuth } from '../../contexts/ClientAuthContext';
+import { useAuth } from '../../contexts/AuthContext';
 import EnhancedHeader from './EnhancedHeader';
 import AnimatedPage from '../shared/AnimatedPage';
 
 const ClientLayout = () => {
-  const { isAuthenticated, loading } = useClientAuth();
+  const { isAuthenticated, loading: clientLoading, user: clientUser } = useClientAuth();
+  const { user: adminUser, loading: adminLoading } = useAuth();
+  
+  const user = adminUser || clientUser;
+  const loading = clientLoading || adminLoading;
+  
+  // Block cashiers from accessing e-commerce
+  const cashierRoles = ['cashier', 'store_cashier', 'saler'];
 
   if (loading) {
     return (
@@ -14,8 +22,13 @@ const ClientLayout = () => {
     );
   }
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated && !user) {
     return <Navigate to="/login" replace />;
+  }
+
+  // Redirect cashiers to POS
+  if (user && cashierRoles.includes(user.role)) {
+    return <Navigate to="/pos" replace />;
   }
 
   return (
@@ -32,24 +45,24 @@ const ClientLayout = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div>
-              <h3 className="text-xl font-bold text-white mb-4">Les Rois Du Bois</h3>
+              <h3 className="text-xl font-bold text-gold-500 mb-4">Les Rois Du Bois</h3>
               <p className="text-sm">نصنع الأثاث بمواد عالية الجودة مع حرفية دقيقة وتسليم سريع ودفع آمن.</p>
             </div>
             <div>
               <h4 className="text-lg font-semibold text-white mb-4">روابط سريعة</h4>
               <ul className="space-y-2 text-sm">
                 <li>
-                  <a href="/shop" className="hover:text-gold-400 transition">
+                  <a href="/shop" className="hover:text-gold-500 transition">
                     الرئيسية
                   </a>
                 </li>
                 <li>
-                  <a href="/shop/categories" className="hover:text-gold-400 transition">
+                  <a href="/shop/categories" className="hover:text-gold-500 transition">
                     الفئات
                   </a>
                 </li>
                 <li>
-                  <a href="/shop/products" className="hover:text-gold-400 transition">
+                  <a href="/shop/products" className="hover:text-gold-500 transition">
                     المنتجات
                   </a>
                 </li>
@@ -65,7 +78,7 @@ const ClientLayout = () => {
             </div>
           </div>
           <div className="border-t border-gray-700 mt-8 pt-8 text-center text-sm">
-            <p>&copy; {new Date().getFullYear()} Les Rois Du Bois. جميع الحقوق محفوظة.</p>
+            <p className="text-gold-500">&copy; {new Date().getFullYear()} Les Rois Du Bois. جميع الحقوق محفوظة.</p>
           </div>
         </div>
       </footer>

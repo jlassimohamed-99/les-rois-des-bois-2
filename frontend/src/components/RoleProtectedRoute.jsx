@@ -17,7 +17,7 @@ const getRedirectPath = (role) => {
   }
 };
 
-const RoleProtectedRoute = ({ children, allowedRoles }) => {
+const RoleProtectedRoute = ({ children, allowedRoles, blockedRoles = [] }) => {
   const { user, loading } = useAuth();
   const { user: clientUser, loading: clientLoading } = useClientAuth();
   const location = useLocation();
@@ -40,6 +40,12 @@ const RoleProtectedRoute = ({ children, allowedRoles }) => {
     return <Navigate to="/login" replace state={{ from: location.pathname }} />;
   }
 
+  // Block specific roles
+  if (blockedRoles && blockedRoles.length > 0 && blockedRoles.includes(effectiveUser.role)) {
+    return <Navigate to={getRedirectPath(effectiveUser.role)} replace />;
+  }
+
+  // Check allowed roles
   if (allowedRoles && !allowedRoles.includes(effectiveUser.role)) {
     return <Navigate to={getRedirectPath(effectiveUser.role)} replace />;
   }

@@ -64,10 +64,10 @@ const ReturnsList = () => {
   };
 
   const statusColors = {
-    pending: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
-    approved: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
-    completed: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
-    rejected: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
+    pending: 'bg-gold-100 text-gold-800 dark:bg-gold-900/30 dark:text-gold-400',
+    approved: 'bg-gold-100 text-gold-800 dark:bg-gold-900/30 dark:text-gold-400',
+    completed: 'bg-gold-100 text-gold-800 dark:bg-gold-900/30 dark:text-gold-400',
+    rejected: 'bg-gold-100 text-gold-800 dark:bg-gold-900/30 dark:text-gold-400',
   };
 
   return (
@@ -135,7 +135,7 @@ const ReturnsList = () => {
                         {returnItem.status === 'pending' && (
                           <button
                             onClick={() => handleApprove(returnItem._id)}
-                            className="p-2 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors"
+                            className="p-2 text-gold-600 hover:bg-gold-50 dark:hover:bg-gold-900/20 rounded-lg transition-colors"
                             title="موافقة"
                           >
                             <CheckCircle size={18} />
@@ -144,7 +144,7 @@ const ReturnsList = () => {
                         {returnItem.status === 'approved' && !returnItem.restocked && (
                           <button
                             onClick={() => handleRestock(returnItem._id)}
-                            className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                            className="p-2 text-gold-600 hover:bg-gold-50 dark:hover:bg-gold-900/20 rounded-lg transition-colors"
                             title="إعادة المخزون"
                           >
                             <Package size={18} />
@@ -152,7 +152,7 @@ const ReturnsList = () => {
                         )}
                         <button
                           onClick={() => handleEdit(returnItem)}
-                          className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                          className="p-2 text-gold-600 hover:bg-gold-50 dark:hover:bg-gold-900/20 rounded-lg transition-colors"
                         >
                           <Edit size={18} />
                         </button>

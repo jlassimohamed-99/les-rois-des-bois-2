@@ -119,7 +119,7 @@ const AuditLogs = () => {
                     <td className="py-3 px-4 text-sm">{log.userEmail}</td>
                     <td className="py-3 px-4 text-sm">{log.resourceType}</td>
                     <td className="py-3 px-4">
-                      <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
+                      <span className="px-2 py-1 bg-gold-100 text-gold-800 rounded-full text-xs">
                         {actionLabels[log.action] || log.action}
                       </span>
                     </td>

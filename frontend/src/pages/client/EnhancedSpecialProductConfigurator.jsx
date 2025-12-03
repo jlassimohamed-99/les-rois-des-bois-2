@@ -43,12 +43,24 @@ const EnhancedSpecialProductConfigurator = () => {
   }, [id]);
 
   const activeCombination = useMemo(() => {
-    if (!detail) return null;
-    return (
-      detail.combinations?.find(
-        (c) => c.optionA?.value === chooses.optionA && c.optionB?.value === chooses.optionB
-      ) || detail.combinations?.[0] || null
-    );
+    if (!detail || !chooses.optionA || !chooses.optionB) return null;
+    
+    // Find combination by matching variant values
+    const combination = detail.combinations?.find((c) => {
+      // Try different possible structures for optionA
+      const optionAMatches = 
+        (c.optionA?.variant?.value === chooses.optionA) ||
+        (c.optionA?.value === chooses.optionA);
+      
+      // Try different possible structures for optionB
+      const optionBMatches = 
+        (c.optionB?.variant?.value === chooses.optionB) ||
+        (c.optionB?.value === chooses.optionB);
+      
+      return optionAMatches && optionBMatches;
+    });
+    
+    return combination || null;
   }, [detail, chooses]);
 
   const price = useMemo(() => {
@@ -203,7 +215,7 @@ const EnhancedSpecialProductConfigurator = () => {
                     className={`p-3 rounded-xl border-2 text-right transition-all ${
                       chooses.optionA === variant.value
                         ? 'border-gold-500 bg-gold-50 dark:bg-gold-900/20 text-gold-700 shadow-md'
-                        : 'border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-200 hover:border-gold-300'
+                        : 'border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-200 hover:border-gold-500'
                     }`}
                   >
                     {variant.image && (
@@ -215,7 +227,7 @@ const EnhancedSpecialProductConfigurator = () => {
                         transition={{ duration: 0.2 }}
                       />
                     )}
-                    <div className="font-semibold">{variant.value}</div>
+                    <div className="font-semibold text-sm">{variant.name || variant.value}</div>
                     <div className="text-xs text-gray-500">
                       {variant.additionalPrice ? `+${variant.additionalPrice} TND` : 'بدون زيادة'}
                     </div>
@@ -261,7 +273,7 @@ const EnhancedSpecialProductConfigurator = () => {
                         ? 'opacity-50 cursor-not-allowed'
                         : chooses.optionB === variant.value
                         ? 'border-gold-500 bg-gold-50 dark:bg-gold-900/20 text-gold-700 shadow-md'
-                        : 'border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-200 hover:border-gold-300'
+                        : 'border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-200 hover:border-gold-500'
                     }`}
                   >
                     {variant.image && (
@@ -273,7 +285,7 @@ const EnhancedSpecialProductConfigurator = () => {
                         transition={{ duration: 0.2 }}
                       />
                     )}
-                    <div className="font-semibold">{variant.value}</div>
+                    <div className="font-semibold text-sm">{variant.name || variant.value}</div>
                     <div className="text-xs text-gray-500">
                       {variant.additionalPrice ? `+${variant.additionalPrice} TND` : 'بدون زيادة'}
                     </div>
@@ -342,11 +354,17 @@ const EnhancedSpecialProductConfigurator = () => {
               <div className="space-y-2 text-gray-700 dark:text-gray-300">
                 <p>
                   <span className="font-semibold">{detail?.baseProductA?.name || 'الجزء الأول'}:</span>{' '}
-                  {chooses.optionA || 'اختر خياراً'}
+                  {detail?.baseProductA?.variants?.find((v) => v.value === chooses.optionA)?.name || 
+                   detail?.baseProductA?.variants?.find((v) => v.value === chooses.optionA)?.value || 
+                   chooses.optionA || 
+                   'اختر خياراً'}
                 </p>
                 <p>
                   <span className="font-semibold">{detail?.baseProductB?.name || 'الجزء الثاني'}:</span>{' '}
-                  {chooses.optionB || 'اختر خياراً'}
+                  {detail?.baseProductB?.variants?.find((v) => v.value === chooses.optionB)?.name || 
+                   detail?.baseProductB?.variants?.find((v) => v.value === chooses.optionB)?.value || 
+                   chooses.optionB || 
+                   'اختر خياراً'}
                 </p>
                 <motion.p
                   key={price}

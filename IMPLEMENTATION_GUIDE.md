@@ -391,7 +391,7 @@ const SalesChart = ({ data }) => {
       <YAxis />
       <Tooltip />
       <Legend />
-      <Line type="monotone" dataKey="revenue" stroke="#f59e0b" />
+      <Line type="monotone" dataKey="revenue" stroke="#FFD700" />
     </LineChart>
   );
 };

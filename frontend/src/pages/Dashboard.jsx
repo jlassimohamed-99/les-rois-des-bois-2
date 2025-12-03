@@ -53,14 +53,14 @@ const Dashboard = () => {
   };
 
   const statCards = [
-    { label: 'إجمالي الفئات', value: stats.categories, icon: FolderTree, color: 'bg-blue-500' },
-    { label: 'إجمالي المنتجات', value: stats.products, icon: Package, color: 'bg-green-500' },
-    { label: 'المنتجات الخاصة', value: stats.specialProducts, icon: Boxes, color: 'bg-purple-500' },
-    { label: 'إجمالي المستخدمين', value: stats.users, icon: Users, color: 'bg-yellow-500' },
-    { label: 'إجمالي الطلبات', value: stats.orders, icon: ShoppingCart, color: 'bg-indigo-500' },
+    { label: 'إجمالي الفئات', value: stats.categories, icon: FolderTree, color: 'bg-gold-500' },
+    { label: 'إجمالي المنتجات', value: stats.products, icon: Package, color: 'bg-gold-600' },
+    { label: 'المنتجات الخاصة', value: stats.specialProducts, icon: Boxes, color: 'bg-gold-500' },
+    { label: 'إجمالي المستخدمين', value: stats.users, icon: Users, color: 'bg-gold-500' },
+    { label: 'إجمالي الطلبات', value: stats.orders, icon: ShoppingCart, color: 'bg-gold-600' },
     { label: 'الطلبات المعلقة', value: stats.pendingOrders, icon: FileText, color: 'bg-gold-600' },
     { label: 'إجمالي الإيرادات', value: `${stats.revenue.toLocaleString()} TND`, icon: TrendingUp, color: 'bg-gold-500' },
-    { label: 'فواتير الائتمان', value: stats.creditInvoices, icon: CreditCard, color: 'bg-red-500' },
+    { label: 'فواتير الائتمان', value: stats.creditInvoices, icon: CreditCard, color: 'bg-gold-700' },
   ];
 
   // Dummy chart data
@@ -82,9 +82,9 @@ const Dashboard = () => {
   ];
 
   const stockData = [
-    { name: 'متوفر', value: 65, color: '#10b981' },
-    { name: 'منخفض', value: 25, color: '#c08a25' },
-    { name: 'نفد', value: 10, color: '#ef4444' },
+    { name: 'متوفر', value: 65, color: '#FFD700' },
+    { name: 'منخفض', value: 25, color: '#e6c200' },
+    { name: 'نفد', value: 10, color: '#ccad00' },
   ];
 
   if (loading) {
@@ -134,7 +134,7 @@ const Dashboard = () => {
               <YAxis />
               <Tooltip />
               <Legend />
-              <Line type="monotone" dataKey="sales" stroke="#c08a25" strokeWidth={2} />
+              <Line type="monotone" dataKey="sales" stroke="#FFD700" strokeWidth={2} />
             </LineChart>
           </ResponsiveContainer>
         </div>
@@ -148,7 +148,7 @@ const Dashboard = () => {
               <XAxis dataKey="name" />
               <YAxis />
               <Tooltip />
-              <Bar dataKey="sales" fill="#c08a25" />
+              <Bar dataKey="sales" fill="#FFD700" />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -165,7 +165,7 @@ const Dashboard = () => {
                 labelLine={false}
                 label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
                 outerRadius={80}
-                fill="#8884d8"
+                fill="#FFD700"
                 dataKey="value"
               >
                 {stockData.map((entry, index) => (

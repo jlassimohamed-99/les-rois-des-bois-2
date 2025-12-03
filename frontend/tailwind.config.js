@@ -9,16 +9,16 @@ export default {
     extend: {
       colors: {
         gold: {
-          50: '#fffbeb',
-          100: '#fef3c7',
-          200: '#fde68a',
-          300: '#fcd34d',
-          400: '#fbbf24',
-          500: '#f59e0b',
-          600: '#d97706',
-          700: '#b45309',
-          800: '#92400e',
-          900: '#78350f',
+          50: '#fffef5',
+          100: '#fffce0',
+          200: '#fff9cc',
+          300: '#fff6b8',
+          400: '#fff3a4',
+          500: '#FFD700', // Pure gold - main color #FFD700
+          600: '#FFD700', // Use same #FFD700 for buttons and accent text
+          700: '#E6C200', // Slightly darker for hover states (visible hover effect)
+          800: '#CCAD00', // Darker variant for some accents
+          900: '#B39800', // Darkest variant
         },
       },
     },

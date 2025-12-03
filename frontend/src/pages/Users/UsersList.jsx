@@ -85,9 +85,9 @@ const UsersList = () => {
   };
 
   const roleColors = {
-    admin: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
-    commercial: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
-    store_cashier: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
+    admin: 'bg-gold-100 text-gold-800 dark:bg-gold-900/30 dark:text-gold-400',
+    commercial: 'bg-gold-100 text-gold-800 dark:bg-gold-900/30 dark:text-gold-400',
+    store_cashier: 'bg-gold-100 text-gold-800 dark:bg-gold-900/30 dark:text-gold-400',
     client: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300',
     user: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300',
   };
@@ -184,7 +184,7 @@ const UsersList = () => {
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-2">
                         {user.isAdmin ? (
-                          <Shield className="text-red-500" size={18} />
+                          <Shield className="text-gold-500" size={18} />
                         ) : (
                           <UserIcon className="text-gray-400" size={18} />
                         )}
@@ -216,8 +216,8 @@ const UsersList = () => {
                       <span
                         className={`px-2 py-1 rounded-full text-xs font-medium ${
                           user.isAdmin
-                            ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
-                            : 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                            ? 'bg-gold-100 text-gold-800 dark:bg-gold-900/30 dark:text-gold-400'
+                            : 'bg-gold-100 text-gold-800 dark:bg-gold-900/30 dark:text-gold-400'
                         }`}
                       >
                         {user.isAdmin ? 'مدير' : 'نشط'}
@@ -227,21 +227,21 @@ const UsersList = () => {
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => handleEdit(user)}
-                          className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                          className="p-2 text-gold-600 hover:bg-gold-50 dark:hover:bg-gold-900/20 rounded-lg transition-colors"
                           title="تعديل"
                         >
                           <Edit size={18} />
                         </button>
                         <button
                           onClick={() => handleResetPassword(user._id)}
-                          className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                          className="p-2 text-gold-600 hover:bg-gold-50 dark:hover:bg-gold-900/20 rounded-lg transition-colors"
                           title="إعادة تعيين كلمة المرور"
                         >
                           <Lock size={18} />
                         </button>
                         <button
                           onClick={() => handleDelete(user._id)}
-                          className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                          className="p-2 text-gold-600 hover:bg-gold-50 dark:hover:bg-gold-900/20 rounded-lg transition-colors"
                           title="حذف"
                         >
                           <Trash2 size={18} />

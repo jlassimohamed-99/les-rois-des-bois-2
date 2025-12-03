@@ -56,10 +56,10 @@ const POList = () => {
 
   const statusColors = {
     draft: 'bg-gray-100 text-gray-800',
-    sent: 'bg-blue-100 text-blue-800',
-    received: 'bg-green-100 text-green-800',
-    completed: 'bg-green-100 text-green-800',
-    canceled: 'bg-red-100 text-red-800',
+    sent: 'bg-gold-100 text-gold-800',
+    received: 'bg-gold-100 text-gold-800',
+    completed: 'bg-gold-100 text-gold-800',
+    canceled: 'bg-gold-100 text-gold-800',
   };
 
   return (
@@ -122,14 +122,14 @@ const POList = () => {
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => handleEdit(po)}
-                          className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg"
+                          className="p-2 text-gold-600 hover:bg-gold-50 dark:hover:bg-gold-900/20 rounded-lg"
                         >
                           <Edit size={18} />
                         </button>
                         {po.status === 'sent' && (
                           <button
                             onClick={() => handleStatusUpdate(po._id, 'received')}
-                            className="p-2 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg"
+                            className="p-2 text-gold-600 hover:bg-gold-50 dark:hover:bg-gold-900/20 rounded-lg"
                             title="تم الاستلام"
                           >
                             <CheckCircle size={18} />

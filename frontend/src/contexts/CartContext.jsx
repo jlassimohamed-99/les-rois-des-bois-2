@@ -33,21 +33,59 @@ export const CartProvider = ({ children }) => {
 
   const addToCart = useCallback((item, triggerAnimation = true) => {
     setCartItems((prevItems) => {
-      const existingItem = prevItems.find(
-        (i) =>
-          i.productId === item.productId &&
-          i.productType === item.productType &&
-          JSON.stringify(i.selectedOptions) === JSON.stringify(item.selectedOptions)
-      );
+      // Helper function to compare variants
+      const variantsMatch = (variant1, variant2) => {
+        if (!variant1 && !variant2) return true; // Both have no variant
+        if (!variant1 || !variant2) return false; // One has variant, the other doesn't
+        // Compare by value first (most reliable), then by name
+        return variant1.value === variant2.value || 
+               (variant1.name === variant2.name && variant1.value === variant2.value);
+      };
+
+      // Find existing item - must match productId, productType, and variant
+      const existingItem = prevItems.find((i) => {
+        // Must match productId and productType
+        if (i.productId !== item.productId || i.productType !== item.productType) {
+          return false;
+        }
+
+        // For special products, check selectedOptions
+        if (item.productType === 'special') {
+          return JSON.stringify(i.selectedOptions) === JSON.stringify(item.selectedOptions);
+        }
+
+        // For regular products, check variant
+        if (item.productType === 'regular') {
+          return variantsMatch(i.variant, item.variant);
+        }
+
+        // For other product types, just check productId and productType
+        return true;
+      });
 
       if (existingItem) {
-        const updated = prevItems.map((i) =>
-          i.productId === item.productId &&
-          i.productType === item.productType &&
-          JSON.stringify(i.selectedOptions) === JSON.stringify(item.selectedOptions)
-            ? { ...i, quantity: i.quantity + (item.quantity || 1) }
-            : i
-        );
+        // Update existing item quantity
+        const updated = prevItems.map((i) => {
+          // Check if this is the matching item
+          if (i.productId !== item.productId || i.productType !== item.productType) {
+            return i;
+          }
+
+          if (item.productType === 'special') {
+            if (JSON.stringify(i.selectedOptions) === JSON.stringify(item.selectedOptions)) {
+              return { ...i, quantity: i.quantity + (item.quantity || 1) };
+            }
+          } else if (item.productType === 'regular') {
+            if (variantsMatch(i.variant, item.variant)) {
+              return { ...i, quantity: i.quantity + (item.quantity || 1) };
+            }
+          } else {
+            return { ...i, quantity: i.quantity + (item.quantity || 1) };
+          }
+
+          return i;
+        });
+        
         if (triggerAnimation) {
           setLastAddedItem({ ...item, action: 'updated' });
           setTimeout(() => setLastAddedItem(null), 500);
@@ -55,6 +93,7 @@ export const CartProvider = ({ children }) => {
         return updated;
       }
 
+      // Add as new item - different variant means different item
       const newItems = [...prevItems, { ...item, quantity: item.quantity || 1 }];
       if (triggerAnimation) {
         setLastAddedItem({ ...item, action: 'added' });

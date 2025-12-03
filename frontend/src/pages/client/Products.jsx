@@ -77,13 +77,23 @@ const Products = () => {
   };
 
   const handleAddToCart = (product) => {
+    const variantPrice = product.selectedVariant?.additionalPrice || 0;
+    const finalPrice = product.variantPrice || (product.price + variantPrice);
+    const displayImage = product.displayImage || product.images?.[0];
+    const quantity = product.quantity || 1;
+    
     addToCart({
       productId: product._id,
       productType: 'regular',
       name: product.name,
-      price: product.price,
-      image: withBase(product.images?.[0]),
-      quantity: 1,
+      price: finalPrice,
+      image: withBase(displayImage),
+      quantity: quantity,
+      variant: product.selectedVariant ? {
+        name: product.selectedVariant.name,
+        value: product.selectedVariant.value,
+        additionalPrice: product.selectedVariant.additionalPrice || 0,
+      } : undefined,
     });
     toast.success('تمت الإضافة إلى السلة');
   };
@@ -99,7 +109,7 @@ const Products = () => {
           </div>
           <button
             onClick={clearFilters}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:border-gold-400"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:border-gold-500"
           >
             <RefreshCcw size={16} />
             إعادة الضبط

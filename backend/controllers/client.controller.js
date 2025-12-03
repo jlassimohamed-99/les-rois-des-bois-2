@@ -31,7 +31,6 @@ export const getPublicProducts = async (req, res, next) => {
     const [products, total] = await Promise.all([
       Product.find(query)
         .populate('category', 'name slug')
-        .select('-variants') // Don't send variants to client
         .sort(sortOption)
         .skip(skip)
         .limit(parseInt(limit)),
@@ -57,8 +56,7 @@ export const getPublicProducts = async (req, res, next) => {
 export const getPublicProduct = async (req, res, next) => {
   try {
     const product = await Product.findById(req.params.id)
-      .populate('category', 'name slug')
-      .select('-variants'); // Don't send variants to client
+      .populate('category', 'name slug');
 
     if (!product || product.status !== 'visible') {
       return res.status(404).json({
@@ -103,7 +101,6 @@ export const getPublicCategory = async (req, res, next) => {
 
     const products = await Product.find({ category: category._id, status: 'visible' })
       .populate('category', 'name slug')
-      .select('-variants')
       .sort({ createdAt: -1 });
 
     res.status(200).json({

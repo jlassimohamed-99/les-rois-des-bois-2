@@ -198,7 +198,7 @@ const POModal = ({ po, onClose }) => {
                       <button
                         type="button"
                         onClick={() => handleRemoveItem(index)}
-                        className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
+                        className="p-2 text-gold-600 hover:bg-gold-50 dark:hover:bg-gold-900/20 rounded"
                       >
                         <Trash2 size={18} />
                       </button>

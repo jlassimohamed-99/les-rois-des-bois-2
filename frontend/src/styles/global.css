@@ -31,16 +31,24 @@ html {
   scroll-behavior: smooth;
 }
 
-/* Focus Styles */
+/* Focus Styles - Custom orange (#fda63a) in light mode, Gold in dark mode */
 *:focus-visible {
-  outline: 2px solid theme('colors.gold.600');
+  outline: 2px solid #fda63a;
   outline-offset: 2px;
 }
 
-/* Selection Styles */
+.dark *:focus-visible {
+  outline: 2px solid theme('colors.gold.600');
+}
+
+/* Selection Styles - Custom orange tint in light mode, Gold in dark mode */
 ::selection {
-  background-color: theme('colors.gold.200');
+  background-color: rgba(253, 166, 58, 0.2); /* light custom orange */
   color: theme('colors.gray.900');
+}
+
+.dark ::selection {
+  background-color: theme('colors.gold.200');
 }
 
 /* RTL Support */
@@ -99,7 +107,7 @@ img {
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: theme('colors.gold.600');
+  background: #fda63a; /* custom orange */
 }
 
 /* Dark Mode Scrollbar */

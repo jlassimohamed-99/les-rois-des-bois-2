@@ -1,7 +1,7 @@
 import Product from '../models/Product.model.js';
 import SpecialProduct from '../models/SpecialProduct.model.js';
 
-export const calculateOrderTotals = (items, discount = 0, taxRate = 0.19) => {
+export const calculateOrderTotals = (items, discount = 0, taxRate = 0) => {
   let subtotal = 0;
   let totalCost = 0;
 
@@ -13,8 +13,8 @@ export const calculateOrderTotals = (items, discount = 0, taxRate = 0.19) => {
 
   const discountAmount = discount;
   const subtotalAfterDiscount = subtotal - discountAmount;
-  const tax = subtotalAfterDiscount * taxRate;
-  const total = subtotalAfterDiscount + tax;
+  const tax = 0; // No tax
+  const total = subtotalAfterDiscount;
   const profit = subtotalAfterDiscount - totalCost;
 
   return {
@@ -66,8 +66,17 @@ export const buildOrderItems = async (itemsData) => {
         item.variantA = combination.optionA;
         item.variantB = combination.optionB;
         item.combinationId = itemData.combinationId;
+        item.combinationImage = combination.finalImage; // Store the combination image
         item.unitPrice = product.finalPrice + (combination.additionalPrice || 0);
       }
+    }
+
+    // Handle regular product variants
+    if (productType === 'regular' && itemData.variant) {
+      const variantPrice = itemData.variant.additionalPrice || 0;
+      item.unitPrice = (itemData.unitPrice || product.price) + variantPrice;
+      // Store variant info in the item for reference (including variant image)
+      item.variant = itemData.variant;
     }
 
     item.subtotal = item.unitPrice * item.quantity;

@@ -1,6 +1,13 @@
 import Invoice from '../models/Invoice.model.js';
 import Payment from '../models/Payment.model.js';
 import Order from '../models/Order.model.js';
+import { generateInvoicePDF } from '../services/pdfService.js';
+import { sendInvoiceEmail } from '../services/emailService.js';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export const getInvoices = async (req, res, next) => {
   try {
@@ -26,6 +33,92 @@ export const getInvoice = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'الفاتورة غير موجودة' });
     }
     res.json({ success: true, data: invoice });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Create invoice from order (route: /from-order/:orderId)
+export const createInvoiceFromOrder = async (req, res, next) => {
+  try {
+    const { orderId } = req.params;
+    const { dueDate, notes } = req.body;
+
+    if (!orderId) {
+      return res.status(400).json({ success: false, message: 'رقم الطلب مطلوب' });
+    }
+
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ success: false, message: 'الطلب غير موجود' });
+    }
+
+    // Check if invoice already exists for this order
+    const existingInvoice = await Invoice.findOne({ orderId });
+    if (existingInvoice) {
+      return res.status(400).json({ success: false, message: 'تم إنشاء فاتورة لهذا الطلب بالفعل' });
+    }
+
+    // Build invoice items from order
+    const invoiceItems = order.items.map((item) => ({
+      productId: item.productId,
+      productName: item.productName,
+      quantity: item.quantity,
+      unitPrice: item.unitPrice,
+      discount: item.discount || 0,
+      tax: (item.total * 0.19) / 1.19,
+      total: item.total,
+    }));
+
+    const subtotal = order.subtotal;
+    const discount = order.discount;
+    const tax = order.tax;
+    const total = order.total;
+
+    // Set commercialId if order has one
+    const commercialId = order.commercialId || null;
+
+    // Generate unique invoice number in format ROI-INV-YYYY-XXXX
+    const year = new Date().getFullYear();
+    let invoiceNumber;
+    let attempts = 0;
+    const maxAttempts = 10;
+    
+    do {
+      const count = await Invoice.countDocuments({
+        invoiceNumber: new RegExp(`^ROI-INV-${year}`),
+      });
+      invoiceNumber = `ROI-INV-${year}-${String(count + 1).padStart(4, '0')}`;
+      const existingInvoiceNum = await Invoice.findOne({ invoiceNumber });
+      if (!existingInvoiceNum) break;
+      attempts++;
+      if (attempts >= maxAttempts) {
+        invoiceNumber = `ROI-INV-${year}-${Date.now()}`;
+        break;
+      }
+    } while (attempts < maxAttempts);
+
+    const invoice = await Invoice.create({
+      invoiceNumber,
+      orderId,
+      clientId: order.clientId,
+      clientName: order.clientName,
+      clientAddress: order.clientAddress,
+      commercialId: commercialId,
+      items: invoiceItems,
+      subtotal,
+      discount,
+      tax,
+      total,
+      paidAmount: 0,
+      remainingAmount: total,
+      dueDate: dueDate ? new Date(dueDate) : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days default
+      notes: notes || '',
+      createdBy: req.user._id,
+      status: 'draft',
+    });
+
+    res.status(201).json({ success: true, data: invoice });
   } catch (error) {
     next(error);
   }
@@ -66,11 +159,15 @@ export const createInvoice = async (req, res, next) => {
     const tax = order.tax;
     const total = order.total;
 
+    // Set commercialId if order has one
+    const commercialId = order.commercialId || null;
+
     const invoice = await Invoice.create({
       orderId,
       clientId: order.clientId,
       clientName: order.clientName,
       clientAddress: order.clientAddress,
+      commercialId: commercialId,
       items: invoiceItems,
       subtotal,
       discount,
@@ -92,26 +189,38 @@ export const createInvoice = async (req, res, next) => {
 
 export const recordPayment = async (req, res, next) => {
   try {
-    const { amount, paymentMethod, paymentDate, reference, notes } = req.body;
+    const { amount, paymentMethod, notes } = req.body;
     const invoice = await Invoice.findById(req.params.id);
     
     if (!invoice) {
       return res.status(404).json({ success: false, message: 'الفاتورة غير موجودة' });
     }
 
-    const payment = await Payment.create({
-      invoiceId: invoice._id,
-      amount,
-      paymentMethod,
-      paymentDate: paymentDate || new Date(),
-      reference,
-      notes,
-      recordedBy: req.user._id,
-    });
+    if (!amount || amount <= 0) {
+      return res.status(400).json({ success: false, message: 'المبلغ يجب أن يكون أكبر من صفر' });
+    }
 
+    if (amount > invoice.remainingAmount) {
+      return res.status(400).json({ 
+        success: false, 
+        message: `المبلغ المدفوع (${amount}) أكبر من المبلغ المتبقي (${invoice.remainingAmount})` 
+      });
+    }
+
+    // Add payment to payments array
+    const paymentRecord = {
+      amount,
+      paymentMethod: paymentMethod || 'cash',
+      paidAt: new Date(),
+      notes: notes || '',
+      recordedBy: req.user._id,
+    };
+
+    invoice.payments.push(paymentRecord);
     invoice.paidAmount = (invoice.paidAmount || 0) + amount;
     invoice.remainingAmount = invoice.total - invoice.paidAmount;
     
+    // Update status
     if (invoice.remainingAmount <= 0) {
       invoice.status = 'paid';
       invoice.paidAt = new Date();
@@ -121,7 +230,21 @@ export const recordPayment = async (req, res, next) => {
 
     await invoice.save();
 
-    res.status(201).json({ success: true, data: payment });
+    // Also create Payment record for tracking
+    await Payment.create({
+      invoiceId: invoice._id,
+      amount,
+      paymentMethod: paymentMethod || 'cash',
+      paymentDate: new Date(),
+      notes: notes || '',
+      recordedBy: req.user._id,
+    });
+
+    res.status(200).json({ 
+      success: true, 
+      data: invoice,
+      message: 'تم تسجيل الدفع بنجاح'
+    });
   } catch (error) {
     next(error);
   }
@@ -140,38 +263,182 @@ export const getPayments = async (req, res, next) => {
 
 export const generatePDF = async (req, res, next) => {
   try {
-    const invoice = await Invoice.findById(req.params.id).populate('orderId');
+    const invoice = await Invoice.findById(req.params.id)
+      .populate('orderId')
+      .populate('clientId', 'email')
+      .populate('commercialId', 'name email');
+    
     if (!invoice) {
       return res.status(404).json({ success: false, message: 'الفاتورة غير موجودة' });
     }
 
-    // Placeholder for PDF generation - will be implemented with PDFKit or similar
-    // For now, return a JSON response indicating PDF generation is queued
-    res.json({
-      success: true,
-      message: 'PDF generation is queued. This feature will be implemented with a job queue.',
-      invoiceNumber: invoice.invoiceNumber,
+    // If PDF already exists, return it
+    if (invoice.pdfPath) {
+      const fullPath = path.join(__dirname, '..', invoice.pdfPath);
+      return res.download(fullPath, `${invoice.invoiceNumber}.pdf`, (err) => {
+        if (err) {
+          console.error('Error sending PDF:', err);
+          res.status(500).json({ success: false, message: 'خطأ في إرسال ملف PDF' });
+        }
+      });
+    }
+
+    // Check if Redis/job queue is available
+    const useQueue = process.env.REDIS_HOST && process.env.USE_JOB_QUEUE === 'true';
+    
+    if (useQueue) {
+      try {
+        // Enqueue PDF generation job
+        const { pdfQueue, isQueueAvailable } = await import('../config/queue.js');
+        
+        if (!isQueueAvailable() || !pdfQueue) {
+          throw new Error('Queue not available');
+        }
+        
+        const Job = (await import('../models/Job.model.js')).default;
+        
+        // Create job record
+        const job = await Job.create({
+          jobId: `pdf-${invoice._id}-${Date.now()}`,
+          type: 'pdf_generation',
+          status: 'pending',
+          payload: { invoiceId: invoice._id },
+          resourceType: 'invoice',
+          resourceId: invoice._id,
+          createdBy: req.user._id,
+        });
+
+        // Add job to queue
+        await pdfQueue.add('generate-invoice-pdf', {
+          invoiceId: invoice._id,
+          jobId: job._id,
+        });
+
+        return res.json({
+          success: true,
+          message: 'PDF generation enqueued. It will be available shortly.',
+          jobId: job._id,
+          invoiceNumber: invoice.invoiceNumber,
+        });
+      } catch (queueError) {
+        console.warn('Job queue not available, generating PDF synchronously:', queueError.message);
+        // Fall through to synchronous generation
+      }
+    }
+
+    // Generate PDF synchronously (fallback or if queue not enabled)
+    const pdfPath = await generateInvoicePDF(invoice);
+
+    // Update invoice with PDF path
+    invoice.pdfPath = pdfPath;
+    await invoice.save();
+
+    // Send PDF file
+    const fullPath = path.join(__dirname, '..', pdfPath);
+    res.download(fullPath, `${invoice.invoiceNumber}.pdf`, (err) => {
+      if (err) {
+        console.error('Error sending PDF:', err);
+        res.status(500).json({ success: false, message: 'خطأ في إرسال ملف PDF' });
+      }
     });
   } catch (error) {
+    console.error('Error generating PDF:', error);
     next(error);
   }
 };
 
 export const sendEmail = async (req, res, next) => {
   try {
-    const invoice = await Invoice.findById(req.params.id);
+    const invoice = await Invoice.findById(req.params.id)
+      .populate('clientId', 'email name')
+      .populate('orderId');
+    
     if (!invoice) {
       return res.status(404).json({ success: false, message: 'الفاتورة غير موجودة' });
     }
 
-    // Placeholder for email sending - will be implemented with nodemailer or similar
-    res.json({
-      success: true,
-      message: 'Email sending is queued. This feature will be implemented with a job queue.',
-      invoiceNumber: invoice.invoiceNumber,
-    });
+    // Get client email
+    const clientEmail = invoice.clientId?.email || invoice.clientEmail;
+    if (!clientEmail) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'البريد الإلكتروني للعميل غير موجود' 
+      });
+    }
+
+    // Ensure PDF is generated first
+    let pdfPath = invoice.pdfPath;
+    if (!pdfPath) {
+      pdfPath = await generateInvoicePDF(invoice);
+      invoice.pdfPath = pdfPath;
+      await invoice.save();
+    }
+
+    // Check if Redis/job queue is available
+    const useQueue = process.env.REDIS_HOST && process.env.USE_JOB_QUEUE === 'true';
+    
+    if (useQueue) {
+      try {
+        // Enqueue email sending job
+        const { emailQueue, isQueueAvailable } = await import('../config/queue.js');
+        
+        if (!isQueueAvailable() || !emailQueue) {
+          throw new Error('Queue not available');
+        }
+        
+        const Job = (await import('../models/Job.model.js')).default;
+        
+        // Create job record
+        const job = await Job.create({
+          jobId: `email-${invoice._id}-${Date.now()}`,
+          type: 'email',
+          status: 'pending',
+          payload: { invoiceId: invoice._id },
+          resourceType: 'invoice',
+          resourceId: invoice._id,
+          createdBy: req.user._id,
+        });
+
+        // Add job to queue
+        await emailQueue.add('send-invoice-email', {
+          invoiceId: invoice._id,
+          jobId: job._id,
+        });
+
+        return res.json({
+          success: true,
+          message: 'Email sending enqueued. It will be sent shortly.',
+          jobId: job._id,
+          invoiceNumber: invoice.invoiceNumber,
+        });
+      } catch (queueError) {
+        console.warn('Job queue not available, sending email synchronously:', queueError.message);
+        // Fall through to synchronous sending
+      }
+    }
+    
+    // Send email synchronously (fallback)
+    {
+      const fullPdfPath = path.join(__dirname, '..', pdfPath);
+      await sendInvoiceEmail(invoice, fullPdfPath);
+
+      // Update invoice email status
+      invoice.emailSent = true;
+      invoice.emailSentAt = new Date();
+      await invoice.save();
+
+      res.json({
+        success: true,
+        message: 'تم إرسال البريد الإلكتروني بنجاح',
+        invoiceNumber: invoice.invoiceNumber,
+      });
+    }
   } catch (error) {
-    next(error);
+    console.error('Error sending email:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'خطأ في إرسال البريد الإلكتروني',
+    });
   }
 };
 

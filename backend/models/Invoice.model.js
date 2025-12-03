@@ -63,6 +63,26 @@ const invoiceSchema = new mongoose.Schema(
     clientTaxId: {
       type: String,
     },
+    commercialId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+    },
+    payments: [
+      {
+        amount: { type: Number, required: true, min: 0 },
+        paymentMethod: {
+          type: String,
+          enum: ['cash', 'card', 'bank_transfer', 'check'],
+          required: true,
+        },
+        paidAt: { type: Date, default: Date.now },
+        notes: String,
+        recordedBy: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'User',
+        },
+      },
+    ],
     items: [invoiceItemSchema],
     subtotal: {
       type: Number,
@@ -135,14 +155,14 @@ const invoiceSchema = new mongoose.Schema(
   }
 );
 
-// Generate invoice number
+// Generate invoice number in format ROI-INV-YYYY-XXXX
 invoiceSchema.pre('save', async function (next) {
   if (!this.invoiceNumber) {
     const year = new Date().getFullYear();
     const count = await mongoose.model('Invoice').countDocuments({
-      invoiceNumber: new RegExp(`^INV-${year}`),
+      invoiceNumber: new RegExp(`^ROI-INV-${year}`),
     });
-    this.invoiceNumber = `INV-${year}-${String(count + 1).padStart(6, '0')}`;
+    this.invoiceNumber = `ROI-INV-${year}-${String(count + 1).padStart(4, '0')}`;
   }
   next();
 });
@@ -153,6 +173,8 @@ invoiceSchema.index({ orderId: 1 });
 invoiceSchema.index({ clientId: 1, createdAt: -1 });
 invoiceSchema.index({ status: 1, createdAt: -1 });
 invoiceSchema.index({ dueDate: 1, status: 1 });
+invoiceSchema.index({ commercialId: 1, createdAt: -1 });
+invoiceSchema.index({ 'payments.paidAt': 1 });
 
 export default mongoose.model('Invoice', invoiceSchema);
 

@@ -31,7 +31,24 @@ export const AuthProvider = ({ children }) => {
       const response = await axios.get('/api/auth/me');
       setUser(response.data.user);
     } catch (error) {
-      // Do not clear token here to allow client auth to reuse it
+      // If 401/403, token is invalid - clear it
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        localStorage.removeItem('token');
+        delete axios.defaults.headers.common.Authorization;
+        setUser(null);
+      } else if (error.code === 'ECONNREFUSED' || error.code === 'ERR_NETWORK' || !error.response) {
+        // Backend is not available - don't clear token, keep trying
+        // This is a connection error, not an auth error
+        console.warn('Backend not available, keeping token for retry');
+        // Don't clear user if we have a token - might be temporary backend issue
+        const token = localStorage.getItem('token');
+        if (!token) {
+          setUser(null);
+        }
+        // Keep loading false so UI can render, but user might still be null
+        // This allows the app to work even if backend is temporarily down
+      }
+      // Do not clear token for other errors to allow client auth to reuse it
     } finally {
       setLoading(false);
     }

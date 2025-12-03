@@ -184,11 +184,11 @@ const InvoiceDetail = () => {
                 <span className="font-bold">الإجمالي</span>
                 <span className="font-bold">{invoice.total} TND</span>
               </div>
-              <div className="flex justify-between text-green-600">
+              <div className="flex justify-between text-gold-600">
                 <span>المدفوع</span>
                 <span>{invoice.paidAmount} TND</span>
               </div>
-              <div className="flex justify-between text-red-600 font-bold">
+              <div className="flex justify-between text-gold-600 font-bold">
                 <span>المتبقي</span>
                 <span>{invoice.remainingAmount} TND</span>
               </div>

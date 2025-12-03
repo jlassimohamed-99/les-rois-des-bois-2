@@ -7,11 +7,14 @@ import { withBase } from '../../utils/imageUrl';
 import LoadingSkeleton from '../../components/shared/LoadingSkeleton';
 import EnhancedProductCard from '../../components/client/EnhancedProductCard';
 import { fadeIn, slideUp, staggerContainer } from '../../utils/animations';
+import { useCart } from '../../contexts/CartContext';
+import toast from 'react-hot-toast';
 
 const Home = () => {
   const [featuredProducts, setFeaturedProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { addToCart } = useCart();
 
   useEffect(() => {
     fetchData();
@@ -30,6 +33,29 @@ const Home = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleAddToCart = (product) => {
+    const variantPrice = product.selectedVariant?.additionalPrice || 0;
+    const finalPrice = product.variantPrice || (product.price + variantPrice);
+    const displayImage = product.displayImage || product.images?.[0];
+    const quantity = product.quantity || 1;
+    
+    addToCart({
+      productId: product._id,
+      productType: 'regular',
+      name: product.name,
+      price: finalPrice,
+      image: withBase(displayImage),
+      quantity: quantity,
+      variant: product.selectedVariant ? {
+        name: product.selectedVariant.name,
+        value: product.selectedVariant.value,
+        image: product.selectedVariant.image,
+        additionalPrice: product.selectedVariant.additionalPrice || 0,
+      } : undefined,
+    });
+    toast.success('تمت الإضافة إلى السلة');
   };
 
   return (
@@ -163,7 +189,7 @@ const Home = () => {
               className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
             >
               {featuredProducts.map((product, index) => (
-                <EnhancedProductCard key={product._id} product={product} index={index} />
+                <EnhancedProductCard key={product._id} product={product} index={index} onAdd={handleAddToCart} />
               ))}
             </motion.div>
           )}

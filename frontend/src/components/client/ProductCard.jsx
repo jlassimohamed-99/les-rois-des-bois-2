@@ -1,22 +1,56 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ShoppingCart } from 'lucide-react';
 import { useCart } from '../../contexts/CartContext';
 import { withBase } from '../../utils/imageUrl';
+import VariantSelectionModal from './VariantSelectionModal';
 
 const ProductCard = ({ product, onAdd }) => {
   const { addToCart } = useCart();
+  const [showVariantModal, setShowVariantModal] = useState(false);
 
   const handleAdd = () => {
+    // Si le produit a des variants, afficher le modal
+    if (product.variants && product.variants.length > 0) {
+      setShowVariantModal(true);
+    } else {
+      // Sinon, ajouter directement au panier
+      const item = {
+        productId: product._id,
+        productType: 'regular',
+        name: product.name,
+        price: product.price,
+        image: withBase(product.images?.[0]),
+        quantity: 1,
+      };
+      addToCart(item);
+      if (onAdd) onAdd(item);
+    }
+  };
+
+  const handleModalAddToCart = (productWithVariant) => {
+    const variantPrice = productWithVariant.selectedVariant?.additionalPrice || 0;
+    const finalPrice = productWithVariant.variantPrice || (product.price + variantPrice);
+    const displayImage = productWithVariant.displayImage || product.images?.[0];
+    const quantity = productWithVariant.quantity || 1;
+
     const item = {
       productId: product._id,
       productType: 'regular',
       name: product.name,
-      price: product.price,
-      image: withBase(product.images?.[0]),
-      quantity: 1,
+      price: finalPrice,
+      image: withBase(displayImage),
+      quantity: quantity,
+      variant: productWithVariant.selectedVariant ? {
+        name: productWithVariant.selectedVariant.name,
+        value: productWithVariant.selectedVariant.value,
+        image: productWithVariant.selectedVariant.image,
+        additionalPrice: productWithVariant.selectedVariant.additionalPrice || 0,
+      } : undefined,
     };
     addToCart(item);
     if (onAdd) onAdd(item);
+    setShowVariantModal(false);
   };
 
   return (
@@ -57,7 +91,18 @@ const ProductCard = ({ product, onAdd }) => {
             Add
           </button>
         </div>
+        {product.variants && product.variants.length > 0 && (
+          <div className="text-xs text-gold-600 mt-1">
+            {product.variants.length} متغير متاح
+          </div>
+        )}
       </div>
+      <VariantSelectionModal
+        isOpen={showVariantModal}
+        onClose={() => setShowVariantModal(false)}
+        product={product}
+        onAddToCart={handleModalAddToCart}
+      />
     </div>
   );
 };

@@ -112,7 +112,7 @@ const EnhancedHeader = () => {
                 className="flex items-center space-x-2 rtl:space-x-reverse group"
               >
                 <motion.span
-                  className="text-2xl font-bold bg-gradient-to-r from-gold-600 to-gold-800 bg-clip-text text-transparent"
+                  className="text-2xl font-bold text-gold-500"
                   whileHover={{ scale: 1.05 }}
                   transition={{ duration: 0.2 }}
                 >
@@ -324,7 +324,7 @@ const EnhancedHeader = () => {
                               setShowProfileDropdown(false);
                               logout();
                             }}
-                            className="w-full text-right px-4 py-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600"
+                            className="w-full text-right px-4 py-2 rounded-lg hover:bg-gold-50 dark:hover:bg-gold-900/20 text-gold-600"
                           >
                             تسجيل الخروج
                           </button>
@@ -453,7 +453,7 @@ const EnhancedHeader = () => {
                             setMobileMenuOpen(false);
                             logout();
                           }}
-                          className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600"
+                          className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gold-50 dark:hover:bg-gold-900/20 text-gold-600"
                         >
                           <LogOut size={20} />
                           <span>تسجيل الخروج</span>

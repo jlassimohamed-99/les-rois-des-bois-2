@@ -11,8 +11,10 @@ export const getOrders = async (req, res, next) => {
       clientId,
       storeId,
       commercialId,
+      source,
       startDate,
       endDate,
+      search,
       page = 1,
       limit = 50,
     } = req.query;
@@ -23,10 +25,31 @@ export const getOrders = async (req, res, next) => {
     if (clientId) query.clientId = clientId;
     if (storeId) query.storeId = storeId;
     if (commercialId) query.commercialId = commercialId;
+    if (source) query.source = source;
+    
+    // Handle date filtering
     if (startDate || endDate) {
       query.createdAt = {};
-      if (startDate) query.createdAt.$gte = new Date(startDate);
-      if (endDate) query.createdAt.$lte = new Date(endDate);
+      if (startDate) {
+        const start = new Date(startDate);
+        start.setHours(0, 0, 0, 0); // Start of day
+        query.createdAt.$gte = start;
+      }
+      if (endDate) {
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999); // End of day
+        query.createdAt.$lte = end;
+      }
+    }
+    
+    // Handle search - search in orderNumber, clientName, clientPhone, clientEmail
+    if (search) {
+      query.$or = [
+        { orderNumber: { $regex: search, $options: 'i' } },
+        { clientName: { $regex: search, $options: 'i' } },
+        { clientPhone: { $regex: search, $options: 'i' } },
+        { clientEmail: { $regex: search, $options: 'i' } },
+      ];
     }
 
     const [orders, total] = await Promise.all([
@@ -34,6 +57,7 @@ export const getOrders = async (req, res, next) => {
         .populate('clientId', 'name email phone')
         .populate('commercialId', 'name email')
         .populate('storeId', 'name code')
+        .populate('cashierId', 'name email')
         .populate('assignedTo', 'name email')
         .sort({ createdAt: -1 })
         .skip(skip)
@@ -95,6 +119,7 @@ export const createOrder = async (req, res, next) => {
       notes,
       commercialId,
       storeId,
+      source = 'admin', // Default for admin-created orders
     } = req.body;
 
     if (!items || items.length === 0) {
@@ -138,6 +163,7 @@ export const createOrder = async (req, res, next) => {
       notes,
       commercialId,
       storeId,
+      source: source || 'admin',
       status: 'pending',
     });
 

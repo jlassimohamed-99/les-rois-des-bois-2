@@ -20,6 +20,8 @@ const storage = multer.diskStorage({
       uploadPath = path.join(uploadPath, 'special-products');
     } else if (req.path.includes('/settings')) {
       uploadPath = path.join(uploadPath, 'settings');
+    } else if (req.path.includes('/expense') || req.path.includes('/receipt')) {
+      uploadPath = path.join(uploadPath, 'expenses');
     } else {
       uploadPath = path.join(uploadPath, 'general');
     }
@@ -32,8 +34,8 @@ const storage = multer.diskStorage({
   }
 });
 
-// File filter
-const fileFilter = (req, file, cb) => {
+// File filter for images
+const imageFilter = (req, file, cb) => {
   const allowedTypes = /jpeg|jpg|png|gif|webp/;
   const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
   const mimetype = allowedTypes.test(file.mimetype);
@@ -45,12 +47,33 @@ const fileFilter = (req, file, cb) => {
   }
 };
 
+// File filter for receipts (images + PDF)
+const receiptFilter = (req, file, cb) => {
+  const allowedTypes = /jpeg|jpg|png|gif|webp|pdf/;
+  const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+  const mimetype = allowedTypes.test(file.mimetype) || file.mimetype === 'application/pdf';
+
+  if (mimetype || extname) {
+    return cb(null, true);
+  } else {
+    cb(new Error('يسمح فقط بملفات الصور أو PDF (jpeg, jpg, png, gif, webp, pdf)'));
+  }
+};
+
 const upload = multer({
   storage: storage,
   limits: {
     fileSize: 5 * 1024 * 1024, // 5MB
   },
-  fileFilter: fileFilter,
+  fileFilter: imageFilter,
+});
+
+const uploadReceipt = multer({
+  storage: storage,
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB for receipts (can include PDFs)
+  },
+  fileFilter: receiptFilter,
 });
 
 const router = express.Router();
@@ -148,6 +171,26 @@ router.post('/settings/logo', protect, upload.single('image'), (req, res) => {
       filename: req.file.filename,
       path: `/uploads/settings/${req.file.filename}`,
       originalName: req.file.originalname,
+    },
+  });
+});
+
+// Expense receipt upload (supports images and PDFs)
+router.post('/expense/receipt', protect, uploadReceipt.single('receipt'), (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({
+      success: false,
+      message: 'لم يتم رفع أي ملف',
+    });
+  }
+
+  res.status(200).json({
+    success: true,
+    data: {
+      filename: req.file.filename,
+      path: `/uploads/expenses/${req.file.filename}`,
+      originalName: req.file.originalname,
+      mimetype: req.file.mimetype,
     },
   });
 });

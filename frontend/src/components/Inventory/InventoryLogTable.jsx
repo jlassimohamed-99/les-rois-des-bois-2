@@ -118,7 +118,11 @@ const InventoryLogTable = () => {
                   className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50"
                 >
                   <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">
-                    {new Date(log.createdAt).toLocaleDateString('ar-SA')}
+                    {new Date(log.createdAt).toLocaleDateString('fr-FR', {
+                      year: 'numeric',
+                      month: '2-digit',
+                      day: '2-digit'
+                    })}
                   </td>
                   <td className="py-3 px-4 text-sm font-medium text-gray-900 dark:text-gray-100">
                     {log.productId?.name || '-'}
@@ -127,8 +131,8 @@ const InventoryLogTable = () => {
                     <span
                       className={`px-2 py-1 rounded-full text-xs font-medium ${
                         log.changeType === 'increase' || log.changeType === 'purchase' || log.changeType === 'return'
-                          ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                          : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+                          ? 'bg-gold-100 text-gold-800 dark:bg-gold-900/30 dark:text-gold-400'
+                          : 'bg-gold-100 text-gold-800 dark:bg-gold-900/30 dark:text-gold-400'
                       }`}
                     >
                       {changeTypeLabels[log.changeType] || log.changeType}
@@ -144,8 +148,8 @@ const InventoryLogTable = () => {
                     <span
                       className={`text-sm font-medium ${
                         log.quantityChange > 0
-                          ? 'text-green-600 dark:text-green-400'
-                          : 'text-red-600 dark:text-red-400'
+                          ? 'text-gold-600 dark:text-gold-400'
+                          : 'text-gold-600 dark:text-gold-400'
                       }`}
                     >
                       {log.quantityChange > 0 ? '+' : ''}

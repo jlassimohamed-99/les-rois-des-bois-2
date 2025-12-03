@@ -73,8 +73,8 @@ export const protectPOS = async (req, res, next) => {
         });
       }
 
-      // Allow admin, store_cashier, cashier, saler, and store_manager
-      const allowedRoles = ['admin', 'store_cashier', 'cashier', 'saler', 'store_manager'];
+      // Allow admin, store_cashier, cashier, saler, store_manager, and commercial
+      const allowedRoles = ['admin', 'store_cashier', 'cashier', 'saler', 'store_manager', 'commercial'];
       let userRole = req.user.role || (req.user.isAdmin ? 'admin' : null);
       
       // Normalize cashier to store_cashier

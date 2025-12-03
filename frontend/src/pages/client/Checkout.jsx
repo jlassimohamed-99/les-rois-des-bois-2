@@ -40,9 +40,7 @@ const Checkout = () => {
     }
   }, [user]);
 
-  const subtotal = getCartTotal();
-  const tax = subtotal * 0.19;
-  const total = subtotal + tax;
+  const total = getCartTotal();
 
   const handleChange = (field, value) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -63,6 +61,7 @@ const Checkout = () => {
           quantity: item.quantity,
           unitPrice: item.price,
           combinationId: item.combinationId,
+          variant: item.variant, // Include variant with image
           productName: item.name,
         })),
         paymentMethod: 'cash',
@@ -189,15 +188,7 @@ const Checkout = () => {
                   <span>{(item.price * item.quantity).toFixed(2)} TND</span>
                 </div>
               ))}
-              <div className="flex justify-between border-t border-gray-200 dark:border-gray-700 pt-2">
-                  <span>المجموع الفرعي</span>
-                <span>{subtotal.toFixed(2)} TND</span>
-              </div>
-              <div className="flex justify-between">
-                  <span>الضريبة (19%)</span>
-                <span>{tax.toFixed(2)} TND</span>
-              </div>
-              <div className="flex justify-between font-semibold text-lg text-gray-900 dark:text-gray-100 pt-2">
+              <div className="flex justify-between font-semibold text-lg text-gray-900 dark:text-gray-100 pt-2 border-t border-gray-200 dark:border-gray-700">
                 <span>الإجمالي</span>
                 <span>{total.toFixed(2)} TND</span>
               </div>

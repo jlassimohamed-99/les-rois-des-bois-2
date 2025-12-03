@@ -138,7 +138,7 @@ const SpecialProducts = () => {
                       {product.baseProductB?.name || '-'}
                     </td>
                     <td className="py-3 px-4">
-                      <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400 rounded-full text-sm font-medium">
+                      <span className="px-2 py-1 bg-gold-100 dark:bg-gold-900/30 text-gold-800 dark:text-gold-400 rounded-full text-sm font-medium">
                         {product.combinations?.length || 0}
                       </span>
                     </td>
@@ -149,7 +149,7 @@ const SpecialProducts = () => {
                       <span
                         className={`px-2 py-1 rounded-full text-xs font-medium ${
                           product.status === 'visible'
-                            ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                            ? 'bg-gold-100 text-gold-800 dark:bg-gold-900/30 dark:text-gold-400'
                             : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400'
                         }`}
                       >
@@ -160,13 +160,13 @@ const SpecialProducts = () => {
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => handleEdit(product)}
-                          className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                          className="p-2 text-gold-600 hover:bg-gold-50 dark:hover:bg-gold-900/20 rounded-lg transition-colors"
                         >
                           <Edit size={18} />
                         </button>
                         <button
                           onClick={() => handleDelete(product._id)}
-                          className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                          className="p-2 text-gold-600 hover:bg-gold-50 dark:hover:bg-gold-900/20 rounded-lg transition-colors"
                         >
                           <Trash2 size={18} />
                         </button>

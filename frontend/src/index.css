@@ -27,7 +27,21 @@
 
 @layer components {
   .btn-primary {
-    @apply bg-gold-600 hover:bg-gold-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200;
+    @apply text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200;
+    /* Custom orange (#fda63a) in light mode, Gold in dark mode */
+    background-color: #fda63a;
+  }
+  
+  .btn-primary:hover {
+    background-color: #e8952d; /* Darker orange for hover */
+  }
+  
+  .dark .btn-primary {
+    background-color: #FFD700; /* gold-600 */
+  }
+  
+  .dark .btn-primary:hover {
+    background-color: #E6C200; /* gold-700 */
   }
   
   .btn-secondary {
@@ -35,11 +49,144 @@
   }
   
   .input-field {
-    @apply w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-gold-500;
+    @apply w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2;
+  }
+  
+  .input-field:focus {
+    --tw-ring-color: #fda63a;
+  }
+  
+  .dark .input-field:focus {
+    --tw-ring-color: #FFD700;
   }
   
   .card {
     @apply bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border border-gray-200 dark:border-gray-700;
   }
+}
+
+/* Force orange in light mode and gold in dark mode for all accent colors */
+/* Using direct CSS values outside @layer to override Tailwind utilities */
+/* Background colors - Custom orange (#fda63a) light, Gold dark */
+.bg-gold-50 {
+  background-color: rgba(253, 166, 58, 0.1) !important; /* light custom orange */
+}
+
+.dark .bg-gold-50 {
+  background-color: rgba(255, 215, 0, 0.1) !important; /* light gold */
+}
+
+.bg-gold-100 {
+  background-color: rgba(253, 166, 58, 0.2) !important; /* light custom orange */
+}
+
+.dark .bg-gold-100,
+.dark .bg-gold-900\/20 {
+  background-color: rgba(255, 215, 0, 0.2) !important; /* light gold */
+}
+
+.bg-gold-500 {
+  background-color: #fda63a !important; /* custom orange */
+}
+
+.dark .bg-gold-500 {
+  background-color: #FFD700 !important; /* gold */
+}
+
+.bg-gold-600,
+button.bg-gold-600,
+[class*="bg-gold-600"] {
+  background-color: #fda63a !important; /* custom orange */
+}
+
+.dark .bg-gold-600,
+.dark button.bg-gold-600,
+.dark [class*="bg-gold-600"] {
+  background-color: #FFD700 !important; /* gold-600 */
+}
+
+.hover\:bg-gold-700:hover,
+button:hover.bg-gold-700 {
+  background-color: #e8952d !important; /* darker custom orange */
+}
+
+.dark .hover\:bg-gold-700:hover,
+.dark button:hover.bg-gold-700 {
+  background-color: #E6C200 !important; /* gold-700 */
+}
+
+/* Text colors - Custom orange (#fda63a) light, Gold dark */
+.text-gold-500,
+.text-gold-600,
+[class*="text-gold-500"],
+[class*="text-gold-600"] {
+  color: #fda63a !important; /* custom orange */
+}
+
+.dark .text-gold-500,
+.dark .text-gold-600,
+.dark [class*="text-gold-500"],
+.dark [class*="text-gold-600"] {
+  color: #FFD700 !important; /* gold-600 */
+}
+
+.dark .text-gold-400 {
+  color: #FFD700 !important; /* gold-600 */
+}
+
+.text-gold-700 {
+  color: #c2410c !important; /* darker custom orange */
+}
+
+.dark .text-gold-700 {
+  color: #FFD700 !important; /* gold */
+}
+
+/* Ensure all gold text colors use gold in dark mode */
+.dark [class*="text-gold-"] {
+  color: #FFD700 !important;
+}
+
+/* Fix for Tailwind opacity classes like bg-gold-900/20 */
+.dark .bg-gold-900\/20 {
+  background-color: rgba(255, 215, 0, 0.2) !important; /* light gold with opacity */
+}
+
+/* Border colors - Custom orange (#fda63a) light, Gold dark */
+.border-gold-500,
+.border-gold-600,
+[class*="border-gold-500"],
+[class*="border-gold-600"] {
+  border-color: #fda63a !important; /* custom orange */
+}
+
+.dark .border-gold-500,
+.dark .border-gold-600,
+.dark [class*="border-gold-500"],
+.dark [class*="border-gold-600"] {
+  border-color: #FFD700 !important; /* gold-600 */
+}
+
+.hover\:border-gold-500:hover,
+.hover\:border-gold-600:hover {
+  border-color: #fda63a !important; /* custom orange */
+}
+
+.dark .hover\:border-gold-500:hover,
+.dark .hover\:border-gold-600:hover {
+  border-color: #FFD700 !important; /* gold-600 */
+}
+
+/* Focus ring */
+.focus\:ring-gold-500:focus,
+.focus\:ring-gold-600:focus {
+  --tw-ring-color: #fda63a !important; /* custom orange */
+  box-shadow: 0 0 0 2px #fda63a !important;
+}
+
+.dark .focus\:ring-gold-500:focus,
+.dark .focus\:ring-gold-600:focus {
+  --tw-ring-color: #FFD700 !important; /* gold-500/600 */
+  box-shadow: 0 0 0 2px #FFD700 !important;
 }
 

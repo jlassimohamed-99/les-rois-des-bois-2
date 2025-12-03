@@ -96,7 +96,7 @@ const CreateOrder = () => {
       setLoading(true);
       const response = await api.post('/orders', formData);
       toast.success('تم إنشاء الطلب بنجاح');
-      navigate(`/orders/${response.data.data._id}`);
+      navigate(`/admin/orders/${response.data.data._id}`);
     } catch (error) {
       const message = error.response?.data?.message || 'حدث خطأ أثناء إنشاء الطلب';
       toast.error(message);
@@ -112,7 +112,7 @@ const CreateOrder = () => {
       <div className="flex items-center justify-between">
         <div>
           <button
-            onClick={() => navigate('/orders')}
+            onClick={() => navigate('/admin/orders')}
             className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 mb-2"
           >
             <ArrowRight size={20} />
@@ -246,7 +246,7 @@ const CreateOrder = () => {
                           <button
                             type="button"
                             onClick={() => handleRemoveItem(index)}
-                            className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg"
+                            className="p-2 text-gold-600 hover:bg-gold-50 dark:hover:bg-gold-900/20 rounded-lg"
                           >
                             <Trash2 size={18} />
                           </button>
@@ -319,7 +319,7 @@ const CreateOrder = () => {
                 {formData.discount > 0 && (
                   <div className="flex justify-between">
                     <span className="text-gray-600 dark:text-gray-400">الخصم</span>
-                    <span className="font-medium text-red-600">-{totals.discount.toFixed(2)} TND</span>
+                    <span className="font-medium text-gold-600">-{totals.discount.toFixed(2)} TND</span>
                   </div>
                 )}
                 <div className="flex justify-between">
@@ -338,7 +338,7 @@ const CreateOrder = () => {
             <div className="flex gap-4">
               <button
                 type="button"
-                onClick={() => navigate('/orders')}
+                onClick={() => navigate('/admin/orders')}
                 className="btn-secondary flex-1"
               >
                 إلغاء

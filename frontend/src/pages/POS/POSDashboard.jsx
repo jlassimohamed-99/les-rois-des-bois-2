@@ -3,9 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import api from '../../utils/axios';
 import toast from 'react-hot-toast';
 import { ShoppingCart, Package, TrendingUp, Play, BarChart3 } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
 import POSInterface from './POSInterface';
 
 const POSDashboard = () => {
+  const { user, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
   const [stats, setStats] = useState({
     todaySales: 0,
     todayRevenue: 0,
@@ -14,9 +17,71 @@ const POSDashboard = () => {
   const [showInterface, setShowInterface] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  // Protect POS route - redirect if not authenticated or not a cashier
   useEffect(() => {
-    fetchStats();
-  }, []);
+    // Only redirect after auth has finished loading
+    if (!authLoading) {
+      const token = localStorage.getItem('token');
+      
+      // If no token at all and no user, redirect to login
+      if (!token && !user) {
+        navigate('/login', { replace: true });
+        return;
+      }
+      
+      // If we have a user, check their role
+      if (user) {
+        const cashierRoles = ['cashier', 'store_cashier', 'saler', 'admin'];
+        if (!cashierRoles.includes(user.role)) {
+          // If not a cashier, redirect based on role
+          if (user.role === 'client' || user.role === 'user') {
+            navigate('/shop', { replace: true });
+          } else {
+            navigate('/login', { replace: true });
+          }
+        }
+        // If user is a cashier, they're allowed - stay on POS
+      } else if (token) {
+        // We have a token but no user - backend might be down
+        // Don't redirect to login immediately - keep token and stay on POS
+        // This allows user to continue working if backend comes back online
+        // Only redirect if we're absolutely sure the token is invalid
+        console.log('Token exists but user not loaded - backend might be unavailable');
+        return;
+      }
+      // If no token and no user, redirect will happen above
+    }
+    // If still loading, don't do anything
+  }, [user, authLoading, navigate]);
+
+  // Block browser back button - keep cashiers on POS
+  useEffect(() => {
+    // Push current route to history to have control
+    if (window.location.pathname !== '/pos') {
+      window.history.pushState(null, '', '/pos');
+    }
+    
+    const handlePopState = (e) => {
+      const currentPath = window.location.pathname;
+      // If trying to go back to /shop or any non-POS route, redirect to /pos
+      if (!currentPath.startsWith('/pos')) {
+        window.history.pushState(null, '', '/pos');
+        navigate('/pos', { replace: true });
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [navigate]);
+
+  useEffect(() => {
+    if (user && (authLoading === false)) {
+      fetchStats();
+    }
+  }, [user, authLoading]);
 
   const fetchStats = async () => {
     try {
@@ -70,7 +135,7 @@ const POSDashboard = () => {
                 {stats.todaySales}
               </p>
             </div>
-            <ShoppingCart className="text-green-500" size={32} />
+            <ShoppingCart className="text-gold-500" size={32} />
           </div>
         </div>
         <div className="card">
@@ -92,7 +157,7 @@ const POSDashboard = () => {
                 {stats.activeOrders}
               </p>
             </div>
-            <Package className="text-blue-500" size={32} />
+            <Package className="text-gold-500" size={32} />
           </div>
         </div>
       </div>

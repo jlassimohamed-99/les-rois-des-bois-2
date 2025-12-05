@@ -166,19 +166,44 @@ const ProductDetail = () => {
             <div>
               <p className="text-sm uppercase tracking-wide text-gold-600 font-semibold">منتج</p>
               <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mt-2">{product.name}</h1>
-              <p className="text-lg text-gold-600 font-semibold mt-2">
-                {product.price + (selectedVariant?.additionalPrice || 0)} TND
-                {selectedVariant?.additionalPrice > 0 && (
-                  <span className="text-sm text-gray-500 dark:text-gray-400 block mt-1">
-                    (السعر الأساسي: {product.price} TND + {selectedVariant.additionalPrice} TND للمتغير المختار)
-                  </span>
-                )}
-                {product.variants && product.variants.length > 0 && !selectedVariant && (
-                  <span className="text-sm text-gold-600 dark:text-gold-400 block mt-1">
-                    يرجى اختيار متغير لمعرفة السعر النهائي
-                  </span>
-                )}
-              </p>
+              
+              {/* Prices Section */}
+              <div className="mt-4 space-y-3">
+                <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">السعر على التفاصيل:</span>
+                    <span className="text-lg font-bold text-gold-600">
+                      {product.price + (selectedVariant?.additionalPrice || 0)} TND
+                    </span>
+                  </div>
+                  {product.facebookPrice > 0 && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600 dark:text-gray-400">السعر على صفحة:</span>
+                      <span className="text-lg font-bold text-blue-600">
+                        {product.facebookPrice + (selectedVariant?.additionalPrice || 0)} TND
+                      </span>
+                    </div>
+                  )}
+                  {product.wholesalePrice > 0 && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600 dark:text-gray-400">سعر الجملة:</span>
+                      <span className="text-lg font-bold text-green-600">
+                        {product.wholesalePrice + (selectedVariant?.additionalPrice || 0)} TND
+                      </span>
+                    </div>
+                  )}
+                  {selectedVariant?.additionalPrice > 0 && (
+                    <div className="text-xs text-gray-500 dark:text-gray-400 pt-2 border-t border-gray-200 dark:border-gray-600">
+                      (السعر الأساسي: {product.price} TND + {selectedVariant.additionalPrice} TND للمتغير المختار)
+                    </div>
+                  )}
+                  {product.variants && product.variants.length > 0 && !selectedVariant && (
+                    <div className="text-sm text-gold-600 dark:text-gold-400 pt-2">
+                      يرجى اختيار متغير لمعرفة السعر النهائي
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
 
             <p className="text-gray-700 dark:text-gray-300 leading-relaxed">{product.description}</p>

@@ -179,17 +179,33 @@ const VariantSelectionModal = ({ isOpen, onClose, product, onAddToCart }) => {
                 {/* Price Display */}
                 <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4 space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-gray-600 dark:text-gray-400">السعر الأساسي:</span>
+                    <span className="text-gray-600 dark:text-gray-400">السعر على التفاصيل:</span>
                     <span className="text-gray-900 dark:text-gray-100 font-medium">
-                      {product.price} TND
+                      {product.price + (selectedVariant?.additionalPrice || 0)} TND
                     </span>
                   </div>
-                  {selectedVariant?.additionalPrice > 0 && (
+                  {product.facebookPrice > 0 && (
                     <div className="flex items-center justify-between">
-                      <span className="text-gray-600 dark:text-gray-400">
+                      <span className="text-gray-600 dark:text-gray-400">السعر على صفحة:</span>
+                      <span className="text-blue-600 font-medium">
+                        {product.facebookPrice + (selectedVariant?.additionalPrice || 0)} TND
+                      </span>
+                    </div>
+                  )}
+                  {product.wholesalePrice > 0 && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-600 dark:text-gray-400">سعر الجملة:</span>
+                      <span className="text-green-600 font-medium">
+                        {product.wholesalePrice + (selectedVariant?.additionalPrice || 0)} TND
+                      </span>
+                    </div>
+                  )}
+                  {selectedVariant?.additionalPrice > 0 && (
+                    <div className="flex items-center justify-between pt-2 border-t border-gray-200 dark:border-gray-600">
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
                         {selectedVariant.name || selectedVariant.value}:
                       </span>
-                      <span className="text-gold-600 font-medium">
+                      <span className="text-xs text-gold-600 font-medium">
                         +{selectedVariant.additionalPrice} TND
                       </span>
                     </div>

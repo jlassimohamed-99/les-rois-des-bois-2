@@ -11,9 +11,10 @@ const Dashboard = () => {
     users: 0,
     orders: 0,
     pendingOrders: 0,
-    revenue: 0,
-    creditInvoices: 0,
-  });
+      revenue: 0,
+      profit: 0,
+      creditInvoices: 0,
+    });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -42,7 +43,8 @@ const Dashboard = () => {
         users: users.length || 0,
         orders: orders.length,
         pendingOrders: orders.filter((o) => o.status === 'pending').length,
-        revenue: orders.reduce((sum, o) => sum + (o.total || 0), 0),
+        revenue: orders.filter((o) => o.status !== 'canceled').reduce((sum, o) => sum + (o.total || 0), 0),
+        profit: orders.filter((o) => o.status !== 'canceled').reduce((sum, o) => sum + (o.profit || 0), 0),
         creditInvoices: invoices.filter((i) => i.status === 'partial' || i.status === 'overdue').length,
       });
     } catch (error) {
@@ -60,6 +62,7 @@ const Dashboard = () => {
     { label: 'إجمالي الطلبات', value: stats.orders, icon: ShoppingCart, color: 'bg-gold-600' },
     { label: 'الطلبات المعلقة', value: stats.pendingOrders, icon: FileText, color: 'bg-gold-600' },
     { label: 'إجمالي الإيرادات', value: `${stats.revenue.toLocaleString()} TND`, icon: TrendingUp, color: 'bg-gold-500' },
+    { label: 'الربح', value: `${stats.profit.toLocaleString()} TND`, icon: TrendingUp, color: 'bg-green-500' },
     { label: 'فواتير الائتمان', value: stats.creditInvoices, icon: CreditCard, color: 'bg-gold-700' },
   ];
 

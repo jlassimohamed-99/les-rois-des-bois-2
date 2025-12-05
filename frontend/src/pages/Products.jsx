@@ -173,10 +173,24 @@ const Products = () => {
                       {product.category?.name || '-'}
                     </td>
                     <td className="py-3 px-4">
-                      <div className="font-medium text-gray-900 dark:text-gray-100">{product.price} TND</div>
-                      {product.cost > 0 && (
-                        <div className="text-sm text-gray-500 dark:text-gray-400">تكلفة: {product.cost} TND</div>
-                      )}
+                      <div className="space-y-1">
+                        <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                          السعر على التفاصيل: {product.price} TND
+                        </div>
+                        {product.facebookPrice > 0 && (
+                          <div className="text-sm text-blue-600 dark:text-blue-400">
+                            السعر على صفحة: {product.facebookPrice} TND
+                          </div>
+                        )}
+                        {product.wholesalePrice > 0 && (
+                          <div className="text-sm text-green-600 dark:text-green-400">
+                            سعر الجملة: {product.wholesalePrice} TND
+                          </div>
+                        )}
+                        {product.cost > 0 && (
+                          <div className="text-xs text-gray-500 dark:text-gray-400">تكلفة: {product.cost} TND</div>
+                        )}
+                      </div>
                     </td>
                     <td className="py-3 px-4">
                       <div className="font-medium text-gray-900 dark:text-gray-100">{product.stock} قطعة</div>

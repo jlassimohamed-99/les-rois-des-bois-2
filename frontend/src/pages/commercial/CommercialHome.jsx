@@ -81,6 +81,13 @@ const CommercialHome = () => {
       color: 'bg-gold-600',
       action: () => navigate('/commercial/invoices'),
     },
+    {
+      label: 'الربح',
+      value: `${(stats.totalRevenue - stats.totalExpenses).toLocaleString()} TND`,
+      icon: TrendingUp,
+      color: 'bg-green-600',
+      action: () => navigate('/commercial/invoices'),
+    },
   ];
 
   const chartData = stats.ordersOverTime.map((item) => ({

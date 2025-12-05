@@ -202,7 +202,7 @@ const CommercialDetail = () => {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
         <div className="card">
           <div className="flex items-center justify-between">
             <div>
@@ -212,6 +212,18 @@ const CommercialDetail = () => {
               </p>
             </div>
             <DollarSign className="text-gold-500" size={32} />
+          </div>
+        </div>
+
+        <div className="card">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600 dark:text-gray-400">الربح</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-2">
+                {((metrics.totalRevenue || 0) - (metrics.totalExpenses || 0)).toFixed(2)} TND
+              </p>
+            </div>
+            <DollarSign className="text-green-500" size={32} />
           </div>
         </div>
 

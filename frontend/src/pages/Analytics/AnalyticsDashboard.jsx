@@ -69,6 +69,13 @@ const AnalyticsDashboard = () => {
         </div>
         <div className="flex gap-4">
           <button
+            onClick={() => navigate('/admin/analytics/orders-products')}
+            className="btn-secondary flex items-center gap-2"
+          >
+            <Package size={20} />
+            <span>تحليلات الطلبيات والمنتجات</span>
+          </button>
+          <button
             onClick={() => navigate('/admin/analytics/commercials')}
             className="btn-secondary flex items-center gap-2"
           >
@@ -91,7 +98,7 @@ const AnalyticsDashboard = () => {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
         <div className="card">
           <div className="flex items-center justify-between">
             <div>
@@ -108,6 +115,15 @@ const AnalyticsDashboard = () => {
               <p className="text-2xl font-bold mt-2">195,000 TND</p>
             </div>
             <DollarSign className="text-gold-500" size={32} />
+          </div>
+        </div>
+        <div className="card">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600">الربح</p>
+              <p className="text-2xl font-bold mt-2">120,000 TND</p>
+            </div>
+            <DollarSign className="text-green-500" size={32} />
           </div>
         </div>
         <div className="card">
@@ -184,6 +200,7 @@ const AnalyticsDashboard = () => {
               <Legend />
               <Bar dataKey="sales" fill="#3b82f6" name="المبيعات" />
               <Bar dataKey="revenue" fill="#10b981" name="الإيرادات" />
+              <Bar dataKey="profit" fill="#22c55e" name="الربح" />
             </BarChart>
           </ResponsiveContainer>
         </div>

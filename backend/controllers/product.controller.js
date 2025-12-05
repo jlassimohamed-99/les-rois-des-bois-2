@@ -87,6 +87,7 @@ export const createProduct = async (req, res, next) => {
       unit: 'piece', // Always piece
       wholesalePrice: wholesalePrice ? Number(wholesalePrice) : 0,
       wholesaleUnit: 'piece', // Always piece
+      facebookPrice: facebookPrice ? Number(facebookPrice) : 0,
       images: Array.isArray(images) ? images : [],
       description: description || '',
       status: status || 'visible',
@@ -130,6 +131,7 @@ export const updateProduct = async (req, res, next) => {
       unit,
       wholesalePrice,
       wholesaleUnit,
+      facebookPrice,
       images,
       description,
       status,
@@ -144,6 +146,7 @@ export const updateProduct = async (req, res, next) => {
     product.unit = 'piece'; // Always piece
     if (wholesalePrice !== undefined) product.wholesalePrice = Number(wholesalePrice);
     product.wholesaleUnit = 'piece'; // Always piece
+    if (facebookPrice !== undefined) product.facebookPrice = Number(facebookPrice);
     if (images !== undefined) product.images = Array.isArray(images) ? images : [];
     if (description !== undefined) product.description = description;
     if (status) product.status = status;

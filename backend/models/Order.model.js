@@ -102,8 +102,20 @@ const orderSchema = new mongoose.Schema(
     // Order source to track origin
     source: {
       type: String,
-      enum: ['catalog', 'pos', 'commercial_pos', 'admin'],
+      enum: ['catalog', 'pos', 'commercial_pos', 'admin', 'page'],
       default: 'catalog',
+    },
+    // Order source type for analytics (ecommerce, pos, page)
+    orderSource: {
+      type: String,
+      enum: ['ecommerce', 'pos', 'page'],
+      default: null,
+    },
+    // Price type used in the order
+    priceType: {
+      type: String,
+      enum: ['gros', 'detail', 'page'],
+      default: null,
     },
     // For POS orders - track cashier who created the sale
     cashierId: {

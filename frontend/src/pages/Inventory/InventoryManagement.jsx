@@ -200,8 +200,22 @@ const InventoryManagement = () => {
                       {product.stock || 0} قطعة
                     </span>
                   </td>
-                  <td className="py-3 px-4 text-gray-900 dark:text-gray-100">
-                    {product.price} TND
+                  <td className="py-3 px-4">
+                    <div className="space-y-1">
+                      <div className="text-gray-900 dark:text-gray-100 text-sm">
+                        التفاصيل: {product.price} TND
+                      </div>
+                      {product.facebookPrice > 0 && (
+                        <div className="text-blue-600 dark:text-blue-400 text-sm">
+                          صفحة: {product.facebookPrice} TND
+                        </div>
+                      )}
+                      {product.wholesalePrice > 0 && (
+                        <div className="text-green-600 dark:text-green-400 text-sm">
+                          الجملة: {product.wholesalePrice} TND
+                        </div>
+                      )}
+                    </div>
                   </td>
                   <td className="py-3 px-4 text-gray-900 dark:text-gray-100">
                     {((product.stock || 0) * (product.price || 0)).toLocaleString()} TND

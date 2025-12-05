@@ -472,12 +472,18 @@ const AdvancedCommercialAnalyticsDashboard = () => {
           <SmartAlerts analytics={analytics} />
 
           {/* KPI Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
             <KPICard
               title="إجمالي الإيرادات"
               value={`${aggregatedKPIs.totalRevenue.toFixed(2)} TND`}
               icon={DollarSign}
               color="text-gold-500"
+            />
+            <KPICard
+              title="الربح"
+              value={`${(aggregatedKPIs.totalRevenue - aggregatedKPIs.totalExpenses).toFixed(2)} TND`}
+              icon={DollarSign}
+              color="text-green-500"
             />
             <KPICard
               title="عدد الطلبيات"

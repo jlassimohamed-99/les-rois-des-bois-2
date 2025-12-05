@@ -74,7 +74,25 @@ const ProductCard = ({ product, onAdd }) => {
           <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 line-clamp-2">
             {product.name}
           </h3>
-          <span className="text-gold-600 font-bold whitespace-nowrap">{product.price} TND</span>
+        </div>
+        {/* Prices Section */}
+        <div className="space-y-1">
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-gray-500 dark:text-gray-400">السعر على التفاصيل:</span>
+            <span className="text-gold-600 font-bold text-sm">{product.price} TND</span>
+          </div>
+          {product.facebookPrice > 0 && (
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-gray-500 dark:text-gray-400">السعر على صفحة:</span>
+              <span className="text-blue-600 font-bold text-sm">{product.facebookPrice} TND</span>
+            </div>
+          )}
+          {product.wholesalePrice > 0 && (
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-gray-500 dark:text-gray-400">سعر الجملة:</span>
+              <span className="text-green-600 font-bold text-sm">{product.wholesalePrice} TND</span>
+            </div>
+          )}
         </div>
         {product.description && (
           <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">{product.description}</p>

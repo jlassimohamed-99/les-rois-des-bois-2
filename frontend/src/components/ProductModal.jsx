@@ -13,6 +13,7 @@ const ProductModal = ({ product, categories, onClose }) => {
     unit: 'piece',
     wholesalePrice: '',
     wholesaleUnit: 'piece',
+    facebookPrice: '',
     images: [],
     description: '',
     status: 'visible',
@@ -35,6 +36,7 @@ const ProductModal = ({ product, categories, onClose }) => {
         unit: 'piece', // Always piece
         wholesalePrice: product.wholesalePrice || '',
         wholesaleUnit: 'piece', // Always piece
+        facebookPrice: product.facebookPrice || '',
         images: product.images || [],
         description: product.description || '',
         status: product.status || 'visible',
@@ -227,18 +229,49 @@ const ProductModal = ({ product, categories, onClose }) => {
               </select>
             </div>
 
-            <div>
+            <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                السعر (TND) *
+                الأسعار (TND) *
               </label>
-              <input
-                type="number"
-                step="0.01"
-                value={formData.price}
-                onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                className="input-field"
-                required
-              />
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">
+                    السعر على التفاصيل *
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={formData.price}
+                    onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                    className="input-field"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">
+                    السعر على صفحة
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={formData.facebookPrice}
+                    onChange={(e) => setFormData({ ...formData, facebookPrice: e.target.value })}
+                    className="input-field"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">
+                    سعر الجملة
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={formData.wholesalePrice}
+                    onChange={(e) => setFormData({ ...formData, wholesalePrice: e.target.value })}
+                    className="input-field"
+                  />
+                </div>
+              </div>
             </div>
 
             <div>
@@ -264,19 +297,6 @@ const ProductModal = ({ product, categories, onClose }) => {
                 onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
                 className="input-field"
                 required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                سعر الجملة (TND)
-              </label>
-              <input
-                type="number"
-                step="0.01"
-                value={formData.wholesalePrice}
-                onChange={(e) => setFormData({ ...formData, wholesalePrice: e.target.value })}
-                className="input-field"
               />
             </div>
 

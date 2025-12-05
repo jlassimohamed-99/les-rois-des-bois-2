@@ -66,6 +66,10 @@ const productSchema = new mongoose.Schema(
       type: String,
       default: 'piece',
     },
+    facebookPrice: {
+      type: Number,
+      default: 0,
+    },
     images: [
       {
         type: String,

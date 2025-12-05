@@ -101,12 +101,27 @@ const EnhancedProductCard = ({ product, onAdd, index = 0 }) => {
           </p>
         )}
 
-        <div className="flex items-center justify-between pt-2">
-          <span className="text-xl font-bold text-gold-600">
-            {product.price} TND
-          </span>
+        <div className="space-y-2 pt-2">
+          <div className="space-y-1">
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-gray-500 dark:text-gray-400">السعر على التفاصيل:</span>
+              <span className="text-gold-600 font-bold text-sm">{product.price} TND</span>
+            </div>
+            {product.facebookPrice > 0 && (
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-gray-500 dark:text-gray-400">السعر على صفحة:</span>
+                <span className="text-blue-600 font-bold text-sm">{product.facebookPrice} TND</span>
+              </div>
+            )}
+            {product.wholesalePrice > 0 && (
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-gray-500 dark:text-gray-400">سعر الجملة:</span>
+                <span className="text-green-600 font-bold text-sm">{product.wholesalePrice} TND</span>
+              </div>
+            )}
+          </div>
           
-          <div className="flex items-center gap-2">
+          <div className="flex items-center justify-end gap-2 pt-1">
             <motion.button
               whileHover={hoverScale}
               whileTap={{ scale: 0.9 }}

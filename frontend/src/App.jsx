@@ -30,6 +30,7 @@ import InvoiceDetail from './pages/Invoices/InvoiceDetail';
 import AnalyticsDashboard from './pages/Analytics/AnalyticsDashboard';
 import CommercialAnalyticsDashboard from './pages/Analytics/CommercialAnalyticsDashboard';
 import AdvancedCommercialAnalyticsDashboard from './pages/Analytics/AdvancedCommercialAnalyticsDashboard';
+import OrdersProductsAnalytics from './pages/Analytics/OrdersProductsAnalytics';
 import CommercialDetail from './pages/Analytics/CommercialDetail';
 import AuditLogs from './pages/AuditLogs/AuditLogs';
 import POSDashboard from './pages/POS/POSDashboard';
@@ -207,6 +208,7 @@ function App() {
                   <Route path="analytics" element={<AnalyticsDashboard />} />
                   <Route path="analytics/commercials" element={<CommercialAnalyticsDashboard />} />
                   <Route path="analytics/commercials/advanced" element={<AdvancedCommercialAnalyticsDashboard />} />
+                  <Route path="analytics/orders-products" element={<OrdersProductsAnalytics />} />
                   <Route path="analytics/commercials/:id" element={<CommercialDetail />} />
                   <Route path="audit-logs" element={<AuditLogs />} />
                   <Route path="users" element={<UsersList />} />

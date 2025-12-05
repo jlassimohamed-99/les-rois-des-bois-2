@@ -87,7 +87,7 @@ const jobSchema = new mongoose.Schema(
 // Indexes
 jobSchema.index({ status: 1, createdAt: -1 });
 jobSchema.index({ type: 1, status: 1 });
-jobSchema.index({ jobId: 1 });
+// Note: jobId already has unique: true, which creates an index automatically
 jobSchema.index({ resourceType: 1, resourceId: 1 });
 jobSchema.index({ createdBy: 1, createdAt: -1 });
 

@@ -100,7 +100,7 @@ returnSchema.pre('save', async function (next) {
 });
 
 // Indexes
-returnSchema.index({ returnNumber: 1 });
+// Note: returnNumber already has unique: true, which creates an index automatically
 returnSchema.index({ orderId: 1 });
 returnSchema.index({ status: 1, createdAt: -1 });
 

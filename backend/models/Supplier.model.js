@@ -42,7 +42,7 @@ const supplierSchema = new mongoose.Schema(
 );
 
 // Indexes
-supplierSchema.index({ code: 1 });
+// Note: code already has unique: true, which creates an index automatically
 supplierSchema.index({ isActive: 1 });
 
 export default mongoose.model('Supplier', supplierSchema);

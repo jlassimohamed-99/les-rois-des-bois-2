@@ -94,7 +94,7 @@ purchaseOrderSchema.pre('save', async function (next) {
 });
 
 // Indexes
-purchaseOrderSchema.index({ poNumber: 1 });
+// Note: poNumber already has unique: true, which creates an index automatically
 purchaseOrderSchema.index({ supplierId: 1, createdAt: -1 });
 purchaseOrderSchema.index({ status: 1, createdAt: -1 });
 

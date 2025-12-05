@@ -28,7 +28,7 @@ const expenseCategorySchema = new mongoose.Schema(
 
 // Indexes
 expenseCategorySchema.index({ orderIndex: 1 });
-expenseCategorySchema.index({ name: 1 });
+// Note: name already has unique: true, which creates an index automatically
 
 export default mongoose.model('ExpenseCategory', expenseCategorySchema);
 

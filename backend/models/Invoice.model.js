@@ -168,7 +168,7 @@ invoiceSchema.pre('save', async function (next) {
 });
 
 // Indexes
-invoiceSchema.index({ invoiceNumber: 1 });
+// Note: invoiceNumber already has unique: true, which creates an index automatically
 invoiceSchema.index({ orderId: 1 });
 invoiceSchema.index({ clientId: 1, createdAt: -1 });
 invoiceSchema.index({ status: 1, createdAt: -1 });

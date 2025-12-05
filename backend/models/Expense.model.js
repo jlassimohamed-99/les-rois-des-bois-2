@@ -84,7 +84,7 @@ const expenseSchema = new mongoose.Schema(
 );
 
 // Indexes
-expenseSchema.index({ expenseNumber: 1 });
+// Note: expenseNumber already has unique: true, which creates an index automatically
 expenseSchema.index({ categoryId: 1, expenseDate: -1 });
 expenseSchema.index({ expenseDate: -1 });
 expenseSchema.index({ category: 1, expenseDate: -1 }); // Legacy index

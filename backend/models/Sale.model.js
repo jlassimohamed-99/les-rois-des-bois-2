@@ -108,7 +108,7 @@ saleSchema.pre('save', async function (next) {
 });
 
 // Indexes
-saleSchema.index({ saleNumber: 1 });
+// Note: saleNumber already has unique: true, which creates an index automatically
 saleSchema.index({ storeId: 1, createdAt: -1 });
 saleSchema.index({ cashierId: 1, createdAt: -1 });
 saleSchema.index({ createdAt: -1 });

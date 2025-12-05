@@ -37,7 +37,7 @@ const storeSchema = new mongoose.Schema(
 );
 
 // Indexes
-storeSchema.index({ code: 1 });
+// Note: code already has unique: true, which creates an index automatically
 storeSchema.index({ isActive: 1 });
 
 export default mongoose.model('Store', storeSchema);

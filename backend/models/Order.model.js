@@ -204,7 +204,7 @@ orderSchema.pre('save', async function (next) {
 });
 
 // Indexes
-orderSchema.index({ orderNumber: 1 });
+// Note: orderNumber already has unique: true, which creates an index automatically
 orderSchema.index({ clientId: 1, createdAt: -1 });
 orderSchema.index({ status: 1, createdAt: -1 });
 orderSchema.index({ commercialId: 1, createdAt: -1 });

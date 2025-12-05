@@ -61,7 +61,7 @@ creditNoteSchema.pre('save', async function (next) {
 });
 
 // Indexes
-creditNoteSchema.index({ creditNoteNumber: 1 });
+// Note: creditNoteNumber already has unique: true, which creates an index automatically
 creditNoteSchema.index({ returnId: 1 });
 creditNoteSchema.index({ invoiceId: 1 });
 

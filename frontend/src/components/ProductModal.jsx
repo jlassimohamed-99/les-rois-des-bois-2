@@ -17,6 +17,7 @@ const ProductModal = ({ product, categories, onClose }) => {
     images: [],
     description: '',
     status: 'visible',
+    variantName: '',
     variants: [],
   });
   const [imageFiles, setImageFiles] = useState([]);
@@ -40,6 +41,7 @@ const ProductModal = ({ product, categories, onClose }) => {
         images: product.images || [],
         description: product.description || '',
         status: product.status || 'visible',
+        variantName: product.variantName || '',
         variants: product.variants || [],
       });
       setImagePreviews(
@@ -104,7 +106,7 @@ const ProductModal = ({ product, categories, onClose }) => {
   const handleAddVariant = () => {
     setFormData((prev) => ({
       ...prev,
-      variants: [...prev.variants, { name: '', value: '', image: '', additionalPrice: 0 }],
+      variants: [...prev.variants, { value: '', stock: 0, image: '' }],
     }));
   };
 
@@ -392,30 +394,37 @@ const ProductModal = ({ product, categories, onClose }) => {
                 <span>إضافة متغير</span>
               </button>
             </div>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                اسم المتغيرات (مثلاً: اللون، الحجم، إلخ)
+              </label>
+              <input
+                type="text"
+                placeholder="مثلاً: اللون"
+                value={formData.variantName}
+                onChange={(e) => setFormData({ ...formData, variantName: e.target.value })}
+                className="input-field"
+              />
+            </div>
             {formData.variants.map((variant, index) => (
               <div key={index} className="mb-4 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <input
                     type="text"
-                    placeholder="اسم المتغير (مثلاً: اللون)"
-                    value={variant.name}
-                    onChange={(e) => handleVariantChange(index, 'name', e.target.value)}
-                    className="input-field"
-                  />
-                  <input
-                    type="text"
-                    placeholder="القيمة (مثلاً: أحمر)"
+                    placeholder={`القيمة (مثلاً: أحمر، كبير، إلخ)`}
                     value={variant.value}
                     onChange={(e) => handleVariantChange(index, 'value', e.target.value)}
                     className="input-field"
+                    required
                   />
                   <input
                     type="number"
-                    step="0.01"
-                    placeholder="سعر إضافي"
-                    value={variant.additionalPrice}
-                    onChange={(e) => handleVariantChange(index, 'additionalPrice', parseFloat(e.target.value) || 0)}
+                    min="0"
+                    placeholder="الكمية المتوفرة"
+                    value={variant.stock}
+                    onChange={(e) => handleVariantChange(index, 'stock', parseInt(e.target.value) || 0)}
                     className="input-field"
+                    required
                   />
                   <button
                     type="button"
@@ -427,7 +436,7 @@ const ProductModal = ({ product, categories, onClose }) => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    صورة المتغير (مطلوبة للتركيبات)
+                    صورة المتغير (اختياري)
                   </label>
                   <div className="flex items-center gap-4">
                     {variant.image ? (

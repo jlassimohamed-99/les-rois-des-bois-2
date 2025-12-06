@@ -2,21 +2,19 @@ import mongoose from 'mongoose';
 import slugify from 'slugify';
 
 const variantSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: true,
-  },
   value: {
     type: String,
     required: true,
   },
+  stock: {
+    type: Number,
+    required: true,
+    min: 0,
+    default: 0,
+  },
   image: {
     type: String,
     default: '',
-  },
-  additionalPrice: {
-    type: Number,
-    default: 0,
   },
 });
 
@@ -83,6 +81,11 @@ const productSchema = new mongoose.Schema(
       type: String,
       enum: ['visible', 'hidden'],
       default: 'visible',
+    },
+    variantName: {
+      type: String,
+      default: '',
+      trim: true,
     },
     variants: [variantSchema],
   },

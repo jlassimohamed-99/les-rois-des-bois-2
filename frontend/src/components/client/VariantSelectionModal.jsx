@@ -32,8 +32,13 @@ const VariantSelectionModal = ({ isOpen, onClose, product, onAddToCart }) => {
       return;
     }
 
-    const variantPrice = selectedVariant?.additionalPrice || 0;
-    const finalPrice = product.price + variantPrice;
+    // Vérifier le stock disponible pour la variante sélectionnée
+    if (selectedVariant && selectedVariant.stock !== undefined && quantity > selectedVariant.stock) {
+      toast.error(`الكمية المتاحة: ${selectedVariant.stock}`);
+      return;
+    }
+
+    const finalPrice = product.price;
 
     onAddToCart({
       ...product,
@@ -46,7 +51,7 @@ const VariantSelectionModal = ({ isOpen, onClose, product, onAddToCart }) => {
     onClose();
   };
 
-  const finalPrice = product.price + (selectedVariant?.additionalPrice || 0);
+  const finalPrice = product.price;
 
   return (
     <AnimatePresence>
@@ -101,7 +106,7 @@ const VariantSelectionModal = ({ isOpen, onClose, product, onAddToCart }) => {
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                        اختر المتغير
+                        {product.variantName ? `اختر ${product.variantName}` : 'اختر المتغير'}
                       </h3>
                       <span className="text-sm text-gray-500 dark:text-gray-400">
                         ({product.variants.length} متغير متاح)
@@ -112,32 +117,37 @@ const VariantSelectionModal = ({ isOpen, onClose, product, onAddToCart }) => {
                         <motion.button
                           key={idx}
                           onClick={() => handleVariantSelect(variant)}
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
+                          disabled={variant.stock !== undefined && variant.stock <= 0}
+                          whileHover={{ scale: variant.stock > 0 ? 1.05 : 1 }}
+                          whileTap={{ scale: variant.stock > 0 ? 0.95 : 1 }}
                           className={`relative overflow-hidden rounded-xl border-2 transition-all p-2 ${
                             selectedVariant?.value === variant.value
                               ? 'border-gold-500 ring-2 ring-gold-300 bg-gold-50 dark:bg-gold-900/20'
+                              : variant.stock !== undefined && variant.stock <= 0
+                              ? 'border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-800 opacity-50 cursor-not-allowed'
                               : 'border-gray-200 dark:border-gray-700 hover:border-gold-500 bg-white dark:bg-gray-700'
                           }`}
                         >
                           {variant.image ? (
                             <img
                               src={withBase(variant.image)}
-                              alt={variant.name || variant.value}
+                              alt={variant.value}
                               className="w-full h-24 object-cover rounded-lg mb-2"
                             />
                           ) : (
                             <div className="w-full h-24 bg-gray-200 dark:bg-gray-600 rounded-lg mb-2 flex items-center justify-center text-xs text-gray-600 dark:text-gray-400">
-                              {variant.name || variant.value}
+                              {variant.value}
                             </div>
                           )}
                           <div className="text-center">
                             <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
-                              {variant.name || variant.value}
+                              {variant.value}
                             </p>
-                            {variant.additionalPrice > 0 && (
-                              <p className="text-xs text-gold-600 mt-1">
-                                +{variant.additionalPrice} TND
+                            {variant.stock !== undefined && (
+                              <p className={`text-xs mt-1 ${
+                                variant.stock > 0 ? 'text-green-600' : 'text-red-600'
+                              }`}>
+                                {variant.stock > 0 ? `متوفر: ${variant.stock}` : 'غير متوفر'}
                               </p>
                             )}
                           </div>
@@ -168,12 +178,19 @@ const VariantSelectionModal = ({ isOpen, onClose, product, onAddToCart }) => {
                       {quantity}
                     </span>
                     <button
-                      onClick={() => setQuantity((q) => q + 1)}
-                      className="w-10 h-10 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors flex items-center justify-center font-semibold"
+                      onClick={() => {
+                        const maxStock = selectedVariant?.stock !== undefined ? selectedVariant.stock : Infinity;
+                        setQuantity((q) => Math.min(maxStock, q + 1));
+                      }}
+                      disabled={selectedVariant?.stock !== undefined && quantity >= selectedVariant.stock}
+                      className="w-10 h-10 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors flex items-center justify-center font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       +
                     </button>
                   </div>
+                  {selectedVariant?.stock !== undefined && quantity > selectedVariant.stock && (
+                    <p className="text-xs text-red-600">الكمية المطلوبة تتجاوز المخزون المتاح</p>
+                  )}
                 </div>
 
                 {/* Price Display */}
@@ -181,14 +198,14 @@ const VariantSelectionModal = ({ isOpen, onClose, product, onAddToCart }) => {
                   <div className="flex items-center justify-between">
                     <span className="text-gray-600 dark:text-gray-400">السعر على التفاصيل:</span>
                     <span className="text-gray-900 dark:text-gray-100 font-medium">
-                      {product.price + (selectedVariant?.additionalPrice || 0)} TND
+                      {product.price} TND
                     </span>
                   </div>
                   {product.facebookPrice > 0 && (
                     <div className="flex items-center justify-between">
                       <span className="text-gray-600 dark:text-gray-400">السعر على صفحة:</span>
                       <span className="text-blue-600 font-medium">
-                        {product.facebookPrice + (selectedVariant?.additionalPrice || 0)} TND
+                        {product.facebookPrice} TND
                       </span>
                     </div>
                   )}
@@ -196,17 +213,19 @@ const VariantSelectionModal = ({ isOpen, onClose, product, onAddToCart }) => {
                     <div className="flex items-center justify-between">
                       <span className="text-gray-600 dark:text-gray-400">سعر الجملة:</span>
                       <span className="text-green-600 font-medium">
-                        {product.wholesalePrice + (selectedVariant?.additionalPrice || 0)} TND
+                        {product.wholesalePrice} TND
                       </span>
                     </div>
                   )}
-                  {selectedVariant?.additionalPrice > 0 && (
+                  {selectedVariant && selectedVariant.stock !== undefined && (
                     <div className="flex items-center justify-between pt-2 border-t border-gray-200 dark:border-gray-600">
                       <span className="text-xs text-gray-500 dark:text-gray-400">
-                        {selectedVariant.name || selectedVariant.value}:
+                        الكمية المتاحة:
                       </span>
-                      <span className="text-xs text-gold-600 font-medium">
-                        +{selectedVariant.additionalPrice} TND
+                      <span className={`text-xs font-medium ${
+                        selectedVariant.stock > 0 ? 'text-green-600' : 'text-red-600'
+                      }`}>
+                        {selectedVariant.stock}
                       </span>
                     </div>
                   )}

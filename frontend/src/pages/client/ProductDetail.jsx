@@ -58,9 +58,13 @@ const ProductDetail = () => {
       return;
     }
     
-    // Calculate price with variant additional price
-    const variantPrice = selectedVariant?.additionalPrice || 0;
-    const finalPrice = product.price + variantPrice;
+    // Check stock if variant is selected
+    if (selectedVariant && selectedVariant.stock !== undefined && quantity > selectedVariant.stock) {
+      toast.error(`الكمية المتاحة: ${selectedVariant.stock}`);
+      return;
+    }
+    
+    const finalPrice = product.price;
     
     addToCart({
       productId: product._id,
@@ -70,14 +74,13 @@ const ProductDetail = () => {
       image: withBase(selectedImage || product.images?.[0]),
       quantity,
       variant: selectedVariant ? {
-        name: selectedVariant.name,
         value: selectedVariant.value,
         image: selectedVariant.image,
-        additionalPrice: selectedVariant.additionalPrice || 0,
+        stock: selectedVariant.stock,
       } : undefined,
     });
     
-    const variantName = selectedVariant ? ` (${selectedVariant.name || selectedVariant.value})` : '';
+    const variantName = selectedVariant ? ` (${selectedVariant.value})` : '';
     toast.success(`تمت إضافة ${product.name}${variantName} إلى السلة`);
   };
 
@@ -173,14 +176,14 @@ const ProductDetail = () => {
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-gray-600 dark:text-gray-400">السعر على التفاصيل:</span>
                     <span className="text-lg font-bold text-gold-600">
-                      {product.price + (selectedVariant?.additionalPrice || 0)} TND
+                      {product.price} TND
                     </span>
                   </div>
                   {product.facebookPrice > 0 && (
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-gray-600 dark:text-gray-400">السعر على صفحة:</span>
                       <span className="text-lg font-bold text-blue-600">
-                        {product.facebookPrice + (selectedVariant?.additionalPrice || 0)} TND
+                        {product.facebookPrice} TND
                       </span>
                     </div>
                   )}
@@ -188,13 +191,18 @@ const ProductDetail = () => {
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-gray-600 dark:text-gray-400">سعر الجملة:</span>
                       <span className="text-lg font-bold text-green-600">
-                        {product.wholesalePrice + (selectedVariant?.additionalPrice || 0)} TND
+                        {product.wholesalePrice} TND
                       </span>
                     </div>
                   )}
-                  {selectedVariant?.additionalPrice > 0 && (
-                    <div className="text-xs text-gray-500 dark:text-gray-400 pt-2 border-t border-gray-200 dark:border-gray-600">
-                      (السعر الأساسي: {product.price} TND + {selectedVariant.additionalPrice} TND للمتغير المختار)
+                  {selectedVariant && selectedVariant.stock !== undefined && (
+                    <div className="flex items-center justify-between pt-2 border-t border-gray-200 dark:border-gray-600">
+                      <span className="text-xs text-gray-500 dark:text-gray-400">الكمية المتاحة:</span>
+                      <span className={`text-xs font-medium ${
+                        selectedVariant.stock > 0 ? 'text-green-600' : 'text-red-600'
+                      }`}>
+                        {selectedVariant.stock}
+                      </span>
                     </div>
                   )}
                   {product.variants && product.variants.length > 0 && !selectedVariant && (
@@ -233,18 +241,20 @@ const ProductDetail = () => {
                       {variant.image ? (
                         <img
                           src={withBase(variant.image)}
-                          alt={variant.name || variant.value}
+                          alt={variant.value}
                           className="h-24 w-full object-cover rounded-lg mb-2"
                         />
                       ) : (
                         <div className="h-24 w-full bg-gray-200 dark:bg-gray-700 rounded-lg mb-2 flex items-center justify-center text-xs text-gray-400">
-                          {variant.name || variant.value}
+                          {variant.value}
                         </div>
                       )}
-                      <div className="font-semibold text-sm mb-1">{variant.name || variant.value}</div>
-                      {variant.additionalPrice > 0 ? (
-                        <div className="text-xs text-gold-600 font-medium">
-                          +{variant.additionalPrice} TND
+                      <div className="font-semibold text-sm mb-1">{variant.value}</div>
+                      {variant.stock !== undefined ? (
+                        <div className={`text-xs font-medium ${
+                          variant.stock > 0 ? 'text-green-600' : 'text-red-600'
+                        }`}>
+                          {variant.stock > 0 ? `متوفر: ${variant.stock}` : 'غير متوفر'}
                         </div>
                       ) : (
                         <div className="text-xs text-gray-500">بدون زيادة</div>

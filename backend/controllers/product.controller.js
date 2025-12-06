@@ -68,6 +68,7 @@ export const createProduct = async (req, res, next) => {
       images,
       description,
       status,
+      variantName,
       variants,
     } = req.body;
 
@@ -91,6 +92,7 @@ export const createProduct = async (req, res, next) => {
       images: Array.isArray(images) ? images : [],
       description: description || '',
       status: status || 'visible',
+      variantName: variantName || '',
       variants: Array.isArray(variants) ? variants : [],
     });
 
@@ -135,6 +137,7 @@ export const updateProduct = async (req, res, next) => {
       images,
       description,
       status,
+      variantName,
       variants,
     } = req.body;
 
@@ -150,6 +153,7 @@ export const updateProduct = async (req, res, next) => {
     if (images !== undefined) product.images = Array.isArray(images) ? images : [];
     if (description !== undefined) product.description = description;
     if (status) product.status = status;
+    if (variantName !== undefined) product.variantName = variantName;
     if (variants !== undefined) product.variants = Array.isArray(variants) ? variants : [];
 
     await product.save();

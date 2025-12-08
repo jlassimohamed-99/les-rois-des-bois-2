@@ -65,6 +65,7 @@ export const createProduct = async (req, res, next) => {
       unit,
       wholesalePrice,
       wholesaleUnit,
+      facebookPrice,
       images,
       description,
       status,

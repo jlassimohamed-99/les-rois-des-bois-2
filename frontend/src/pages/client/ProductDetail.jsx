@@ -58,10 +58,21 @@ const ProductDetail = () => {
       return;
     }
     
-    // Check stock if variant is selected
-    if (selectedVariant && selectedVariant.stock !== undefined && quantity > selectedVariant.stock) {
-      toast.error(`الكمية المتاحة: ${selectedVariant.stock}`);
+    // Check stock - use variant stock if available, otherwise product stock
+    const availableStock = selectedVariant && selectedVariant.stock !== undefined 
+      ? selectedVariant.stock 
+      : product.stock || 0;
+    
+    if (availableStock <= 0) {
+      toast.error('المنتج غير متوفر في المخزون');
       return;
+    }
+    
+    // Limit quantity to available stock
+    let finalQuantity = quantity;
+    if (quantity > availableStock) {
+      toast.warning(`الكمية المتاحة فقط: ${availableStock}. سيتم إضافة ${availableStock} فقط`);
+      finalQuantity = availableStock;
     }
     
     const finalPrice = product.price;
@@ -72,7 +83,8 @@ const ProductDetail = () => {
       name: product.name,
       price: finalPrice,
       image: withBase(selectedImage || product.images?.[0]),
-      quantity,
+      quantity: finalQuantity,
+      stock: availableStock,
       variant: selectedVariant ? {
         value: selectedVariant.value,
         image: selectedVariant.image,
@@ -81,7 +93,7 @@ const ProductDetail = () => {
     });
     
     const variantName = selectedVariant ? ` (${selectedVariant.value})` : '';
-    toast.success(`تمت إضافة ${product.name}${variantName} إلى السلة`);
+    toast.success(`تمت إضافة ${product.name}${variantName} (${finalQuantity}) إلى السلة`);
   };
 
   const handleVariantChange = (variant) => {
@@ -231,30 +243,58 @@ const ProductDetail = () => {
                   {product.variants.map((variant, idx) => (
                     <button
                       key={idx}
-                      onClick={() => handleVariantChange(variant)}
-                      className={`relative p-3 rounded-xl border-2 text-right transition-all hover:scale-105 ${
-                        selectedVariant?.value === variant.value
-                          ? 'border-gold-500 bg-gold-50 dark:bg-gold-900/20 text-gold-700 shadow-lg ring-2 ring-gold-300'
-                          : 'border-gray-200 dark:border-gray-600 text-gray-800 dark:text-gray-200 hover:border-gold-500 bg-white dark:bg-gray-800'
+                      onClick={() => {
+                        if (variant.stock !== undefined && variant.stock <= 0) {
+                          toast.error('هذا المتغير غير متوفر في المخزون');
+                          return;
+                        }
+                        handleVariantChange(variant);
+                      }}
+                      disabled={variant.stock !== undefined && variant.stock <= 0}
+                      className={`relative p-3 rounded-xl border-2 text-right transition-all ${
+                        variant.stock !== undefined && variant.stock <= 0
+                          ? 'opacity-50 cursor-not-allowed border-red-300 dark:border-red-700'
+                          : selectedVariant?.value === variant.value
+                          ? 'border-gold-500 bg-gold-50 dark:bg-gold-900/20 text-gold-700 shadow-lg ring-2 ring-gold-300 hover:scale-105'
+                          : 'border-gray-200 dark:border-gray-600 text-gray-800 dark:text-gray-200 hover:border-gold-500 bg-white dark:bg-gray-800 hover:scale-105'
                       }`}
                     >
                       {variant.image ? (
-                        <img
-                          src={withBase(variant.image)}
-                          alt={variant.value}
-                          className="h-24 w-full object-cover rounded-lg mb-2"
-                        />
+                        <div className="relative">
+                          <img
+                            src={withBase(variant.image)}
+                            alt={variant.value}
+                            className={`h-24 w-full object-cover rounded-lg mb-2 ${variant.stock !== undefined && variant.stock <= 0 ? 'grayscale' : ''}`}
+                          />
+                          {variant.stock !== undefined && variant.stock <= 0 && (
+                            <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-60 rounded-lg">
+                              <span className="text-white font-bold text-sm">نفد</span>
+                            </div>
+                          )}
+                        </div>
                       ) : (
-                        <div className="h-24 w-full bg-gray-200 dark:bg-gray-700 rounded-lg mb-2 flex items-center justify-center text-xs text-gray-400">
-                          {variant.value}
+                        <div className={`h-24 w-full rounded-lg mb-2 flex items-center justify-center text-xs ${
+                          variant.stock !== undefined && variant.stock <= 0
+                            ? 'bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-400'
+                            : 'bg-gray-200 dark:bg-gray-700 text-gray-400'
+                        }`}>
+                          {variant.stock !== undefined && variant.stock <= 0 ? 'نفد' : variant.value}
                         </div>
                       )}
-                      <div className="font-semibold text-sm mb-1">{variant.value}</div>
+                      <div className={`font-semibold text-sm mb-1 ${
+                        variant.stock !== undefined && variant.stock <= 0 ? 'line-through text-gray-400' : ''
+                      }`}>
+                        {variant.value}
+                      </div>
                       {variant.stock !== undefined ? (
                         <div className={`text-xs font-medium ${
-                          variant.stock > 0 ? 'text-green-600' : 'text-red-600'
+                          variant.stock > 0 
+                            ? variant.stock <= 10 
+                              ? 'text-yellow-600 dark:text-yellow-400' 
+                              : 'text-green-600 dark:text-green-400'
+                            : 'text-red-600 dark:text-red-400'
                         }`}>
-                          {variant.stock > 0 ? `متوفر: ${variant.stock}` : 'غير متوفر'}
+                          {variant.stock > 0 ? `متوفر: ${variant.stock}${variant.stock <= 10 ? ' (منخفض)' : ''}` : 'غير متوفر'}
                         </div>
                       ) : (
                         <div className="text-xs text-gray-500">بدون زيادة</div>
@@ -279,14 +319,39 @@ const ProductDetail = () => {
 
             <div className="flex items-center gap-4">
               <div className="flex items-center bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl">
-                <button onClick={() => setQuantity((q) => Math.max(1, q - 1))} className="p-3 text-gray-600 dark:text-gray-300">
+                <button 
+                  onClick={() => setQuantity((q) => Math.max(1, q - 1))} 
+                  className="p-3 text-gray-600 dark:text-gray-300"
+                >
                   <Minus size={18} />
                 </button>
                 <span className="w-12 text-center font-semibold text-gray-900 dark:text-gray-100">{quantity}</span>
-                <button onClick={() => setQuantity((q) => q + 1)} className="p-3 text-gray-600 dark:text-gray-300">
+                <button 
+                  onClick={() => {
+                    const maxStock = selectedVariant && selectedVariant.stock !== undefined 
+                      ? selectedVariant.stock 
+                      : product.stock || 999;
+                    setQuantity((q) => Math.min(maxStock, q + 1));
+                  }} 
+                  disabled={
+                    (selectedVariant && selectedVariant.stock !== undefined && quantity >= selectedVariant.stock) ||
+                    (!selectedVariant && quantity >= (product.stock || 0))
+                  }
+                  className="p-3 text-gray-600 dark:text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
                   <Plus size={18} />
                 </button>
               </div>
+              {(selectedVariant && selectedVariant.stock !== undefined ? selectedVariant.stock : product.stock || 0) <= 10 && (
+                <span className="text-xs text-yellow-600 dark:text-yellow-400 font-semibold">
+                  ⚠️ متوفر: {selectedVariant && selectedVariant.stock !== undefined ? selectedVariant.stock : product.stock || 0}
+                </span>
+              )}
+              {quantity > (selectedVariant && selectedVariant.stock !== undefined ? selectedVariant.stock : product.stock || 0) && (
+                <span className="text-xs text-red-600 dark:text-red-400 font-semibold">
+                  الكمية المطلوبة تتجاوز المخزون المتاح
+                </span>
+              )}
 
               <button
                 onClick={handleAdd}

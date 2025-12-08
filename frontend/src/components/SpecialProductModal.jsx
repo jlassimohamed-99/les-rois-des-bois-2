@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import api from '../utils/axios';
 import toast from 'react-hot-toast';
 import { X, Upload, Loader2 } from 'lucide-react';
+import { withBase } from '../utils/imageUrl';
 
 const SpecialProductModal = ({ product, onClose }) => {
   const [step, setStep] = useState(1);
@@ -17,6 +18,10 @@ const SpecialProductModal = ({ product, onClose }) => {
     status: 'visible',
     combinations: [],
   });
+  const [selectedVariantsA, setSelectedVariantsA] = useState([]);
+  const [selectedVariantsB, setSelectedVariantsB] = useState([]);
+  const [productA, setProductA] = useState(null);
+  const [productB, setProductB] = useState(null);
   const [combinationData, setCombinationData] = useState(null);
   const [uploadingImages, setUploadingImages] = useState({});
   const [loading, setLoading] = useState(false);
@@ -62,11 +67,24 @@ const SpecialProductModal = ({ product, onClose }) => {
       return;
     }
 
+    // Check if variants are selected
+    if (productA?.variants?.length > 0 && selectedVariantsA.length === 0) {
+      toast.error('يرجى اختيار متغير واحد على الأقل للمنتج الأول');
+      return;
+    }
+
+    if (productB?.variants?.length > 0 && selectedVariantsB.length === 0) {
+      toast.error('يرجى اختيار متغير واحد على الأقل للمنتج الثاني');
+      return;
+    }
+
     try {
       setGenerating(true);
       const response = await api.post('/special-products/generate-combinations', {
         productAId: formData.baseProductA,
         productBId: formData.baseProductB,
+        selectedVariantsA: selectedVariantsA.length > 0 ? selectedVariantsA : null,
+        selectedVariantsB: selectedVariantsB.length > 0 ? selectedVariantsB : null,
       });
 
       setCombinationData(response.data.data);
@@ -79,7 +97,7 @@ const SpecialProductModal = ({ product, onClose }) => {
           additionalPrice: combo.additionalPrice || 0,
         })),
       }));
-      setStep(3);
+      setStep(4);
       toast.success('تم إنشاء التركيبات بنجاح');
     } catch (error) {
       const message = error.response?.data?.message || 'حدث خطأ أثناء إنشاء التركيبات';
@@ -123,7 +141,7 @@ const SpecialProductModal = ({ product, onClose }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (step < 4) {
+    if (step < 5) {
       toast.error('يرجى إكمال جميع الخطوات');
       return;
     }
@@ -154,7 +172,33 @@ const SpecialProductModal = ({ product, onClose }) => {
   };
 
   const canProceedToStep2 = formData.baseProductA && formData.baseProductB && formData.baseProductA !== formData.baseProductB;
-  const canProceedToStep4 = formData.combinations.length > 0 && formData.combinations.every((c) => c.finalImage);
+  const canProceedToStep3 = 
+    (productA?.variants?.length > 0 ? selectedVariantsA.length > 0 : true) &&
+    (productB?.variants?.length > 0 ? selectedVariantsB.length > 0 : true);
+  const canProceedToStep5 = formData.combinations.length > 0 && formData.combinations.every((c) => c.finalImage);
+
+  // Update product A and B when selected
+  useEffect(() => {
+    if (formData.baseProductA) {
+      const selectedA = products.find(p => p._id === formData.baseProductA);
+      setProductA(selectedA || null);
+      setSelectedVariantsA([]);
+    } else {
+      setProductA(null);
+      setSelectedVariantsA([]);
+    }
+  }, [formData.baseProductA, products]);
+
+  useEffect(() => {
+    if (formData.baseProductB) {
+      const selectedB = products.find(p => p._id === formData.baseProductB);
+      setProductB(selectedB || null);
+      setSelectedVariantsB([]);
+    } else {
+      setProductB(null);
+      setSelectedVariantsB([]);
+    }
+  }, [formData.baseProductB, products]);
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -173,8 +217,8 @@ const SpecialProductModal = ({ product, onClose }) => {
 
         {/* Steps Indicator */}
         <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-          <div className="flex items-center justify-center gap-4">
-            {[1, 2, 3, 4].map((s) => (
+          <div className="flex items-center justify-center gap-2">
+            {[1, 2, 3, 4, 5].map((s) => (
               <div key={s} className="flex items-center">
                 <div
                   className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${
@@ -185,9 +229,9 @@ const SpecialProductModal = ({ product, onClose }) => {
                 >
                   {s}
                 </div>
-                {s < 4 && (
+                {s < 5 && (
                   <div
-                    className={`w-16 h-1 mx-2 ${
+                    className={`w-12 h-1 mx-1 ${
                       step > s ? 'bg-gold-600' : 'bg-gray-200 dark:bg-gray-700'
                     }`}
                   />
@@ -195,18 +239,21 @@ const SpecialProductModal = ({ product, onClose }) => {
               </div>
             ))}
           </div>
-          <div className="flex items-center justify-center gap-16 mt-4 text-sm">
+          <div className="flex items-center justify-center gap-8 mt-4 text-xs">
             <span className={step >= 1 ? 'text-gold-600 font-medium' : 'text-gray-500'}>
               اختيار المنتجات
             </span>
             <span className={step >= 2 ? 'text-gold-600 font-medium' : 'text-gray-500'}>
-              إنشاء التركيبات
+              اختيار المتغيرات
             </span>
             <span className={step >= 3 ? 'text-gold-600 font-medium' : 'text-gray-500'}>
-              رفع الصور
+              إنشاء التركيبات
             </span>
             <span className={step >= 4 ? 'text-gold-600 font-medium' : 'text-gray-500'}>
-              التفاصيل النهائية
+              رفع الصور
+            </span>
+            <span className={step >= 5 ? 'text-gold-600 font-medium' : 'text-gray-500'}>
+              التفاصيل
             </span>
           </div>
         </div>
@@ -297,15 +344,155 @@ const SpecialProductModal = ({ product, onClose }) => {
             </div>
           )}
 
-          {/* Step 2: Generate Combinations */}
+          {/* Step 2: Select Variants */}
           {step === 2 && (
+            <div className="space-y-6">
+              <div className="text-center">
+                <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+                  اختر المتغيرات
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400">
+                  اختر المتغيرات التي تريد استخدامها من كل منتج
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Product A Variants */}
+                <div className="space-y-4">
+                  <h4 className="font-semibold text-gray-900 dark:text-gray-100">
+                    {productA?.name || 'المنتج الأول'}
+                  </h4>
+                  {productA?.variants && productA.variants.length > 0 ? (
+                    <div className="space-y-2 max-h-64 overflow-y-auto">
+                      {productA.variants.map((variant, idx) => (
+                        <label
+                          key={idx}
+                          className="flex items-center gap-3 p-3 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={selectedVariantsA.some(v => v.value === variant.value)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedVariantsA([...selectedVariantsA, variant]);
+                              } else {
+                                setSelectedVariantsA(selectedVariantsA.filter(v => v.value !== variant.value));
+                              }
+                            }}
+                            className="w-5 h-5 text-gold-600 border-gray-300 rounded focus:ring-gold-500"
+                          />
+                          <div className="flex-1">
+                            {variant.image && (
+                              <img
+                                src={withBase(variant.image)}
+                                alt={variant.value}
+                                className="w-16 h-16 object-cover rounded mb-2"
+                              />
+                            )}
+                            <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                              {variant.value || variant.name}
+                            </div>
+                            {variant.stock !== undefined && (
+                              <div className="text-xs text-gray-500 dark:text-gray-400">
+                                المخزون: {variant.stock}
+                              </div>
+                            )}
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg text-sm text-gray-600 dark:text-gray-400">
+                      هذا المنتج لا يحتوي على متغيرات
+                    </div>
+                  )}
+                </div>
+
+                {/* Product B Variants */}
+                <div className="space-y-4">
+                  <h4 className="font-semibold text-gray-900 dark:text-gray-100">
+                    {productB?.name || 'المنتج الثاني'}
+                  </h4>
+                  {productB?.variants && productB.variants.length > 0 ? (
+                    <div className="space-y-2 max-h-64 overflow-y-auto">
+                      {productB.variants.map((variant, idx) => (
+                        <label
+                          key={idx}
+                          className="flex items-center gap-3 p-3 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={selectedVariantsB.some(v => v.value === variant.value)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedVariantsB([...selectedVariantsB, variant]);
+                              } else {
+                                setSelectedVariantsB(selectedVariantsB.filter(v => v.value !== variant.value));
+                              }
+                            }}
+                            className="w-5 h-5 text-gold-600 border-gray-300 rounded focus:ring-gold-500"
+                          />
+                          <div className="flex-1">
+                            {variant.image && (
+                              <img
+                                src={withBase(variant.image)}
+                                alt={variant.value}
+                                className="w-16 h-16 object-cover rounded mb-2"
+                              />
+                            )}
+                            <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                              {variant.value || variant.name}
+                            </div>
+                            {variant.stock !== undefined && (
+                              <div className="text-xs text-gray-500 dark:text-gray-400">
+                                المخزون: {variant.stock}
+                              </div>
+                            )}
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg text-sm text-gray-600 dark:text-gray-400">
+                      هذا المنتج لا يحتوي على متغيرات
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {canProceedToStep3 && (
+                <div className="p-4 bg-gold-50 dark:bg-gold-900/20 rounded-lg">
+                  <p className="text-sm text-gold-800 dark:text-gold-300">
+                    سيتم إنشاء {selectedVariantsA.length || 1} × {selectedVariantsB.length || 1} = {(selectedVariantsA.length || 1) * (selectedVariantsB.length || 1)} تركيبة
+                  </p>
+                </div>
+              )}
+
+              <div className="flex items-center justify-end gap-4">
+                <button type="button" onClick={() => setStep(1)} className="btn-secondary">
+                  السابق
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setStep(3)}
+                  disabled={!canProceedToStep3}
+                  className="btn-primary disabled:opacity-50"
+                >
+                  التالي
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Step 3: Generate Combinations */}
+          {step === 3 && (
             <div className="space-y-6">
               <div className="text-center">
                 <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">
                   إنشاء التركيبات
                 </h3>
                 <p className="text-gray-600 dark:text-gray-400">
-                  سيتم إنشاء جميع التركيبات الممكنة من متغيرات المنتجين
+                  سيتم إنشاء التركيبات من المتغيرات المختارة
                 </p>
               </div>
 
@@ -326,15 +513,15 @@ const SpecialProductModal = ({ product, onClose }) => {
               </button>
 
               <div className="flex items-center justify-end gap-4">
-                <button type="button" onClick={() => setStep(1)} className="btn-secondary">
+                <button type="button" onClick={() => setStep(2)} className="btn-secondary">
                   السابق
                 </button>
               </div>
             </div>
           )}
 
-          {/* Step 3: Upload Images */}
-          {step === 3 && combinationData && (
+          {/* Step 4: Upload Images */}
+          {step === 4 && combinationData && (
             <div className="space-y-6">
               <div>
                 <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">
@@ -346,74 +533,144 @@ const SpecialProductModal = ({ product, onClose }) => {
               </div>
 
               <div className="space-y-4 max-h-96 overflow-y-auto">
-                {formData.combinations.map((combo, index) => (
-                  <div
-                    key={index}
-                    className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg"
-                  >
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
-                      <div>
-                        <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                          {combo.optionA.productName}
-                        </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                          {combo.optionA.variant.name}: {combo.optionA.variant.value}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                          {combo.optionB.productName}
-                        </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
-                          {combo.optionB.variant.name}: {combo.optionB.variant.value}
-                        </p>
-                      </div>
-                      <div>
-                        <label className="flex items-center gap-2 btn-secondary cursor-pointer text-sm">
-                          <Upload size={16} />
-                          <span>رفع صورة</span>
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={(e) => {
-                              const file = e.target.files[0];
-                              if (file) {
-                                handleImageUpload(index, file);
-                              }
-                            }}
-                            className="hidden"
-                            disabled={uploadingImages[index]}
-                          />
-                        </label>
-                        {combo.finalImage && (
-                          <div className="mt-2 relative w-20 h-20">
-                            <img
-                              src={`http://localhost:5000${combo.finalImage}`}
-                              alt="Combination"
-                              className="w-full h-full object-cover rounded-lg border border-gray-300 dark:border-gray-600"
-                            />
-                          </div>
-                        )}
-                        {uploadingImages[index] && (
-                          <div className="mt-2 flex items-center gap-2 text-sm text-gray-500">
-                            <Loader2 className="animate-spin" size={16} />
-                            <span>جاري الرفع...</span>
-                          </div>
-                        )}
+                {formData.combinations.map((combo, index) => {
+                  // Get images for each variant - try variant image first, then product image
+                  const variantAImage = combo.optionA.variant.image || 
+                    (combinationData?.productA?.images && combinationData.productA.images.length > 0 
+                      ? combinationData.productA.images[0] 
+                      : '');
+                  const variantBImage = combo.optionB.variant.image || 
+                    (combinationData?.productB?.images && combinationData.productB.images.length > 0 
+                      ? combinationData.productB.images[0] 
+                      : '');
+                  
+                  return (
+                    <div
+                      key={index}
+                      className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-700/30"
+                    >
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+                        {/* Product A Variant */}
+                        <div className="space-y-2">
+                          <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                            {combo.optionA.productName}
+                          </p>
+                          <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
+                            {combo.optionA.variant.name || 'المتغير'}: {combo.optionA.variant.value}
+                          </p>
+                          {variantAImage ? (
+                            <div className="w-full h-32 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden border border-gray-300 dark:border-gray-600">
+                              <img
+                                src={withBase(variantAImage)}
+                                alt={combo.optionA.variant.value}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                          ) : (
+                            <div className="w-full h-32 bg-gray-200 dark:bg-gray-700 rounded-lg border border-gray-300 dark:border-gray-600 flex items-center justify-center">
+                              <span className="text-xs text-gray-500 dark:text-gray-400">لا توجد صورة</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Product B Variant */}
+                        <div className="space-y-2">
+                          <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                            {combo.optionB.productName}
+                          </p>
+                          <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
+                            {combo.optionB.variant.name || 'المتغير'}: {combo.optionB.variant.value}
+                          </p>
+                          {variantBImage ? (
+                            <div className="w-full h-32 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden border border-gray-300 dark:border-gray-600">
+                              <img
+                                src={withBase(variantBImage)}
+                                alt={combo.optionB.variant.value}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                          ) : (
+                            <div className="w-full h-32 bg-gray-200 dark:bg-gray-700 rounded-lg border border-gray-300 dark:border-gray-600 flex items-center justify-center">
+                              <span className="text-xs text-gray-500 dark:text-gray-400">لا توجد صورة</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Final Combination Image Upload */}
+                        <div className="space-y-2">
+                          <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">
+                            صورة التركيبة النهائية
+                          </p>
+                          {combo.finalImage ? (
+                            <div className="space-y-2">
+                              <div className="w-full h-32 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden border-2 border-gold-500">
+                                <img
+                                  src={withBase(combo.finalImage)}
+                                  alt="Combination"
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                              <label className="flex items-center gap-2 btn-secondary cursor-pointer text-sm w-full justify-center">
+                                <Upload size={16} />
+                                <span>تغيير الصورة</span>
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  onChange={(e) => {
+                                    const file = e.target.files[0];
+                                    if (file) {
+                                      handleImageUpload(index, file);
+                                    }
+                                  }}
+                                  className="hidden"
+                                  disabled={uploadingImages[index]}
+                                />
+                              </label>
+                            </div>
+                          ) : (
+                            <div className="space-y-2">
+                              <div className="w-full h-32 bg-gray-200 dark:bg-gray-700 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 flex items-center justify-center">
+                                <span className="text-xs text-gray-500 dark:text-gray-400">لم يتم رفع صورة</span>
+                              </div>
+                              <label className="flex items-center gap-2 btn-primary cursor-pointer text-sm w-full justify-center">
+                                <Upload size={16} />
+                                <span>رفع صورة التركيبة</span>
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  onChange={(e) => {
+                                    const file = e.target.files[0];
+                                    if (file) {
+                                      handleImageUpload(index, file);
+                                    }
+                                  }}
+                                  className="hidden"
+                                  disabled={uploadingImages[index]}
+                                />
+                              </label>
+                            </div>
+                          )}
+                          {uploadingImages[index] && (
+                            <div className="flex items-center gap-2 text-sm text-gold-600 dark:text-gold-400 justify-center">
+                              <Loader2 className="animate-spin" size={16} />
+                              <span>جاري الرفع...</span>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
               <div className="flex items-center justify-end gap-4">
-                <button type="button" onClick={() => setStep(2)} className="btn-secondary">
+                <button type="button" onClick={() => setStep(3)} className="btn-secondary">
                   السابق
                 </button>
                 <button
                   type="button"
-                  onClick={() => setStep(4)}
-                  disabled={!canProceedToStep4}
+                  onClick={() => setStep(5)}
+                  disabled={!canProceedToStep5}
                   className="btn-primary disabled:opacity-50"
                 >
                   التالي
@@ -422,8 +679,8 @@ const SpecialProductModal = ({ product, onClose }) => {
             </div>
           )}
 
-          {/* Step 4: Final Details */}
-          {step === 4 && (
+          {/* Step 5: Final Details */}
+          {step === 5 && (
             <div className="space-y-6">
               <div>
                 <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">
@@ -480,7 +737,7 @@ const SpecialProductModal = ({ product, onClose }) => {
               </div>
 
               <div className="flex items-center justify-end gap-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                <button type="button" onClick={() => setStep(3)} className="btn-secondary">
+                <button type="button" onClick={() => setStep(4)} className="btn-secondary">
                   السابق
                 </button>
                 <button type="button" onClick={onClose} className="btn-secondary">

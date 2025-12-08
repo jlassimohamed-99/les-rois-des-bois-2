@@ -227,6 +227,38 @@ export const getLowStock = async (req, res, next) => {
   }
 };
 
+export const getStockDistribution = async (req, res, next) => {
+  try {
+    const threshold = parseInt(req.query.threshold) || 10;
+    
+    // Count products by stock status
+    const [available, lowStock, outOfStock] = await Promise.all([
+      Product.countDocuments({ stock: { $gt: threshold } }),
+      Product.countDocuments({ stock: { $gt: 0, $lte: threshold } }),
+      Product.countDocuments({ stock: 0 }),
+    ]);
+
+    const total = available + lowStock + outOfStock;
+
+    res.json({
+      success: true,
+      data: {
+        available: total > 0 ? Math.round((available / total) * 100) : 0,
+        lowStock: total > 0 ? Math.round((lowStock / total) * 100) : 0,
+        outOfStock: total > 0 ? Math.round((outOfStock / total) * 100) : 0,
+        counts: {
+          available,
+          lowStock,
+          outOfStock,
+          total,
+        },
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // Get analytics by source
 export const getSalesBySource = async (req, res, next) => {
   try {

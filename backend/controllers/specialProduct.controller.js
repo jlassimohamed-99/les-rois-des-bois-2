@@ -3,7 +3,7 @@ import Product from '../models/Product.model.js';
 
 export const generateCombinations = async (req, res, next) => {
   try {
-    const { productAId, productBId } = req.body;
+    const { productAId, productBId, selectedVariantsA, selectedVariantsB } = req.body;
 
     if (!productAId || !productBId) {
       return res.status(400).json({
@@ -22,16 +22,57 @@ export const generateCombinations = async (req, res, next) => {
       });
     }
 
-    // Get variants for each product
-    const variantsA = productA.variants && productA.variants.length > 0 
-      ? productA.variants 
-      : [{ name: 'افتراضي', value: 'default', image: productA.images[0] || '', additionalPrice: 0 }];
+    // Get variants for each product - use selected variants if provided, otherwise all variants
+    let variantsA;
+    if (selectedVariantsA && Array.isArray(selectedVariantsA) && selectedVariantsA.length > 0) {
+      // Use only selected variants
+      if (productA.variants && productA.variants.length > 0) {
+        variantsA = productA.variants.filter(variantA => 
+          selectedVariantsA.some(selected => selected.value === variantA.value)
+        );
+      } else {
+        variantsA = [{ name: 'افتراضي', value: 'default', image: productA.images[0] || '', stock: productA.stock || 0 }];
+      }
+    } else {
+      // Use all variants if no selection made
+      variantsA = productA.variants && productA.variants.length > 0 
+        ? productA.variants 
+        : [{ name: 'افتراضي', value: 'default', image: productA.images[0] || '', stock: productA.stock || 0 }];
+    }
     
-    const variantsB = productB.variants && productB.variants.length > 0 
-      ? productB.variants 
-      : [{ name: 'افتراضي', value: 'default', image: productB.images[0] || '', additionalPrice: 0 }];
+    let variantsB;
+    if (selectedVariantsB && Array.isArray(selectedVariantsB) && selectedVariantsB.length > 0) {
+      // Use only selected variants
+      if (productB.variants && productB.variants.length > 0) {
+        variantsB = productB.variants.filter(variantB => 
+          selectedVariantsB.some(selected => selected.value === variantB.value)
+        );
+      } else {
+        variantsB = [{ name: 'افتراضي', value: 'default', image: productB.images[0] || '', stock: productB.stock || 0 }];
+      }
+    } else {
+      // Use all variants if no selection made
+      variantsB = productB.variants && productB.variants.length > 0 
+        ? productB.variants 
+        : [{ name: 'افتراضي', value: 'default', image: productB.images[0] || '', stock: productB.stock || 0 }];
+    }
 
-    // Generate all combinations
+    // Validate that we have at least one variant for each product
+    if (variantsA.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'يجب اختيار متغير واحد على الأقل للمنتج الأول',
+      });
+    }
+
+    if (variantsB.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'يجب اختيار متغير واحد على الأقل للمنتج الثاني',
+      });
+    }
+
+    // Generate combinations from selected variants only
     const combinations = [];
     variantsA.forEach((variantA) => {
       variantsB.forEach((variantB) => {
@@ -58,11 +99,13 @@ export const generateCombinations = async (req, res, next) => {
         productA: {
           id: productA._id,
           name: productA.name,
+          images: productA.images || [],
           variants: variantsA,
         },
         productB: {
           id: productB._id,
           name: productB.name,
+          images: productB.images || [],
           variants: variantsB,
         },
         combinations,

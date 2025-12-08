@@ -318,10 +318,57 @@ const POSInterface = () => {
       return variantsMatch(item.variant, variant);
     });
 
-    // Check stock availability for the quantity
+    // Check stock - for variants, use variant stock; otherwise use product stock
+    const availableStock = variant && variant.stock !== undefined ? variant.stock : product.stock;
     const totalQuantity = existingItem ? existingItem.quantity + finalQuantity : finalQuantity;
-    if (totalQuantity > product.stock) {
-      toast.error(`الكمية المتاحة في المخزون: ${product.stock}`);
+    
+    if (totalQuantity > availableStock) {
+      if (availableStock === 0) {
+        toast.error('المنتج غير متوفر في المخزون');
+        return;
+      }
+      // Limit quantity to available stock
+      const limitedQuantity = availableStock - (existingItem ? existingItem.quantity : 0);
+      if (limitedQuantity <= 0) {
+        toast.error('تم الوصول إلى الحد الأقصى من الكمية المتاحة في المخزون');
+        return;
+      }
+      toast.warning(`الكمية المتاحة فقط: ${availableStock}. تم تقليل الكمية إلى ${limitedQuantity}`);
+      const adjustedQuantity = limitedQuantity;
+      
+      if (existingItem) {
+        setCart(
+          cart.map((item) =>
+            item.productId === product._id &&
+            item.productType === 'regular' &&
+            variantsMatch(item.variant, variant)
+              ? { ...item, quantity: availableStock }
+              : item
+          )
+        );
+      } else {
+        setCart([
+          ...cart,
+          {
+            productId: product._id,
+            productType: 'regular',
+            productName: product.name,
+            price: finalPrice,
+            quantity: adjustedQuantity,
+            image: variant?.image || product.images?.[0] || '',
+            stock: availableStock,
+            variant: variant ? {
+              name: variant.name,
+              value: variant.value,
+              image: variant.image,
+              stock: variant.stock,
+            } : undefined,
+          },
+        ]);
+      }
+      setSelectedProductForVariant(null);
+      setSelectedVariant(null);
+      setQuantityToAdd(1);
       return;
     }
 
@@ -345,12 +392,12 @@ const POSInterface = () => {
           price: finalPrice,
           quantity: finalQuantity,
           image: variant?.image || product.images?.[0] || '',
-          stock: product.stock,
+          stock: availableStock,
           variant: variant ? {
             name: variant.name,
             value: variant.value,
             image: variant.image,
-            additionalPrice: variant.additionalPrice || 0,
+            stock: variant.stock,
           } : undefined,
         },
       ]);
@@ -516,8 +563,16 @@ const POSInterface = () => {
       return;
     }
 
-    if (item.productType === 'regular' && item.stock && newQuantity > item.stock) {
-      toast.error('الكمية المطلوبة غير متوفرة في المخزون');
+    // Check stock - use variant stock if available, otherwise product stock
+    const availableStock = item.variant?.stock !== undefined ? item.variant.stock : item.stock;
+    if (item.productType === 'regular' && availableStock && newQuantity > availableStock) {
+      toast.error(`الكمية المتاحة في المخزون: ${availableStock}`);
+      // Auto-limit to available stock
+      setCart(
+        cart.map((i, idx) =>
+          idx === index ? { ...i, quantity: availableStock } : i
+        )
+      );
       return;
     }
 
@@ -562,6 +617,29 @@ const POSInterface = () => {
     if (cart.length === 0) {
       toast.error('السلة فارغة');
       return;
+    }
+
+    // Validate stock for all items in cart before checkout
+    for (const item of cart) {
+      if (item.productType === 'regular') {
+        const availableStock = item.variant?.stock !== undefined ? item.variant.stock : item.stock;
+        if (availableStock === undefined || availableStock <= 0) {
+          toast.error(`المنتج "${item.productName}" غير متوفر في المخزون`);
+          return;
+        }
+        if (item.quantity > availableStock) {
+          toast.error(`الكمية المطلوبة للمنتج "${item.productName}" تتجاوز المخزون المتاح (${availableStock})`);
+          // Auto-adjust quantity
+          setCart(
+            cart.map((i) =>
+              i.productId === item.productId && i.productType === item.productType
+                ? { ...i, quantity: availableStock }
+                : i
+            )
+          );
+          return;
+        }
+      }
     }
 
     // For commercial/admin mode, client selection is optional (but recommended)
@@ -799,17 +877,42 @@ const POSInterface = () => {
                 {filteredRegularProducts.map((product) => (
                   <div
                     key={product._id}
-                    onClick={() => addRegularProductToCart(product)}
-                    className="bg-white dark:bg-gray-800 rounded-lg p-4 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors border border-gray-200 dark:border-gray-700 hover:border-gold-600"
+                    onClick={() => {
+                      if (product.stock <= 0) {
+                        toast.error('المنتج غير متوفر في المخزون');
+                        return;
+                      }
+                      addRegularProductToCart(product);
+                    }}
+                    className={`bg-white dark:bg-gray-800 rounded-lg p-4 transition-colors border ${
+                      product.stock <= 0
+                        ? 'opacity-50 cursor-not-allowed border-red-300 dark:border-red-700'
+                        : 'cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 border-gray-200 dark:border-gray-700 hover:border-gold-600'
+                    }`}
                   >
                     {product.images?.[0] && (
-                      <img
-                        src={withBase(product.images[0])}
-                        alt={product.name}
-                        className="w-full h-40 object-cover rounded-lg mb-3"
-                      />
+                      <div className="relative">
+                        <img
+                          src={withBase(product.images[0])}
+                          alt={product.name}
+                          className={`w-full h-40 object-cover rounded-lg mb-3 ${
+                            product.stock <= 0 ? 'grayscale' : ''
+                          }`}
+                        />
+                        {product.stock <= 0 && (
+                          <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-lg">
+                            <span className="text-white font-bold text-lg">نفد</span>
+                          </div>
+                        )}
+                      </div>
                     )}
-                    <h3 className="font-medium text-gray-900 dark:text-white text-base mb-2 line-clamp-2">{product.name}</h3>
+                    <h3 className={`font-medium text-base mb-2 line-clamp-2 ${
+                      product.stock <= 0
+                        ? 'text-gray-400 dark:text-gray-500 line-through'
+                        : 'text-gray-900 dark:text-white'
+                    }`}>
+                      {product.name}
+                    </h3>
                     <p className="text-gold-500 font-bold text-base">
                       {priceType === 'wholesale' && product.wholesalePrice > 0 
                         ? product.wholesalePrice 
@@ -825,8 +928,16 @@ const POSInterface = () => {
                         </span>
                       )}
                     </p>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+                    <p className={`text-sm mt-2 ${
+                      product.stock <= 0
+                        ? 'text-red-600 dark:text-red-400 font-semibold'
+                        : product.stock <= 10
+                        ? 'text-yellow-600 dark:text-yellow-400 font-semibold'
+                        : 'text-gray-600 dark:text-gray-400'
+                    }`}>
                       المخزون: {product.stock || 0}
+                      {product.stock <= 0 && ' (نفد)'}
+                      {product.stock > 0 && product.stock <= 10 && ' (منخفض)'}
                     </p>
                   </div>
                 ))}
@@ -1087,15 +1198,22 @@ const POSInterface = () => {
                     {item.variant && (
                       <p className="text-xs text-[#fda63a] dark:text-gold-400 font-medium">
                         المتغير: {item.variant.name || item.variant.value}
-                        {item.variant.additionalPrice > 0 && (
-                          <span className="text-gray-400 dark:text-gray-400"> (+{item.variant.additionalPrice} TND)</span>
-                        )}
                       </p>
                     )}
                     {item.combinationTitle && (
                       <p className="text-xs text-gray-600 dark:text-gray-400">{item.combinationTitle}</p>
                     )}
                     <p className="text-gold-600 dark:text-gold-500 font-bold">{item.price} TND</p>
+                    {item.productType === 'regular' && (item.variant?.stock !== undefined || item.stock !== undefined) && (
+                      <p className={`text-xs font-semibold ${
+                        (item.variant?.stock !== undefined ? item.variant.stock : item.stock || 0) <= 10
+                          ? 'text-yellow-600 dark:text-yellow-400'
+                          : 'text-gray-600 dark:text-gray-400'
+                      }`}>
+                        متوفر: {item.variant?.stock !== undefined ? item.variant.stock : item.stock || 0}
+                        {(item.variant?.stock !== undefined ? item.variant.stock : item.stock || 0) <= 10 && ' (منخفض)'}
+                      </p>
+                    )}
                     <div className="flex items-center gap-2 mt-2">
                       <button
                         onClick={() => updateQuantity(index, -1)}
@@ -1106,7 +1224,12 @@ const POSInterface = () => {
                       <span className="w-8 text-center font-medium text-gray-900 dark:text-white">{item.quantity}</span>
                       <button
                         onClick={() => updateQuantity(index, 1)}
-                        className="w-8 h-8 flex items-center justify-center bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 rounded text-gray-900 dark:text-white"
+                        disabled={
+                          item.productType === 'regular' &&
+                          (item.variant?.stock !== undefined || item.stock !== undefined) &&
+                          item.quantity >= (item.variant?.stock !== undefined ? item.variant.stock : item.stock || 0)
+                        }
+                        className="w-8 h-8 flex items-center justify-center bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 rounded text-gray-900 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <Plus size={16} />
                       </button>
@@ -1303,39 +1426,70 @@ const POSInterface = () => {
                     اختر المتغير:
                   </label>
                   <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
-                    {selectedProductForVariant.variants.map((variant, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => {
-                          setSelectedVariant(variant);
-                        }}
-                        className={`p-3 rounded-lg border-2 transition-all ${
-                          selectedVariant?.value === variant.value
-                            ? 'border-gold-600 dark:border-gold-500 bg-gold-50 dark:bg-gold-900/20'
-                            : 'border-gray-300 dark:border-gray-600 hover:border-gold-600 dark:hover:border-gold-500'
-                        }`}
-                      >
-                        {variant.image ? (
-                          <img
-                            src={withBase(variant.image)}
-                            alt={variant.name || variant.value}
-                            className="w-full h-20 object-contain rounded mb-2"
-                          />
-                        ) : (
-                          <div className="w-full h-20 bg-gray-100 dark:bg-gray-700 rounded mb-2 flex items-center justify-center text-xs text-gray-600 dark:text-gray-400">
+                    {selectedProductForVariant.variants.map((variant, idx) => {
+                      const variantStock = variant.stock !== undefined ? variant.stock : selectedProductForVariant.stock || 0;
+                      const isOutOfStock = variantStock <= 0;
+                      return (
+                        <button
+                          key={idx}
+                          onClick={() => {
+                            if (isOutOfStock) {
+                              toast.error('هذا المتغير غير متوفر في المخزون');
+                              return;
+                            }
+                            setSelectedVariant(variant);
+                          }}
+                          disabled={isOutOfStock}
+                          className={`p-3 rounded-lg border-2 transition-all relative ${
+                            isOutOfStock
+                              ? 'opacity-50 cursor-not-allowed border-red-300 dark:border-red-700'
+                              : selectedVariant?.value === variant.value
+                              ? 'border-gold-600 dark:border-gold-500 bg-gold-50 dark:bg-gold-900/20'
+                              : 'border-gray-300 dark:border-gray-600 hover:border-gold-600 dark:hover:border-gold-500'
+                          }`}
+                        >
+                          {variant.image ? (
+                            <div className="relative">
+                              <img
+                                src={withBase(variant.image)}
+                                alt={variant.name || variant.value}
+                                className={`w-full h-20 object-contain rounded mb-2 ${isOutOfStock ? 'grayscale' : ''}`}
+                              />
+                              {isOutOfStock && (
+                                <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded">
+                                  <span className="text-white text-xs font-bold">نفد</span>
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <div className={`w-full h-20 rounded mb-2 flex items-center justify-center text-xs ${
+                              isOutOfStock
+                                ? 'bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-400'
+                                : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
+                            }`}>
+                              {isOutOfStock ? 'نفد' : (variant.name || variant.value)}
+                            </div>
+                          )}
+                          <div className={`text-sm font-medium text-center ${
+                            isOutOfStock
+                              ? 'text-gray-400 dark:text-gray-500 line-through'
+                              : 'text-gray-900 dark:text-white'
+                          }`}>
                             {variant.name || variant.value}
                           </div>
-                        )}
-                        <div className="text-sm font-medium text-gray-900 dark:text-white text-center">
-                          {variant.name || variant.value}
-                        </div>
-                        {variant.additionalPrice > 0 && (
-                          <div className="text-xs text-gold-600 dark:text-gold-500 text-center mt-1">
-                            +{variant.additionalPrice} TND
-                          </div>
-                        )}
-                      </button>
-                    ))}
+                          {variant.additionalPrice > 0 && !isOutOfStock && (
+                            <div className="text-xs text-gold-600 dark:text-gold-500 text-center mt-1">
+                              +{variant.additionalPrice} TND
+                            </div>
+                          )}
+                          {variantStock > 0 && variantStock <= 10 && (
+                            <div className="text-xs text-yellow-600 dark:text-yellow-400 text-center mt-1">
+                              متوفر: {variantStock}
+                            </div>
+                          )}
+                        </button>
+                      );
+                    })}
                   </div>
                   {!selectedVariant && (
                     <p className="text-sm text-gold-600 dark:text-gold-400 mt-2 text-center">
@@ -1360,22 +1514,31 @@ const POSInterface = () => {
                   <input
                     type="number"
                     min="1"
-                    max={selectedProductForVariant.stock || 999}
+                    max={selectedVariant && selectedVariant.stock !== undefined ? selectedVariant.stock : selectedProductForVariant.stock || 999}
                     value={quantityToAdd}
                     onChange={(e) => {
                       const val = parseInt(e.target.value) || 1;
-                      setQuantityToAdd(Math.max(1, Math.min(val, selectedProductForVariant.stock || 999)));
+                      const maxStock = selectedVariant && selectedVariant.stock !== undefined ? selectedVariant.stock : selectedProductForVariant.stock || 999;
+                      setQuantityToAdd(Math.max(1, Math.min(val, maxStock)));
                     }}
                     className="w-20 text-center bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-lg py-2 px-3 font-bold text-lg focus:outline-none focus:ring-2 focus:ring-gold-500"
                   />
                   <button
-                    onClick={() => setQuantityToAdd(Math.min(selectedProductForVariant.stock || 999, quantityToAdd + 1))}
+                    onClick={() => {
+                      const maxStock = selectedVariant && selectedVariant.stock !== undefined ? selectedVariant.stock : selectedProductForVariant.stock || 999;
+                      setQuantityToAdd(Math.min(maxStock, quantityToAdd + 1));
+                    }}
                     className="w-10 h-10 bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 rounded-lg flex items-center justify-center text-gray-900 dark:text-white font-bold"
                   >
                     <Plus size={20} />
                   </button>
-                  <span className="text-gray-600 dark:text-gray-400 text-sm">
-                    متوفر: {selectedProductForVariant.stock || 0}
+                  <span className={`text-sm font-semibold ${
+                    (selectedVariant && selectedVariant.stock !== undefined ? selectedVariant.stock : selectedProductForVariant.stock || 0) <= 10
+                      ? 'text-yellow-600 dark:text-yellow-400'
+                      : 'text-gray-600 dark:text-gray-400'
+                  }`}>
+                    متوفر: {selectedVariant && selectedVariant.stock !== undefined ? selectedVariant.stock : selectedProductForVariant.stock || 0}
+                    {(selectedVariant && selectedVariant.stock !== undefined ? selectedVariant.stock : selectedProductForVariant.stock || 0) <= 10 && ' (منخفض)'}
                   </span>
                 </div>
               </div>
@@ -1442,9 +1605,19 @@ const POSInterface = () => {
                     toast.error('يرجى اختيار متغير');
                     return;
                   }
-                  addRegularProductToCart(selectedProductForVariant, selectedVariant, quantityToAdd);
+                  // Check variant stock before adding
+                  const variantStock = selectedVariant && selectedVariant.stock !== undefined ? selectedVariant.stock : selectedProductForVariant.stock || 0;
+                  if (variantStock <= 0) {
+                    toast.error('هذا المتغير غير متوفر في المخزون');
+                    return;
+                  }
+                  if (quantityToAdd > variantStock) {
+                    toast.warning(`الكمية المتاحة فقط: ${variantStock}. سيتم إضافة ${variantStock} فقط`);
+                    setQuantityToAdd(variantStock);
+                  }
+                  addRegularProductToCart(selectedProductForVariant, selectedVariant, Math.min(quantityToAdd, variantStock));
                 }}
-                disabled={selectedProductForVariant.variants?.length > 0 && !selectedVariant}
+                disabled={(selectedProductForVariant.variants?.length > 0 && !selectedVariant) || (selectedVariant && selectedVariant.stock !== undefined && selectedVariant.stock <= 0) || (selectedProductForVariant.stock <= 0)}
                 className="flex-1 px-4 py-3 bg-gold-600 hover:bg-gold-700 disabled:bg-gray-300 dark:disabled:bg-gray-600 disabled:cursor-not-allowed disabled:text-gray-500 dark:disabled:text-gray-400 rounded-lg font-semibold flex items-center justify-center gap-2 text-white"
               >
                 <ShoppingCart size={20} />

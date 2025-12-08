@@ -36,10 +36,24 @@ const Home = () => {
   };
 
   const handleAddToCart = (product) => {
+    // Check stock availability
+    const availableStock = product.selectedVariant && product.selectedVariant.stock !== undefined
+      ? product.selectedVariant.stock
+      : product.stock || 0;
+    
+    if (availableStock <= 0) {
+      toast.error('المنتج غير متوفر في المخزون');
+      return;
+    }
+    
     const variantPrice = product.selectedVariant?.additionalPrice || 0;
     const finalPrice = product.variantPrice || (product.price + variantPrice);
     const displayImage = product.displayImage || product.images?.[0];
-    const quantity = product.quantity || 1;
+    const quantity = Math.min(product.quantity || 1, availableStock);
+    
+    if ((product.quantity || 1) > availableStock) {
+      toast.warning(`الكمية المتاحة فقط: ${availableStock}. سيتم إضافة ${availableStock} فقط`);
+    }
     
     addToCart({
       productId: product._id,
@@ -48,11 +62,12 @@ const Home = () => {
       price: finalPrice,
       image: withBase(displayImage),
       quantity: quantity,
+      stock: availableStock,
       variant: product.selectedVariant ? {
         name: product.selectedVariant.name,
         value: product.selectedVariant.value,
         image: product.selectedVariant.image,
-        additionalPrice: product.selectedVariant.additionalPrice || 0,
+        stock: product.selectedVariant.stock,
       } : undefined,
     });
     toast.success('تمت الإضافة إلى السلة');

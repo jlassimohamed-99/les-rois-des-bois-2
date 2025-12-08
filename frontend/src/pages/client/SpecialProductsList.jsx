@@ -57,11 +57,25 @@ const SpecialProductsList = () => {
                   <div className="p-4 space-y-2">
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{sp.name}</h3>
                     <p className="text-gold-600 font-bold">{sp.finalPrice} TND</p>
+                    {sp.isAvailable !== false ? (
+                      <div className="text-sm text-green-600 dark:text-green-400">متوفر</div>
+                    ) : (
+                      <div className="text-sm text-red-500">غير متوفر</div>
+                    )}
                     <Link
                       to={`/shop/special-products/${sp._id}`}
-                      className="inline-block mt-2 bg-gold-600 text-white px-4 py-2 rounded-lg hover:bg-gold-700 transition"
+                      className={`inline-block mt-2 px-4 py-2 rounded-lg transition ${
+                        sp.isAvailable !== false
+                          ? 'bg-gold-600 text-white hover:bg-gold-700'
+                          : 'bg-gray-400 text-white cursor-not-allowed opacity-50'
+                      }`}
+                      onClick={(e) => {
+                        if (sp.isAvailable === false) {
+                          e.preventDefault();
+                        }
+                      }}
                     >
-                      خصّص الآن
+                      {sp.isAvailable !== false ? 'خصّص الآن' : 'غير متوفر'}
                     </Link>
                   </div>
                 </div>

@@ -41,44 +41,44 @@ const ClientLayout = () => {
         </AnimatedPage>
       </main>
 
-      <footer className="bg-gray-800 text-gray-300 mt-auto">
+      <footer className="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 mt-auto border-t border-gray-200 dark:border-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div>
-              <h3 className="text-xl font-bold text-gold-500 mb-4">Les Rois Du Bois</h3>
-              <p className="text-sm">نصنع الأثاث بمواد عالية الجودة مع حرفية دقيقة وتسليم سريع ودفع آمن.</p>
+              <h3 className="text-xl font-bold text-gold-600 dark:text-gold-500 mb-4">Les Rois Du Bois</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400">نصنع الأثاث بمواد عالية الجودة مع حرفية دقيقة وتسليم سريع ودفع آمن.</p>
             </div>
             <div>
-              <h4 className="text-lg font-semibold text-white mb-4">روابط سريعة</h4>
+              <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">روابط سريعة</h4>
               <ul className="space-y-2 text-sm">
                 <li>
-                  <a href="/shop" className="hover:text-gold-500 transition">
+                  <a href="/shop" className="text-gray-600 dark:text-gray-400 hover:text-gold-600 dark:hover:text-gold-500 transition">
                     الرئيسية
                   </a>
                 </li>
                 <li>
-                  <a href="/shop/categories" className="hover:text-gold-500 transition">
+                  <a href="/shop/categories" className="text-gray-600 dark:text-gray-400 hover:text-gold-600 dark:hover:text-gold-500 transition">
                     الفئات
                   </a>
                 </li>
                 <li>
-                  <a href="/shop/products" className="hover:text-gold-500 transition">
+                  <a href="/shop/products" className="text-gray-600 dark:text-gray-400 hover:text-gold-600 dark:hover:text-gold-500 transition">
                     المنتجات
                   </a>
                 </li>
               </ul>
             </div>
             <div>
-              <h4 className="text-lg font-semibold text-white mb-4">تواصل معنا</h4>
-              <ul className="space-y-2 text-sm">
+              <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">تواصل معنا</h4>
+              <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
                 <li>البريد: info@lesroisdubois.tn</li>
                 <li>الهاتف: +216 12 345 678</li>
                 <li>العنوان: تونس</li>
               </ul>
             </div>
           </div>
-          <div className="border-t border-gray-700 mt-8 pt-8 text-center text-sm">
-            <p className="text-gold-500">&copy; {new Date().getFullYear()} Les Rois Du Bois. جميع الحقوق محفوظة.</p>
+          <div className="border-t border-gray-200 dark:border-gray-700 mt-8 pt-8 text-center text-sm">
+            <p className="text-gold-600 dark:text-gold-500">&copy; {new Date().getFullYear()} Les Rois Du Bois. جميع الحقوق محفوظة.</p>
           </div>
         </div>
       </footer>

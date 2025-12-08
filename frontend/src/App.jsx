@@ -43,6 +43,9 @@ import ClientsList from './pages/CRM/ClientsList';
 import JobQueue from './pages/Jobs/JobQueue';
 import UsersList from './pages/Users/UsersList';
 import Settings from './pages/Settings/Settings';
+import HeroBanner from './pages/Homepage/HeroBanner';
+import FeaturedProducts from './pages/Homepage/FeaturedProducts';
+import TopSellers from './pages/Homepage/TopSellers';
 import Layout from './components/Layout';
 import CommercialLayout from './components/commercial/CommercialLayout';
 import CommercialDashboard from './pages/commercial/CommercialHome';
@@ -212,6 +215,10 @@ function App() {
                   <Route path="analytics/commercials/:id" element={<CommercialDetail />} />
                   <Route path="audit-logs" element={<AuditLogs />} />
                   <Route path="users" element={<UsersList />} />
+                  <Route path="homepage" element={<Navigate to="/admin/homepage/hero" replace />} />
+                  <Route path="homepage/hero" element={<HeroBanner />} />
+                  <Route path="homepage/featured" element={<FeaturedProducts />} />
+                  <Route path="homepage/top-sellers" element={<TopSellers />} />
                   <Route path="settings" element={<Settings />} />
                   <Route path="jobs" element={<JobQueue />} />
                 </Route>

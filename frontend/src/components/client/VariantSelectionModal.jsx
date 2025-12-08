@@ -38,7 +38,7 @@ const VariantSelectionModal = ({ isOpen, onClose, product, onAddToCart }) => {
       return;
     }
 
-    const finalPrice = product.price;
+    const finalPrice = product.wholesalePrice || product.price;
 
     onAddToCart({
       ...product,
@@ -51,7 +51,7 @@ const VariantSelectionModal = ({ isOpen, onClose, product, onAddToCart }) => {
     onClose();
   };
 
-  const finalPrice = product.price;
+  const finalPrice = product.wholesalePrice || product.price;
 
   return (
     <AnimatePresence>
@@ -194,29 +194,13 @@ const VariantSelectionModal = ({ isOpen, onClose, product, onAddToCart }) => {
                 </div>
 
                 {/* Price Display */}
-                <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4 space-y-2">
+                <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-gray-600 dark:text-gray-400">السعر على التفاصيل:</span>
-                    <span className="text-gray-900 dark:text-gray-100 font-medium">
-                      {product.price} TND
+                    <span className="text-base text-gray-600 dark:text-gray-400">السعر:</span>
+                    <span className="text-2xl font-bold text-gold-600">
+                      {product.wholesalePrice || product.price} TND
                     </span>
                   </div>
-                  {product.facebookPrice > 0 && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-600 dark:text-gray-400">السعر على صفحة:</span>
-                      <span className="text-blue-600 font-medium">
-                        {product.facebookPrice} TND
-                      </span>
-                    </div>
-                  )}
-                  {product.wholesalePrice > 0 && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-600 dark:text-gray-400">سعر الجملة:</span>
-                      <span className="text-green-600 font-medium">
-                        {product.wholesalePrice} TND
-                      </span>
-                    </div>
-                  )}
                   {selectedVariant && selectedVariant.stock !== undefined && (
                     <div className="flex items-center justify-between pt-2 border-t border-gray-200 dark:border-gray-600">
                       <span className="text-xs text-gray-500 dark:text-gray-400">

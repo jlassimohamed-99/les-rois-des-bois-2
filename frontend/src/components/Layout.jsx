@@ -26,6 +26,7 @@ import {
   X,
   Users,
   UserCog,
+  Home,
 } from 'lucide-react';
 
 const Layout = () => {
@@ -57,6 +58,7 @@ const Layout = () => {
     { path: '/admin/users', icon: UserCog, label: 'المستخدمون' },
     { path: '/admin/analytics', icon: BarChart3, label: 'التحليلات' },
     { path: '/admin/audit-logs', icon: Activity, label: 'سجل التدقيق' },
+    { path: '/admin/homepage', icon: Home, label: 'إدارة الصفحة الرئيسية' },
     { path: '/admin/settings', icon: Settings, label: 'الإعدادات' },
     { path: '/admin/jobs', icon: Settings, label: 'المهام' },
   ];
@@ -82,21 +84,63 @@ const Layout = () => {
         <nav className="p-4 space-y-2 overflow-y-auto flex-1 min-h-0">
           {menuItems.map((item) => {
             const Icon = item.icon;
-            const isActive = location.pathname === item.path;
+            const isHomepage = item.path === '/admin/homepage';
+            const isActive = isHomepage 
+              ? location.pathname.startsWith('/admin/homepage')
+              : location.pathname === item.path;
+            
             return (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                  isActive
-                    ? 'bg-gold-100 dark:bg-gold-900/30 text-gold-700 dark:text-gold-400'
-                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                }`}
-                onClick={() => setOpen(false)}
-              >
-                <Icon size={20} />
-                <span>{item.label}</span>
-              </Link>
+              <div key={item.path}>
+                <Link
+                  to={item.path}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                    isActive
+                      ? 'bg-gold-100 dark:bg-gold-900/30 text-gold-700 dark:text-gold-400'
+                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                  }`}
+                  onClick={() => !isHomepage && setOpen(false)}
+                >
+                  <Icon size={20} />
+                  <span>{item.label}</span>
+                </Link>
+                {isHomepage && isActive && (
+                  <div className="mr-8 mt-2 space-y-1">
+                    <Link
+                      to="/admin/homepage/hero"
+                      className={`block px-4 py-2 rounded-lg text-sm transition-colors ${
+                        location.pathname === '/admin/homepage/hero'
+                          ? 'bg-gold-100 dark:bg-gold-900/30 text-gold-700 dark:text-gold-400'
+                          : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+                      }`}
+                      onClick={() => setOpen(false)}
+                    >
+                      البانر الرئيسي
+                    </Link>
+                    <Link
+                      to="/admin/homepage/featured"
+                      className={`block px-4 py-2 rounded-lg text-sm transition-colors ${
+                        location.pathname === '/admin/homepage/featured'
+                          ? 'bg-gold-100 dark:bg-gold-900/30 text-gold-700 dark:text-gold-400'
+                          : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+                      }`}
+                      onClick={() => setOpen(false)}
+                    >
+                      المنتجات المميزة
+                    </Link>
+                    <Link
+                      to="/admin/homepage/top-sellers"
+                      className={`block px-4 py-2 rounded-lg text-sm transition-colors ${
+                        location.pathname === '/admin/homepage/top-sellers'
+                          ? 'bg-gold-100 dark:bg-gold-900/30 text-gold-700 dark:text-gold-400'
+                          : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+                      }`}
+                      onClick={() => setOpen(false)}
+                    >
+                      الأكثر مبيعاً
+                    </Link>
+                  </div>
+                )}
+              </div>
             );
           })}
         </nav>

@@ -1,7 +1,9 @@
 import Order from '../models/Order.model.js';
 import OrderActivity from '../models/OrderActivity.model.js';
 import { buildOrderItems, calculateOrderTotals } from '../utils/orderHelper.js';
-import { validateStock } from '../utils/inventoryHelper.js';
+import { validateStock, adjustStock } from '../utils/inventoryHelper.js';
+import Product from '../models/Product.model.js';
+import SpecialProduct from '../models/SpecialProduct.model.js';
 
 // Create order from client
 export const createClientOrder = async (req, res, next) => {
@@ -104,6 +106,94 @@ export const createClientOrder = async (req, res, next) => {
       userId: user._id,
       notes: 'تم إنشاء الطلب من الموقع',
     });
+
+    // Deduct stock for each item
+    for (const item of orderItems) {
+      if (item.productType === 'regular') {
+        await adjustStock(
+          item.productId,
+          'regular',
+          -item.quantity,
+          'E-commerce Order',
+          user._id,
+          { orderId: order._id }
+        );
+      } else if (item.productType === 'special') {
+        // For special products, deduct from base products
+        const specialProduct = await SpecialProduct.findById(item.productId);
+        if (specialProduct && item.variantA && item.variantB) {
+          // Deduct from variant A base product
+          if (item.variantA.productId) {
+            const baseProductA = await Product.findById(item.variantA.productId);
+            if (baseProductA && item.variantA.variant) {
+              // Find the variant and update its stock
+              const variantA = baseProductA.variants?.find(
+                v => v.value === item.variantA.variant.value || 
+                     v._id?.toString() === item.variantA.variant._id?.toString()
+              );
+              if (variantA) {
+                variantA.stock = Math.max(0, (variantA.stock || 0) - item.quantity);
+                await baseProductA.save();
+              } else {
+                // No variant, deduct from product stock
+                await adjustStock(
+                  item.variantA.productId,
+                  'regular',
+                  -item.quantity,
+                  'E-commerce Order - Special Product',
+                  user._id,
+                  { orderId: order._id }
+                );
+              }
+            } else if (baseProductA) {
+              await adjustStock(
+                item.variantA.productId,
+                'regular',
+                -item.quantity,
+                'E-commerce Order - Special Product',
+                user._id,
+                { orderId: order._id }
+              );
+            }
+          }
+          
+          // Deduct from variant B base product
+          if (item.variantB.productId) {
+            const baseProductB = await Product.findById(item.variantB.productId);
+            if (baseProductB && item.variantB.variant) {
+              // Find the variant and update its stock
+              const variantB = baseProductB.variants?.find(
+                v => v.value === item.variantB.variant.value || 
+                     v._id?.toString() === item.variantB.variant._id?.toString()
+              );
+              if (variantB) {
+                variantB.stock = Math.max(0, (variantB.stock || 0) - item.quantity);
+                await baseProductB.save();
+              } else {
+                // No variant, deduct from product stock
+                await adjustStock(
+                  item.variantB.productId,
+                  'regular',
+                  -item.quantity,
+                  'E-commerce Order - Special Product',
+                  user._id,
+                  { orderId: order._id }
+                );
+              }
+            } else if (baseProductB) {
+              await adjustStock(
+                item.variantB.productId,
+                'regular',
+                -item.quantity,
+                'E-commerce Order - Special Product',
+                user._id,
+                { orderId: order._id }
+              );
+            }
+          }
+        }
+      }
+    }
 
     // Update user stats
     user.totalOrders = (user.totalOrders || 0) + 1;

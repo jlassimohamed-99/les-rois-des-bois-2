@@ -134,8 +134,8 @@ export const getPOSProducts = async (req, res, next) => {
         .populate('category', 'name slug')
         .sort({ name: 1 }),
       SpecialProduct.find({ status: 'visible' })
-        .populate('baseProductA', 'name images variants price')
-        .populate('baseProductB', 'name images variants price')
+        .populate('baseProductA', 'name images variants stock price')
+        .populate('baseProductB', 'name images variants stock price')
         .sort({ name: 1 }),
       Category.find().sort({ name: 1 }),
     ]);
@@ -198,7 +198,48 @@ export const createPOSOrder = async (req, res, next) => {
         }
       } else {
         // For special products, check base products stock
-        // Note: We'll validate during stock deduction
+        if (item.variantA && item.variantB) {
+          // Get fresh stock data for base products
+          const baseProductA = await Product.findById(item.variantA.productId || product.baseProductA._id);
+          const baseProductB = await Product.findById(item.variantB.productId || product.baseProductB._id);
+          
+          // Check variant A stock
+          let stockA = 0;
+          if (item.variantA.variant && baseProductA?.variants && baseProductA.variants.length > 0) {
+            const variantA = baseProductA.variants.find(
+              v => v.value === item.variantA.variant.value || 
+                   v._id?.toString() === item.variantA.variant._id?.toString()
+            );
+            stockA = variantA?.stock ?? 0;
+          } else {
+            stockA = baseProductA?.stock ?? 0;
+          }
+          
+          // Check variant B stock
+          let stockB = 0;
+          if (item.variantB.variant && baseProductB?.variants && baseProductB.variants.length > 0) {
+            const variantB = baseProductB.variants.find(
+              v => v.value === item.variantB.variant.value || 
+                   v._id?.toString() === item.variantB.variant._id?.toString()
+            );
+            stockB = variantB?.stock ?? 0;
+          } else {
+            stockB = baseProductB?.stock ?? 0;
+          }
+          
+          // Combination stock is minimum of both
+          const availableStock = Math.min(stockA, stockB);
+          
+          if (availableStock < item.quantity) {
+            stockIssues.push({
+              productId: item.productId,
+              productName: product.name,
+              requested: item.quantity,
+              available: availableStock,
+              error: 'Insufficient stock in base products',
+            });
+          }
+        }
       }
     }
 
@@ -321,26 +362,75 @@ export const createPOSOrder = async (req, res, next) => {
       } else if (item.productType === 'special') {
         // For special products, deduct from base products
         const specialProduct = await SpecialProduct.findById(item.productId);
-        if (specialProduct) {
-          if (item.variantA && item.variantA.productId) {
-            await adjustStock(
-              item.variantA.productId,
-              'regular',
-              -item.quantity,
-              'POS Sale - Special Product',
-              req.user._id,
-              { orderId: order._id }
-            );
+        if (specialProduct && item.variantA && item.variantB) {
+          // Deduct from variant A base product
+          if (item.variantA.productId) {
+            const baseProductA = await Product.findById(item.variantA.productId);
+            if (baseProductA && item.variantA.variant) {
+              // Find the variant and update its stock
+              const variantA = baseProductA.variants?.find(
+                v => v.value === item.variantA.variant.value || 
+                     v._id?.toString() === item.variantA.variant._id?.toString()
+              );
+              if (variantA) {
+                variantA.stock = Math.max(0, (variantA.stock || 0) - item.quantity);
+                await baseProductA.save();
+              } else {
+                // No variant, deduct from product stock
+                await adjustStock(
+                  item.variantA.productId,
+                  'regular',
+                  -item.quantity,
+                  'POS Sale - Special Product',
+                  req.user._id,
+                  { orderId: order._id }
+                );
+              }
+            } else if (baseProductA) {
+              await adjustStock(
+                item.variantA.productId,
+                'regular',
+                -item.quantity,
+                'POS Sale - Special Product',
+                req.user._id,
+                { orderId: order._id }
+              );
+            }
           }
-          if (item.variantB && item.variantB.productId) {
-            await adjustStock(
-              item.variantB.productId,
-              'regular',
-              -item.quantity,
-              'POS Sale - Special Product',
-              req.user._id,
-              { orderId: order._id }
-            );
+          
+          // Deduct from variant B base product
+          if (item.variantB.productId) {
+            const baseProductB = await Product.findById(item.variantB.productId);
+            if (baseProductB && item.variantB.variant) {
+              // Find the variant and update its stock
+              const variantB = baseProductB.variants?.find(
+                v => v.value === item.variantB.variant.value || 
+                     v._id?.toString() === item.variantB.variant._id?.toString()
+              );
+              if (variantB) {
+                variantB.stock = Math.max(0, (variantB.stock || 0) - item.quantity);
+                await baseProductB.save();
+              } else {
+                // No variant, deduct from product stock
+                await adjustStock(
+                  item.variantB.productId,
+                  'regular',
+                  -item.quantity,
+                  'POS Sale - Special Product',
+                  req.user._id,
+                  { orderId: order._id }
+                );
+              }
+            } else if (baseProductB) {
+              await adjustStock(
+                item.variantB.productId,
+                'regular',
+                -item.quantity,
+                'POS Sale - Special Product',
+                req.user._id,
+                { orderId: order._id }
+              );
+            }
           }
         }
       }

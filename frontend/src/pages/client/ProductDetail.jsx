@@ -184,29 +184,13 @@ const ProductDetail = () => {
               
               {/* Prices Section */}
               <div className="mt-4 space-y-3">
-                <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 space-y-2">
+                <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">السعر على التفاصيل:</span>
-                    <span className="text-lg font-bold text-gold-600">
-                      {product.price} TND
+                    <span className="text-base text-gray-600 dark:text-gray-400">السعر:</span>
+                    <span className="text-2xl font-bold text-gold-600">
+                      {product.wholesalePrice || product.price} TND
                     </span>
                   </div>
-                  {product.facebookPrice > 0 && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600 dark:text-gray-400">السعر على صفحة:</span>
-                      <span className="text-lg font-bold text-blue-600">
-                        {product.facebookPrice} TND
-                      </span>
-                    </div>
-                  )}
-                  {product.wholesalePrice > 0 && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600 dark:text-gray-400">سعر الجملة:</span>
-                      <span className="text-lg font-bold text-green-600">
-                        {product.wholesalePrice} TND
-                      </span>
-                    </div>
-                  )}
                   {selectedVariant && selectedVariant.stock !== undefined && (
                     <div className="flex items-center justify-between pt-2 border-t border-gray-200 dark:border-gray-600">
                       <span className="text-xs text-gray-500 dark:text-gray-400">الكمية المتاحة:</span>

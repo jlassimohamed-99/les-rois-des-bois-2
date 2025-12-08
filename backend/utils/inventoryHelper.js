@@ -127,9 +127,70 @@ export const validateStock = async (items) => {
           error: 'Insufficient stock',
         });
       }
+    } else if (productType === 'special') {
+      // For special products, check base products stock
+      const specialProduct = await SpecialProduct.findById(item.productId)
+        .populate('baseProductA', 'variants stock')
+        .populate('baseProductB', 'variants stock');
+      
+      if (!specialProduct) {
+        stockIssues.push({
+          productId: item.productId,
+          productName: item.productName || 'Unknown',
+          error: 'Special product not found',
+        });
+        continue;
+      }
+
+      // If item has combination info, validate that specific combination
+      if (item.selectedOptions || item.variantA || item.variantB) {
+        const optionA = item.selectedOptions?.optionA || item.variantA;
+        const optionB = item.selectedOptions?.optionB || item.variantB;
+        
+        if (optionA && optionB) {
+          // Get fresh stock data for base products
+          const freshProductA = await Product.findById(specialProduct.baseProductA._id);
+          const freshProductB = await Product.findById(specialProduct.baseProductB._id);
+          
+          // Check variant A stock
+          let stockA = 0;
+          if (optionA.variant && freshProductA?.variants && freshProductA.variants.length > 0) {
+            const variantA = freshProductA.variants.find(
+              v => v.value === optionA.variant.value || 
+                   v._id?.toString() === optionA.variant._id?.toString()
+            );
+            stockA = variantA?.stock !== undefined ? variantA.stock : 0;
+          } else {
+            stockA = freshProductA?.stock ?? 0;
+          }
+          
+          // Check variant B stock
+          let stockB = 0;
+          if (optionB.variant && freshProductB?.variants && freshProductB.variants.length > 0) {
+            const variantB = freshProductB.variants.find(
+              v => v.value === optionB.variant.value || 
+                   v._id?.toString() === optionB.variant._id?.toString()
+            );
+            stockB = variantB?.stock !== undefined ? variantB.stock : 0;
+          } else {
+            stockB = freshProductB?.stock ?? 0;
+          }
+          
+          // Combination stock is minimum of both
+          const availableStock = Math.min(stockA, stockB);
+          
+          if (availableStock < item.quantity) {
+            stockIssues.push({
+              productId: item.productId,
+              productName: item.productName || specialProduct.name,
+              requested: item.quantity,
+              available: availableStock,
+              error: 'Insufficient stock in base products',
+            });
+          }
+        }
+      }
     }
-    // For special products, stock validation will be done during stock deduction
-    // based on base products
   }
 
   return stockIssues;

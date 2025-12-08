@@ -434,6 +434,19 @@ const POSInterface = () => {
     addRegularProductToCart(productToAdd, null, qtyToAdd);
   };
 
+  // Helper function to get available variants from combinations
+  const getAvailableVariantsFromCombinations = (combinations, productType) => {
+    if (!combinations || combinations.length === 0) return [];
+    const variants = new Map();
+    combinations.forEach(combo => {
+      const variant = productType === 'A' ? combo.optionA?.variant : combo.optionB?.variant;
+      if (variant && variant.value) {
+        variants.set(variant.value, variant);
+      }
+    });
+    return Array.from(variants.values());
+  };
+
   // Start special product selection
   const startSpecialProductSelection = (product) => {
     setSelectedSpecialProduct(product);
@@ -984,8 +997,13 @@ const POSInterface = () => {
                         <h2 className="text-xl font-bold mb-4">{selectedSpecialProduct.name}</h2>
                         <p className="text-gray-400 mb-6">اختر الجزء الأول</p>
                         <div className="grid grid-cols-4 md:grid-cols-5 gap-3">
-                          {selectedSpecialProduct.baseProductA?.variants && selectedSpecialProduct.baseProductA.variants.length > 0 ? (
-                            selectedSpecialProduct.baseProductA.variants.map((variant, idx) => (
+                          {(() => {
+                            const availableVariants = getAvailableVariantsFromCombinations(
+                              selectedSpecialProduct.combinations,
+                              'A'
+                            );
+                            return availableVariants.length > 0 ? (
+                              availableVariants.map((variant, idx) => (
                               <div
                                 key={idx}
                                 onClick={() => selectOptionA(variant)}
@@ -998,14 +1016,15 @@ const POSInterface = () => {
                                     className="w-full h-32 object-cover rounded-lg mb-3"
                                   />
                                 )}
-                                <p className="text-white font-medium text-sm">{variant.name}</p>
+                                <p className="text-white font-medium text-sm">{variant.name || variant.value}</p>
                               </div>
                             ))
-                          ) : (
-                            <div className="col-span-full text-center text-gray-400 py-4">
-                              لا توجد خيارات متاحة
-                            </div>
-                          )}
+                            ) : (
+                              <div className="col-span-full text-center text-gray-400 py-4">
+                                لا توجد خيارات متاحة
+                              </div>
+                            );
+                          })()}
                         </div>
                       </div>
                     )}
@@ -1018,8 +1037,26 @@ const POSInterface = () => {
                         </div>
                         <p className="text-gray-400 mb-6">اختر الجزء الثاني</p>
                         <div className="grid grid-cols-4 md:grid-cols-5 gap-3">
-                          {selectedSpecialProduct.baseProductB?.variants && selectedSpecialProduct.baseProductB.variants.length > 0 ? (
-                            selectedSpecialProduct.baseProductB.variants.map((variant, idx) => (
+                          {(() => {
+                            const availableVariants = getAvailableVariantsFromCombinations(
+                              selectedSpecialProduct.combinations,
+                              'B'
+                            );
+                            // Filter variants that work with selectedOptionA
+                            const filteredVariants = selectedOptionA 
+                              ? availableVariants.filter(variantB => {
+                                  // Check if there's a combination with selectedOptionA and this variantB
+                                  return selectedSpecialProduct.combinations?.some(combo => {
+                                    const comboOptionA = combo.optionA?.variant?.value || combo.optionA?.value;
+                                    const comboOptionB = combo.optionB?.variant?.value || combo.optionB?.value;
+                                    return (comboOptionA === (selectedOptionA.value || selectedOptionA)) && 
+                                           (comboOptionB === variantB.value);
+                                  });
+                                })
+                              : availableVariants;
+                            
+                            return filteredVariants.length > 0 ? (
+                              filteredVariants.map((variant, idx) => (
                               <div
                                 key={idx}
                                 onClick={() => selectOptionB(variant)}
@@ -1032,14 +1069,15 @@ const POSInterface = () => {
                                     className="w-full h-32 object-cover rounded-lg mb-3"
                                   />
                                 )}
-                                <p className="text-white font-medium text-sm">{variant.name}</p>
+                                <p className="text-white font-medium text-sm">{variant.name || variant.value}</p>
                               </div>
                             ))
-                          ) : (
-                            <div className="col-span-full text-center text-gray-400 py-4">
-                              لا توجد خيارات متاحة
-                            </div>
-                          )}
+                            ) : (
+                              <div className="col-span-full text-center text-gray-400 py-4">
+                                لا توجد خيارات متاحة
+                              </div>
+                            );
+                          })()}
                         </div>
                       </div>
                     )}

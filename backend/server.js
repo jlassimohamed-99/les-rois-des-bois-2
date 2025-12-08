@@ -37,6 +37,7 @@ import clientOrderRoutes from './routes/clientOrder.routes.js';
 import userRoutes from './routes/user.routes.js';
 import settingsRoutes from './routes/settings.routes.js';
 import commercialRoutes from './routes/commercial.routes.js';
+import homepageRoutes from './routes/homepage.routes.js';
 
 // Import error handler
 import { errorHandler } from './middleware/errorHandler.middleware.js';
@@ -102,6 +103,7 @@ app.use('/api/pos', posRoutes);
 app.use('/api/jobs', jobRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/commercial', commercialRoutes);
+app.use('/api/homepage', homepageRoutes);
 
 // Client routes (public and authenticated)
 app.use('/api/client/auth', clientAuthRoutes);

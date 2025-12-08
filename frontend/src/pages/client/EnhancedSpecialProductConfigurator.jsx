@@ -63,6 +63,16 @@ const EnhancedSpecialProductConfigurator = () => {
     return combination || null;
   }, [detail, chooses]);
 
+  // Check if current combination is available
+  const isAvailable = useMemo(() => {
+    return activeCombination?.isAvailable !== false && (activeCombination?.stock ?? 0) > 0;
+  }, [activeCombination]);
+
+  // Get available stock for current combination
+  const availableStock = useMemo(() => {
+    return activeCombination?.stock ?? 0;
+  }, [activeCombination]);
+
   const price = useMemo(() => {
     if (!detail) return 0;
     return detail.finalPrice + (activeCombination?.additionalPrice || 0);
@@ -73,7 +83,20 @@ const EnhancedSpecialProductConfigurator = () => {
       toast.error('هذه التركيبة غير متاحة');
       return;
     }
+
+    // Check stock availability
+    const stock = activeCombination?.stock ?? 0;
+    if (stock <= 0 || !isAvailable) {
+      toast.error('هذه التركيبة غير متوفرة في المخزون');
+      return;
+    }
+
     const qty = Math.max(1, quantity || 1);
+    if (qty > stock) {
+      toast.error(`المخزون المتاح: ${stock} فقط`);
+      return;
+    }
+
     const item = {
       productId: detail._id,
       productType: 'special',
@@ -189,135 +212,23 @@ const EnhancedSpecialProductConfigurator = () => {
           variants={fadeIn}
           className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-sm p-6 space-y-8"
         >
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Product A Selection */}
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.2 }}
-            >
-              <label className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4 block">
-                1) {detail?.baseProductA?.name || 'الجزء الأول'}
-              </label>
-              <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {detail?.baseProductA?.variants?.map((variant, idx) => (
-                  <motion.button
-                    key={variant.value}
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.1 * idx }}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => {
-                      setChooses((prev) => ({ ...prev, optionA: variant.value }));
-                      setCurrentStep(2);
-                    }}
-                    className={`p-3 rounded-xl border-2 text-right transition-all ${
-                      chooses.optionA === variant.value
-                        ? 'border-gold-500 bg-gold-50 dark:bg-gold-900/20 text-gold-700 shadow-md'
-                        : 'border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-200 hover:border-gold-500'
-                    }`}
-                  >
-                    {variant.image && (
-                      <motion.img
-                        src={withBase(variant.image)}
-                        alt={variant.value}
-                        className="h-20 w-full object-cover rounded-lg mb-2"
-                        whileHover={{ scale: 1.05 }}
-                        transition={{ duration: 0.2 }}
-                      />
-                    )}
-                    <div className="font-semibold text-sm">{variant.name || variant.value}</div>
-                    <div className="text-xs text-gray-500">
-                      {variant.additionalPrice ? `+${variant.additionalPrice} TND` : 'بدون زيادة'}
-                    </div>
-                    {chooses.optionA === variant.value && (
-                      <motion.div
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        className="absolute top-2 right-2 bg-gold-600 text-white rounded-full p-1"
-                      >
-                        <Check size={12} />
-                      </motion.div>
-                    )}
-                  </motion.button>
-                ))}
-              </div>
-            </motion.div>
-
-            {/* Product B Selection */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.3 }}
-            >
-              <label className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4 block">
-                2) {detail?.baseProductB?.name || 'الجزء الثاني'}
-              </label>
-              <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {detail?.baseProductB?.variants?.map((variant, idx) => (
-                  <motion.button
-                    key={variant.value}
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.1 * idx }}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => {
-                      setChooses((prev) => ({ ...prev, optionB: variant.value }));
-                      setCurrentStep(3);
-                    }}
-                    disabled={!chooses.optionA}
-                    className={`p-3 rounded-xl border-2 text-right transition-all relative ${
-                      !chooses.optionA
-                        ? 'opacity-50 cursor-not-allowed'
-                        : chooses.optionB === variant.value
-                        ? 'border-gold-500 bg-gold-50 dark:bg-gold-900/20 text-gold-700 shadow-md'
-                        : 'border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-200 hover:border-gold-500'
-                    }`}
-                  >
-                    {variant.image && (
-                      <motion.img
-                        src={withBase(variant.image)}
-                        alt={variant.value}
-                        className="h-20 w-full object-cover rounded-lg mb-2"
-                        whileHover={{ scale: 1.05 }}
-                        transition={{ duration: 0.2 }}
-                      />
-                    )}
-                    <div className="font-semibold text-sm">{variant.name || variant.value}</div>
-                    <div className="text-xs text-gray-500">
-                      {variant.additionalPrice ? `+${variant.additionalPrice} TND` : 'بدون زيادة'}
-                    </div>
-                    {chooses.optionB === variant.value && (
-                      <motion.div
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        className="absolute top-2 right-2 bg-gold-600 text-white rounded-full p-1"
-                      >
-                        <Check size={12} />
-                      </motion.div>
-                    )}
-                  </motion.button>
-                ))}
-              </div>
-            </motion.div>
-          </div>
-
-          {/* Preview and Summary */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-            className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center"
-          >
-            <motion.div
-              key={activeCombination?._id}
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.3 }}
-              className="bg-gray-50 dark:bg-gray-900 rounded-2xl border border-dashed border-gray-300 dark:border-gray-700 min-h-[320px] flex items-center justify-center overflow-hidden"
-            >
+          {/* Main Layout: Desktop has result left, choices right. Mobile keeps original order */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Left Column: Preview and Summary (Desktop First, Mobile Second) */}
+            <div className="order-2 lg:order-1 space-y-6">
+              {/* Preview */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 }}
+              >
+                <motion.div
+                  key={activeCombination?._id}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.3 }}
+                  className="bg-gray-50 dark:bg-gray-900 rounded-2xl border border-dashed border-gray-300 dark:border-gray-700 min-h-[320px] flex items-center justify-center overflow-hidden"
+                >
               <AnimatePresence mode="wait">
                 {activeCombination?.finalImage ? (
                   <motion.img
@@ -343,13 +254,15 @@ const EnhancedSpecialProductConfigurator = () => {
                 )}
               </AnimatePresence>
             </motion.div>
+              </motion.div>
 
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.5 }}
-              className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-6 space-y-4 shadow-sm"
-            >
+              {/* Summary */}
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.5 }}
+                className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-6 space-y-4 shadow-sm"
+              >
               <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">الملخص</h3>
               <div className="space-y-2 text-gray-700 dark:text-gray-300">
                 <p>
@@ -374,6 +287,15 @@ const EnhancedSpecialProductConfigurator = () => {
                 >
                   الإجمالي: {price} TND
                 </motion.p>
+                {activeCombination && (
+                  <div className={`text-sm pt-2 ${isAvailable ? 'text-green-600 dark:text-green-400' : 'text-red-500'}`}>
+                    {isAvailable ? (
+                      <span>المخزون المتاح: {availableStock}</span>
+                    ) : (
+                      <span>غير متوفر في المخزون</span>
+                    )}
+                  </div>
+                )}
               </div>
               <div className="flex items-center gap-3">
                 <label className="text-sm text-gray-600 dark:text-gray-400">الكمية</label>
@@ -382,7 +304,8 @@ const EnhancedSpecialProductConfigurator = () => {
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
                     onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                    className="px-3 py-2 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600"
+                    disabled={quantity <= 1}
+                    className="px-3 py-2 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     -
                   </motion.button>
@@ -397,8 +320,12 @@ const EnhancedSpecialProductConfigurator = () => {
                   <motion.button
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
-                    onClick={() => setQuantity(quantity + 1)}
-                    className="px-3 py-2 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600"
+                    onClick={() => {
+                      const maxQty = isAvailable ? availableStock : 0;
+                      setQuantity(Math.min(quantity + 1, maxQty));
+                    }}
+                    disabled={!isAvailable || quantity >= availableStock}
+                    className="px-3 py-2 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     +
                   </motion.button>
@@ -406,15 +333,225 @@ const EnhancedSpecialProductConfigurator = () => {
               </div>
               <Button
                 onClick={handleAddToCart}
-                disabled={!activeCombination || !chooses.optionA || !chooses.optionB}
+                disabled={!activeCombination || !chooses.optionA || !chooses.optionB || !isAvailable}
                 className="w-full"
                 size="lg"
               >
-                أضف المنتج المركب
+                {!isAvailable ? 'غير متوفر' : 'أضف المنتج المركب'}
                 <ArrowRight size={18} className="mr-2" />
               </Button>
             </motion.div>
-          </motion.div>
+            </div>
+
+            {/* Right Column: Product Choices (Desktop Second, Mobile First) */}
+            <div className="order-1 lg:order-2 space-y-6">
+              {/* Product A Selection */}
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.2 }}
+              >
+                <label className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4 block">
+                  1) {detail?.baseProductA?.name || 'الجزء الأول'}
+                </label>
+                <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {(() => {
+                    // Get unique variants from combinations for product A with stock info
+                    const availableVariantsA = new Map();
+                    if (detail?.combinations) {
+                      detail.combinations.forEach(combo => {
+                        const variant = combo.optionA?.variant;
+                        if (variant && variant.value) {
+                          if (!availableVariantsA.has(variant.value)) {
+                            // Check if this variant has any available combination
+                            const variantCombos = detail.combinations.filter(c => 
+                              (c.optionA?.variant?.value === variant.value || c.optionA?.value === variant.value)
+                            );
+                            const maxStock = Math.max(...variantCombos.map(c => c.stock ?? 0), 0);
+                            const isVariantAvailable = variantCombos.some(c => (c.stock ?? 0) > 0);
+                            
+                            availableVariantsA.set(variant.value, {
+                              ...variant,
+                              maxStock,
+                              isAvailable: isVariantAvailable,
+                            });
+                          }
+                        }
+                      });
+                    }
+                    return Array.from(availableVariantsA.values()).map((variant, idx) => {
+                      const variantAvailable = variant.isAvailable !== false && (variant.maxStock ?? 0) > 0;
+                      return (
+                        <motion.button
+                          key={variant.value}
+                          initial={{ opacity: 0, scale: 0.9 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ delay: 0.1 * idx }}
+                          whileHover={variantAvailable ? { scale: 1.05 } : {}}
+                          whileTap={variantAvailable ? { scale: 0.95 } : {}}
+                          onClick={() => {
+                            if (variantAvailable) {
+                              setChooses((prev) => ({ ...prev, optionA: variant.value }));
+                              setCurrentStep(2);
+                            }
+                          }}
+                          disabled={!variantAvailable}
+                          className={`p-3 rounded-xl border-2 text-right transition-all relative ${
+                            !variantAvailable
+                              ? 'opacity-50 cursor-not-allowed grayscale border-gray-300 dark:border-gray-600'
+                              : chooses.optionA === variant.value
+                              ? 'border-gold-500 bg-gold-50 dark:bg-gold-900/20 text-gold-700 shadow-md'
+                              : 'border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-200 hover:border-gold-500'
+                          }`}
+                        >
+                          {variant.image && (
+                            <motion.img
+                              src={withBase(variant.image)}
+                              alt={variant.value}
+                              className={`h-20 w-full object-cover rounded-lg mb-2 ${!variantAvailable ? 'opacity-50' : ''}`}
+                              whileHover={variantAvailable ? { scale: 1.05 } : {}}
+                              transition={{ duration: 0.2 }}
+                            />
+                          )}
+                          <div className={`font-semibold text-sm ${!variantAvailable ? 'line-through' : ''}`}>
+                            {variant.name || variant.value}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {variant.additionalPrice ? `+${variant.additionalPrice} TND` : 'بدون زيادة'}
+                          </div>
+                          {!variantAvailable && (
+                            <div className="text-xs text-red-500 mt-1">غير متوفر</div>
+                          )}
+                          {variantAvailable && variant.maxStock > 0 && (
+                            <div className="text-xs text-green-600 dark:text-green-400 mt-1">
+                              متوفر: {variant.maxStock}
+                            </div>
+                          )}
+                          {chooses.optionA === variant.value && variantAvailable && (
+                            <motion.div
+                              initial={{ scale: 0 }}
+                              animate={{ scale: 1 }}
+                              className="absolute top-2 right-2 bg-gold-600 text-white rounded-full p-1"
+                            >
+                              <Check size={12} />
+                            </motion.div>
+                          )}
+                        </motion.button>
+                      );
+                    });
+                  })()}
+                </div>
+              </motion.div>
+
+              {/* Product B Selection */}
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.3 }}
+              >
+                <label className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4 block">
+                  2) {detail?.baseProductB?.name || 'الجزء الثاني'}
+                </label>
+                <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {(() => {
+                    // Get unique variants from combinations for product B with stock info
+                    // Filter to only show variants that work with selected optionA
+                    const availableVariantsB = new Map();
+                    if (detail?.combinations) {
+                      detail.combinations.forEach(combo => {
+                        // Only include variant B if it works with selected optionA
+                        const comboOptionA = combo.optionA?.variant?.value || combo.optionA?.value;
+                        if (!chooses.optionA || comboOptionA === chooses.optionA) {
+                          const variant = combo.optionB?.variant;
+                          if (variant && variant.value) {
+                            if (!availableVariantsB.has(variant.value)) {
+                              // Get stock for this specific combination
+                              const comboStock = combo.stock ?? 0;
+                              const isComboAvailable = combo.isAvailable !== false && comboStock > 0;
+                              
+                              availableVariantsB.set(variant.value, {
+                                ...variant,
+                                stock: comboStock,
+                                isAvailable: isComboAvailable,
+                              });
+                            } else {
+                              // Update with max stock if this combo has more
+                              const existing = availableVariantsB.get(variant.value);
+                              const comboStock = combo.stock ?? 0;
+                              if (comboStock > (existing.stock ?? 0)) {
+                                existing.stock = comboStock;
+                                existing.isAvailable = combo.isAvailable !== false && comboStock > 0;
+                              }
+                            }
+                          }
+                        }
+                      });
+                    }
+                    return Array.from(availableVariantsB.values()).map((variant, idx) => {
+                      const variantAvailable = variant.isAvailable !== false && (variant.stock ?? 0) > 0;
+                      return (
+                        <motion.button
+                          key={variant.value}
+                          initial={{ opacity: 0, scale: 0.9 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ delay: 0.1 * idx }}
+                          whileHover={variantAvailable && chooses.optionA ? { scale: 1.05 } : {}}
+                          whileTap={variantAvailable && chooses.optionA ? { scale: 0.95 } : {}}
+                          onClick={() => {
+                            if (variantAvailable && chooses.optionA) {
+                              setChooses((prev) => ({ ...prev, optionB: variant.value }));
+                              setCurrentStep(3);
+                            }
+                          }}
+                          disabled={!chooses.optionA || !variantAvailable}
+                          className={`p-3 rounded-xl border-2 text-right transition-all relative ${
+                            !chooses.optionA || !variantAvailable
+                              ? 'opacity-50 cursor-not-allowed grayscale border-gray-300 dark:border-gray-600'
+                              : chooses.optionB === variant.value
+                              ? 'border-gold-500 bg-gold-50 dark:bg-gold-900/20 text-gold-700 shadow-md'
+                              : 'border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-200 hover:border-gold-500'
+                          }`}
+                        >
+                          {variant.image && (
+                            <motion.img
+                              src={withBase(variant.image)}
+                              alt={variant.value}
+                              className={`h-20 w-full object-cover rounded-lg mb-2 ${!variantAvailable ? 'opacity-50' : ''}`}
+                              whileHover={variantAvailable ? { scale: 1.05 } : {}}
+                              transition={{ duration: 0.2 }}
+                            />
+                          )}
+                          <div className={`font-semibold text-sm ${!variantAvailable ? 'line-through' : ''}`}>
+                            {variant.name || variant.value}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {variant.additionalPrice ? `+${variant.additionalPrice} TND` : 'بدون زيادة'}
+                          </div>
+                          {!variantAvailable && (
+                            <div className="text-xs text-red-500 mt-1">غير متوفر</div>
+                          )}
+                          {variantAvailable && variant.stock > 0 && (
+                            <div className="text-xs text-green-600 dark:text-green-400 mt-1">
+                              متوفر: {variant.stock}
+                            </div>
+                          )}
+                          {chooses.optionB === variant.value && variantAvailable && (
+                            <motion.div
+                              initial={{ scale: 0 }}
+                              animate={{ scale: 1 }}
+                              className="absolute top-2 right-2 bg-gold-600 text-white rounded-full p-1"
+                            >
+                              <Check size={12} />
+                            </motion.div>
+                          )}
+                        </motion.button>
+                      );
+                    });
+                  })()}
+                </div>
+              </motion.div>
+            </div>
+          </div>
         </motion.div>
       </div>
     </div>

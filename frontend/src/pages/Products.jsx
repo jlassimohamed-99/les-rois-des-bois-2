@@ -7,6 +7,7 @@ import ProductModal from '../components/ProductModal';
 const Products = () => {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [suppliers, setSuppliers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
@@ -16,6 +17,7 @@ const Products = () => {
 
   useEffect(() => {
     fetchCategories();
+    fetchSuppliers();
     fetchProducts();
   }, [searchTerm, selectedCategory, selectedStatus]);
 
@@ -23,6 +25,15 @@ const Products = () => {
     try {
       const response = await api.get('/categories');
       setCategories(response.data.data || []);
+    } catch (error) {
+      // Silent error handling
+    }
+  };
+
+  const fetchSuppliers = async () => {
+    try {
+      const response = await api.get('/suppliers');
+      setSuppliers(response.data.data || []);
     } catch (error) {
       // Silent error handling
     }
@@ -234,6 +245,7 @@ const Products = () => {
         <ProductModal
           product={editingProduct}
           categories={categories}
+          suppliers={suppliers}
           onClose={handleCloseModal}
         />
       )}

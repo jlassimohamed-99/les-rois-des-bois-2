@@ -22,6 +22,7 @@ export const getProducts = async (req, res, next) => {
 
     const products = await Product.find(query)
       .populate('category', 'name slug')
+      .populate('supplierId', 'name code')
       .sort({ createdAt: -1 });
 
     res.status(200).json({
@@ -36,7 +37,9 @@ export const getProducts = async (req, res, next) => {
 
 export const getProduct = async (req, res, next) => {
   try {
-    const product = await Product.findById(req.params.id).populate('category', 'name slug');
+    const product = await Product.findById(req.params.id)
+      .populate('category', 'name slug')
+      .populate('supplierId', 'name code');
 
     if (!product) {
       return res.status(404).json({
@@ -59,6 +62,7 @@ export const createProduct = async (req, res, next) => {
     const {
       name,
       category,
+      supplierId,
       price,
       cost,
       stock,
@@ -83,6 +87,7 @@ export const createProduct = async (req, res, next) => {
     const product = await Product.create({
       name,
       category,
+      supplierId: supplierId || undefined,
       price: Number(price),
       cost: cost ? Number(cost) : 0,
       stock: Number(stock),
@@ -97,7 +102,9 @@ export const createProduct = async (req, res, next) => {
       variants: Array.isArray(variants) ? variants : [],
     });
 
-    const populatedProduct = await Product.findById(product._id).populate('category', 'name slug');
+    const populatedProduct = await Product.findById(product._id)
+      .populate('category', 'name slug')
+      .populate('supplierId', 'name code');
 
     res.status(201).json({
       success: true,
@@ -128,6 +135,7 @@ export const updateProduct = async (req, res, next) => {
     const {
       name,
       category,
+      supplierId,
       price,
       cost,
       stock,
@@ -144,6 +152,7 @@ export const updateProduct = async (req, res, next) => {
 
     if (name) product.name = name;
     if (category) product.category = category;
+    if (supplierId !== undefined) product.supplierId = supplierId || null;
     if (price !== undefined) product.price = Number(price);
     if (cost !== undefined) product.cost = Number(cost);
     if (stock !== undefined) product.stock = Number(stock);
@@ -159,7 +168,9 @@ export const updateProduct = async (req, res, next) => {
 
     await product.save();
 
-    const populatedProduct = await Product.findById(product._id).populate('category', 'name slug');
+    const populatedProduct = await Product.findById(product._id)
+      .populate('category', 'name slug')
+      .populate('supplierId', 'name code');
 
     res.status(200).json({
       success: true,

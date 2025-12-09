@@ -84,8 +84,7 @@ const Dashboard = () => {
   });
   const [loading, setLoading] = useState(true);
   const [lowStockProducts, setLowStockProducts] = useState([]);
-  const [salesData, setSalesData] = useState([]);
-  const [topProducts, setTopProducts] = useState([]);
+      const [topProducts, setTopProducts] = useState([]);
   const [stockData, setStockData] = useState([]);
   const [loadingCharts, setLoadingCharts] = useState(true);
 
@@ -136,7 +135,6 @@ const Dashboard = () => {
     { label: 'الطلبات المعلقة', value: stats.pendingOrders, icon: FileText, color: 'bg-gold-600' },
     { label: 'إجمالي الإيرادات', value: `${stats.revenue.toLocaleString()} TND`, icon: TrendingUp, color: 'bg-gold-500' },
     { label: 'الربح', value: `${stats.profit.toLocaleString()} TND`, icon: TrendingUp, color: 'bg-green-500' },
-    { label: 'فواتير الائتمان', value: stats.creditInvoices, icon: CreditCard, color: 'bg-gold-700' },
   ];
 
   const fetchChartsData = async () => {
@@ -148,14 +146,7 @@ const Dashboard = () => {
       const startDate = new Date();
       startDate.setMonth(startDate.getMonth() - 6);
 
-      const [salesRes, topProductsRes, stockDistributionRes, lowStockRes] = await Promise.all([
-        api.get('/analytics/sales-over-time', {
-          params: {
-            startDate: startDate.toISOString().split('T')[0],
-            endDate: endDate.toISOString().split('T')[0],
-            groupBy: 'month',
-          },
-        }).catch(() => ({ data: { data: [] } })),
+      const [topProductsRes, stockDistributionRes, lowStockRes] = await Promise.all([
         api.get('/analytics/top-products', {
           params: {
             startDate: startDate.toISOString().split('T')[0],
@@ -167,25 +158,6 @@ const Dashboard = () => {
         api.get('/analytics/low-stock', { params: { threshold: 10 } }).catch(() => ({ data: { data: [] } })),
       ]);
 
-      // Format sales data
-      const months = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
-      const formattedSalesData = (salesRes.data.data || []).map((item) => {
-        // item.date is in format "YYYY-MM" or "YYYY-MM-DD"
-        let monthIndex = 0;
-        if (item.date) {
-          const dateParts = item.date.split('-');
-          if (dateParts.length >= 2) {
-            monthIndex = parseInt(dateParts[1]) - 1; // Month is 0-indexed
-          }
-        }
-        return {
-          month: months[monthIndex] || item.date || 'غير محدد',
-          sales: item.sales || 0,
-          revenue: item.revenue || 0,
-        };
-      }).slice(-6); // Get last 6 months
-      setSalesData(formattedSalesData);
-
       // Format top products
       const formattedTopProducts = (topProductsRes.data.data || []).slice(0, 5).map((product) => ({
         name: product.productName?.substring(0, 15) || 'غير محدد',
@@ -196,10 +168,12 @@ const Dashboard = () => {
 
       // Format stock distribution
       const stockDist = stockDistributionRes.data.data || {};
+      // Use counts (actual numbers) instead of percentages for the pie chart
+      const counts = stockDist.counts || {};
       const formattedStockData = [
-        { name: 'متوفر', value: stockDist.available || 0, color: '#10B981' },
-        { name: 'منخفض', value: stockDist.lowStock || 0, color: '#F59E0B' },
-        { name: 'نفد', value: stockDist.outOfStock || 0, color: '#EF4444' },
+        { name: 'متوفر', value: counts.available || 0, color: '#10B981' },
+        { name: 'منخفض', value: counts.lowStock || 0, color: '#F59E0B' },
+        { name: 'نفد', value: counts.outOfStock || 0, color: '#EF4444' },
       ];
       setStockData(formattedStockData);
 
@@ -306,41 +280,6 @@ const Dashboard = () => {
 
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Sales Chart */}
-        <div className="card">
-          <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">المبيعات الشهرية</h2>
-          {loadingCharts ? (
-            <div className="flex items-center justify-center h-64">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gold-600"></div>
-            </div>
-          ) : salesData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={salesData}>
-                <CartesianGrid strokeDasharray="3 3" stroke={document.documentElement.classList.contains('dark') ? '#374151' : '#E5E7EB'} />
-                <XAxis 
-                  dataKey="month" 
-                  stroke={document.documentElement.classList.contains('dark') ? '#9CA3AF' : '#6B7280'}
-                />
-                <YAxis 
-                  stroke={document.documentElement.classList.contains('dark') ? '#9CA3AF' : '#6B7280'}
-                />
-                <Tooltip content={<CustomTooltip />} />
-                <Legend 
-                  wrapperStyle={{
-                    color: document.documentElement.classList.contains('dark') ? '#E5E7EB' : '#111827'
-                  }}
-                />
-                <Line type="monotone" dataKey="sales" stroke="#FFD700" strokeWidth={2} name="عدد المبيعات" />
-                <Line type="monotone" dataKey="revenue" stroke="#10B981" strokeWidth={2} name="الإيرادات (TND)" />
-              </LineChart>
-            </ResponsiveContainer>
-          ) : (
-            <div className="flex items-center justify-center h-64 text-gray-500 dark:text-gray-400">
-              لا توجد بيانات متاحة
-            </div>
-          )}
-        </div>
-
         {/* Top Products */}
         <div className="card">
           <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">أفضل 5 منتجات</h2>
@@ -349,28 +288,68 @@ const Dashboard = () => {
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gold-600"></div>
             </div>
           ) : topProducts.length > 0 ? (
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={topProducts} margin={{ bottom: 60 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke={document.documentElement.classList.contains('dark') ? '#374151' : '#E5E7EB'} />
-                <XAxis 
-                  dataKey="name" 
-                  angle={0} 
-                  textAnchor="middle" 
-                  height={80}
-                  tick={{ 
-                    fontSize: 12,
-                    fill: document.documentElement.classList.contains('dark') ? '#9CA3AF' : '#6B7280'
-                  }}
-                  stroke={document.documentElement.classList.contains('dark') ? '#9CA3AF' : '#6B7280'}
-                  interval={0}
-                />
-                <YAxis 
-                  stroke={document.documentElement.classList.contains('dark') ? '#9CA3AF' : '#6B7280'}
-                />
-                <Tooltip content={<CustomTooltip />} />
-                <Bar dataKey="sales" fill="#FFD700" name="الكمية المباعة" />
-              </BarChart>
-            </ResponsiveContainer>
+            <>
+              <ResponsiveContainer width="100%" height={350}>
+                <BarChart 
+                  data={topProducts} 
+                  margin={{ top: 20, right: 20, left: 20, bottom: 60 }}
+                  barCategoryGap="20%"
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke={document.documentElement.classList.contains('dark') ? '#374151' : '#E5E7EB'} />
+                  <XAxis 
+                    dataKey="name" 
+                    angle={0} 
+                    textAnchor="middle" 
+                    height={60}
+                    tick={{ 
+                      fontSize: 11,
+                      fill: document.documentElement.classList.contains('dark') ? '#D1D5DB' : '#374151',
+                      fontWeight: 500
+                    }}
+                    stroke={document.documentElement.classList.contains('dark') ? '#9CA3AF' : '#6B7280'}
+                    interval={0}
+                  />
+                  <YAxis 
+                    width={50}
+                    tick={{ 
+                      fontSize: 12,
+                      fill: document.documentElement.classList.contains('dark') ? '#D1D5DB' : '#374151',
+                      fontWeight: 500
+                    }}
+                    stroke={document.documentElement.classList.contains('dark') ? '#9CA3AF' : '#6B7280'}
+                  />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Bar 
+                    dataKey="sales" 
+                    name="الكمية المباعة"
+                    radius={[4, 4, 0, 0]}
+                  >
+                    {topProducts.map((entry, index) => {
+                      const colors = ['#FFD700', '#10B981', '#3B82F6', '#F59E0B', '#EF4444'];
+                      return <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />;
+                    })}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+              {/* Custom Legend */}
+              <div className="flex flex-wrap justify-center gap-4 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                {topProducts.map((product, index) => {
+                  const colors = ['#FFD700', '#10B981', '#3B82F6', '#F59E0B', '#EF4444'];
+                  const colorNames = ['ذهبي', 'أخضر', 'أزرق', 'برتقالي', 'أحمر'];
+                  return (
+                    <div key={index} className="flex items-center gap-2">
+                      <div 
+                        className="w-4 h-4 rounded"
+                        style={{ backgroundColor: colors[index % colors.length] }}
+                      ></div>
+                      <span className="text-sm text-gray-700 dark:text-gray-300">
+                        {product.name}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
           ) : (
             <div className="flex items-center justify-center h-64 text-gray-500 dark:text-gray-400">
               لا توجد بيانات متاحة
@@ -379,7 +358,7 @@ const Dashboard = () => {
         </div>
 
         {/* Stock Distribution */}
-        <div className="card lg:col-span-2">
+        <div className="card">
           <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">توزيع المخزون</h2>
           {loadingCharts ? (
             <div className="flex items-center justify-center h-64">
@@ -387,15 +366,15 @@ const Dashboard = () => {
             </div>
           ) : stockData.length > 0 && stockData.some((item) => item.value > 0) ? (
             <>
-              <ResponsiveContainer width="100%" height={300}>
+              <ResponsiveContainer width="100%" height={350}>
                 <PieChart>
                   <Pie
                     data={stockData}
                     cx="50%"
-                    cy="40%"
+                    cy="45%"
                     labelLine={false}
                     label={false}
-                    outerRadius={80}
+                    outerRadius={120}
                     fill="#FFD700"
                     dataKey="value"
                   >

@@ -25,7 +25,7 @@ export const adjustStock = async (productId, productType, quantityChange, reason
   await product.save();
 
   // Create inventory log
-  await InventoryLog.create({
+  const inventoryLog = await InventoryLog.create({
     productId,
     productType,
     changeType,
@@ -46,6 +46,7 @@ export const adjustStock = async (productId, productType, quantityChange, reason
     quantityBefore,
     quantityAfter,
     quantityChange,
+    inventoryLogId: inventoryLog._id,
   };
 };
 

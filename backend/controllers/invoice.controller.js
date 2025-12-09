@@ -11,16 +11,66 @@ const __dirname = path.dirname(__filename);
 
 export const getInvoices = async (req, res, next) => {
   try {
-    const { status, startDate, endDate } = req.query;
-    const query = {};
-    if (status) query.status = status;
+    const { status, startDate, endDate, type } = req.query;
+    
+    // Get client invoices
+    const invoiceQuery = {};
+    if (status) invoiceQuery.status = status;
     if (startDate || endDate) {
-      query.createdAt = {};
-      if (startDate) query.createdAt.$gte = new Date(startDate);
-      if (endDate) query.createdAt.$lte = new Date(endDate);
+      invoiceQuery.createdAt = {};
+      if (startDate) invoiceQuery.createdAt.$gte = new Date(startDate);
+      if (endDate) invoiceQuery.createdAt.$lte = new Date(endDate);
     }
-    const invoices = await Invoice.find(query).populate('orderId', 'orderNumber').sort({ createdAt: -1 });
-    res.json({ success: true, data: invoices });
+    
+    // Get supplier invoices
+    const SupplierInvoice = (await import('../models/SupplierInvoice.model.js')).default;
+    const supplierInvoiceQuery = {};
+    // Filter supplier invoices by status (pending, paid, partial, overdue, canceled)
+    if (status && ['pending', 'paid', 'partial', 'overdue', 'canceled'].includes(status)) {
+      supplierInvoiceQuery.status = status;
+    }
+    if (startDate || endDate) {
+      supplierInvoiceQuery.createdAt = {};
+      if (startDate) supplierInvoiceQuery.createdAt.$gte = new Date(startDate);
+      if (endDate) supplierInvoiceQuery.createdAt.$lte = new Date(endDate);
+    }
+    
+    let clientInvoices = [];
+    let supplierInvoices = [];
+    
+    // Fetch based on type filter
+    if (!type || type === 'client') {
+      clientInvoices = await Invoice.find(invoiceQuery)
+        .populate('orderId', 'orderNumber')
+        .populate('clientId', 'name email')
+        .sort({ createdAt: -1 });
+    }
+    
+    if (!type || type === 'supplier') {
+      supplierInvoices = await SupplierInvoice.find(supplierInvoiceQuery)
+        .populate('supplierId', 'name email')
+        .populate('createdBy', 'name')
+        .sort({ createdAt: -1 });
+    }
+    
+    // Combine and format invoices
+    const allInvoices = [
+      ...clientInvoices.map(inv => ({
+        ...inv.toObject(),
+        invoiceType: 'client',
+        displayName: inv.clientName || inv.clientId?.name || 'N/A',
+        displayType: 'عميل',
+      })),
+      ...supplierInvoices.map(inv => ({
+        ...inv.toObject(),
+        invoiceType: 'supplier',
+        displayName: inv.supplierId?.name || 'N/A',
+        displayType: 'مورد',
+        status: inv.status || 'pending',
+      })),
+    ].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    
+    res.json({ success: true, data: allInvoices });
   } catch (error) {
     next(error);
   }
@@ -275,7 +325,9 @@ export const generatePDF = async (req, res, next) => {
     // If PDF already exists, return it
     if (invoice.pdfPath) {
       const fullPath = path.join(__dirname, '..', invoice.pdfPath);
-      return res.download(fullPath, `${invoice.invoiceNumber}.pdf`, (err) => {
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `inline; filename="${invoice.invoiceNumber}.pdf"`);
+      return res.sendFile(fullPath, (err) => {
         if (err) {
           console.error('Error sending PDF:', err);
           res.status(500).json({ success: false, message: 'خطأ في إرسال ملف PDF' });
@@ -333,9 +385,11 @@ export const generatePDF = async (req, res, next) => {
     invoice.pdfPath = pdfPath;
     await invoice.save();
 
-    // Send PDF file
+    // Send PDF file with inline display
     const fullPath = path.join(__dirname, '..', pdfPath);
-    res.download(fullPath, `${invoice.invoiceNumber}.pdf`, (err) => {
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="${invoice.invoiceNumber}.pdf"`);
+    res.sendFile(fullPath, (err) => {
       if (err) {
         console.error('Error sending PDF:', err);
         res.status(500).json({ success: false, message: 'خطأ في إرسال ملف PDF' });
@@ -343,6 +397,72 @@ export const generatePDF = async (req, res, next) => {
     });
   } catch (error) {
     console.error('Error generating PDF:', error);
+    next(error);
+  }
+};
+
+export const updateInvoiceStatus = async (req, res, next) => {
+  try {
+    const { status } = req.body;
+    const invoice = await Invoice.findById(req.params.id);
+
+    if (!invoice) {
+      return res.status(404).json({
+        success: false,
+        message: 'الفاتورة غير موجودة',
+      });
+    }
+
+    if (!['draft', 'sent', 'pending', 'paid', 'partial', 'overdue', 'canceled'].includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: 'حالة غير صحيحة',
+      });
+    }
+
+    invoice.status = status;
+    await invoice.save();
+
+    res.json({
+      success: true,
+      data: invoice,
+      message: 'تم تحديث حالة الفاتورة بنجاح',
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const deleteInvoice = async (req, res, next) => {
+  try {
+    const invoice = await Invoice.findById(req.params.id);
+
+    if (!invoice) {
+      return res.status(404).json({
+        success: false,
+        message: 'الفاتورة غير موجودة',
+      });
+    }
+
+    // Delete associated payments
+    await Payment.deleteMany({ invoiceId: invoice._id });
+
+    // Delete PDF file if exists
+    if (invoice.pdfPath) {
+      const fs = await import('fs');
+      const fullPath = path.join(__dirname, '..', invoice.pdfPath);
+      if (fs.default.existsSync(fullPath)) {
+        fs.default.unlinkSync(fullPath);
+      }
+    }
+
+    await invoice.deleteOne();
+
+    res.json({
+      success: true,
+      message: 'تم حذف الفاتورة بنجاح',
+    });
+  } catch (error) {
     next(error);
   }
 };

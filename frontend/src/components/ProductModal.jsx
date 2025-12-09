@@ -3,10 +3,11 @@ import api from '../utils/axios';
 import toast from 'react-hot-toast';
 import { X, Upload, Plus, Trash2 } from 'lucide-react';
 
-const ProductModal = ({ product, categories, onClose }) => {
+const ProductModal = ({ product, categories, suppliers = [], onClose }) => {
   const [formData, setFormData] = useState({
     name: '',
     category: '',
+    supplierId: '',
     price: '',
     cost: '',
     stock: '',
@@ -31,6 +32,7 @@ const ProductModal = ({ product, categories, onClose }) => {
       setFormData({
         name: product.name || '',
         category: product.category?._id || product.category || '',
+        supplierId: product.supplierId?._id || product.supplierId || '',
         price: product.price || '',
         cost: product.cost || '',
         stock: product.stock || '',
@@ -226,6 +228,25 @@ const ProductModal = ({ product, categories, onClose }) => {
                 {categories.map((cat) => (
                   <option key={cat._id} value={cat._id}>
                     {cat.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                المورد *
+              </label>
+              <select
+                value={formData.supplierId}
+                onChange={(e) => setFormData({ ...formData, supplierId: e.target.value })}
+                className="input-field"
+                required
+              >
+                <option value="">اختر المورد</option>
+                {suppliers.map((supplier) => (
+                  <option key={supplier._id} value={supplier._id}>
+                    {supplier.name}
                   </option>
                 ))}
               </select>

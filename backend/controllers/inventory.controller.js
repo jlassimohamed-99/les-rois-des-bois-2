@@ -1,5 +1,7 @@
 import InventoryLog from '../models/InventoryLog.model.js';
 import StockAlert from '../models/StockAlert.model.js';
+import Product from '../models/Product.model.js';
+import SupplierInvoice from '../models/SupplierInvoice.model.js';
 import { adjustStock, checkStockAlerts } from '../utils/inventoryHelper.js';
 import { createAuditLog } from '../utils/auditLogger.js';
 
@@ -45,7 +47,7 @@ export const getInventoryLogs = async (req, res, next) => {
 
 export const adjustInventory = async (req, res, next) => {
   try {
-    const { productId, productType, quantity, reason, notes } = req.body;
+    const { productId, productType, quantity, reason, notes, generateInvoice, unitCost } = req.body;
 
     if (!productId || !productType || quantity === undefined || !reason) {
       return res.status(400).json({
@@ -54,33 +56,137 @@ export const adjustInventory = async (req, res, next) => {
       });
     }
 
-    const result = await adjustStock(
-      productId,
-      productType,
-      parseInt(quantity),
-      reason,
-      req.user._id,
-      { notes }
-    );
+    let supplierInvoiceId = null;
 
-    // Create audit log
-    await createAuditLog({
-      resourceType: 'inventory',
-      resourceId: productId,
-      action: 'stock_change',
-      userId: req.user._id,
-      userEmail: req.user.email,
-      before: { stock: result.quantityBefore },
-      after: { stock: result.quantityAfter },
-      ipAddress: req.ip,
-      userAgent: req.get('user-agent'),
-    });
+    // If generating invoice, validate and create it
+    if (generateInvoice && parseInt(quantity) > 0) {
+      if (!unitCost) {
+        return res.status(400).json({
+          success: false,
+          message: 'يرجى إدخال التكلفة الوحدة عند إنشاء الفاتورة',
+        });
+      }
 
-    res.status(200).json({
-      success: true,
-      data: result,
-      message: 'تم تعديل المخزون بنجاح',
-    });
+      // Get product with supplier
+      const product = await Product.findById(productId).populate('supplierId');
+      
+      if (!product) {
+        return res.status(404).json({
+          success: false,
+          message: 'المنتج غير موجود',
+        });
+      }
+
+      if (!product.supplierId) {
+        return res.status(400).json({
+          success: false,
+          message: 'المنتج غير مرتبط بمورد. يرجى ربط المنتج بمورد أولاً',
+        });
+      }
+
+      // Create supplier invoice
+      const quantityNum = parseInt(quantity);
+      const unitCostNum = parseFloat(unitCost);
+      const subtotal = quantityNum * unitCostNum;
+      const tax = subtotal * 0.19; // 19% tax
+      const total = subtotal + tax;
+
+      // Generate invoice number
+      const year = new Date().getFullYear();
+      const count = await SupplierInvoice.countDocuments({
+        invoiceNumber: new RegExp(`^SI-${year}`),
+      });
+      const invoiceNumber = `SI-${year}-${String(count + 1).padStart(6, '0')}`;
+
+      const supplierInvoice = await SupplierInvoice.create({
+        invoiceNumber,
+        supplierId: product.supplierId._id,
+        items: [{
+          productId: product._id,
+          productName: product.name,
+          quantity: quantityNum,
+          unitCost: unitCostNum,
+          total: subtotal,
+        }],
+        subtotal,
+        tax,
+        total,
+        status: 'pending',
+        paidAmount: 0,
+        remainingAmount: total,
+        notes: notes || '',
+        createdBy: req.user._id,
+      });
+
+      supplierInvoiceId = supplierInvoice._id;
+
+      // Adjust stock and get result
+      const result = await adjustStock(
+        productId,
+        productType,
+        quantityNum,
+        reason,
+        req.user._id,
+        { notes }
+      );
+
+      // Update invoice with inventory log ID
+      if (result.inventoryLogId) {
+        supplierInvoice.inventoryLogId = result.inventoryLogId;
+        await supplierInvoice.save();
+      }
+
+      // Create audit log
+      await createAuditLog({
+        resourceType: 'inventory',
+        resourceId: productId,
+        action: 'stock_change',
+        userId: req.user._id,
+        userEmail: req.user.email,
+        before: { stock: result.quantityBefore },
+        after: { stock: result.quantityAfter },
+        ipAddress: req.ip,
+        userAgent: req.get('user-agent'),
+      });
+
+      res.status(200).json({
+        success: true,
+        data: {
+          ...result,
+          supplierInvoiceId: supplierInvoiceId.toString(),
+        },
+        message: 'تم تعديل المخزون وإنشاء فاتورة المورد بنجاح',
+      });
+    } else {
+      // Normal stock adjustment without invoice
+      const result = await adjustStock(
+        productId,
+        productType,
+        parseInt(quantity),
+        reason,
+        req.user._id,
+        { notes }
+      );
+
+      // Create audit log
+      await createAuditLog({
+        resourceType: 'inventory',
+        resourceId: productId,
+        action: 'stock_change',
+        userId: req.user._id,
+        userEmail: req.user.email,
+        before: { stock: result.quantityBefore },
+        after: { stock: result.quantityAfter },
+        ipAddress: req.ip,
+        userAgent: req.get('user-agent'),
+      });
+
+      res.status(200).json({
+        success: true,
+        data: result,
+        message: 'تم تعديل المخزون بنجاح',
+      });
+    }
   } catch (error) {
     next(error);
   }

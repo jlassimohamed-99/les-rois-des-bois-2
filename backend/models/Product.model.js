@@ -88,6 +88,10 @@ const productSchema = new mongoose.Schema(
       trim: true,
     },
     variants: [variantSchema],
+    supplierId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Supplier',
+    },
   },
   {
     timestamps: true,

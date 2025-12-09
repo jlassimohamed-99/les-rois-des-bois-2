@@ -159,11 +159,19 @@ const ProductModal = ({ product, categories, suppliers = [], onClose }) => {
       return;
     }
 
+    // Validate: if no variants, stock is required
+    if (formData.variants.length === 0 && !formData.stock && formData.stock !== 0) {
+      toast.error('يرجى إدخال الكمية المتوفرة أو إضافة متغيرات');
+      return;
+    }
+
     // Ensure unit is always 'piece'
     const submitData = {
       ...formData,
       unit: 'piece',
       wholesaleUnit: 'piece',
+      // If product has variants, set stock to 0 (variants have their own stock)
+      stock: formData.variants.length > 0 ? 0 : formData.stock,
     };
 
     try {
@@ -312,15 +320,21 @@ const ProductModal = ({ product, categories, suppliers = [], onClose }) => {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                الكمية المتوفرة *
+                الكمية المتوفرة {formData.variants.length === 0 ? '*' : ''}
               </label>
               <input
                 type="number"
                 value={formData.stock}
                 onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
                 className="input-field"
-                required
+                required={formData.variants.length === 0}
+                disabled={formData.variants.length > 0}
               />
+              {formData.variants.length > 0 && (
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  عند وجود متغيرات، يتم إدارة المخزون لكل متغير على حدة
+                </p>
+              )}
             </div>
 
             <div>

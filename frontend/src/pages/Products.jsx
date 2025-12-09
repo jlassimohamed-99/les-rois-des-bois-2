@@ -180,7 +180,7 @@ const Products = () => {
                       <div className="font-medium text-gray-900 dark:text-gray-100">{product.name}</div>
                       <div className="text-sm text-gray-500 dark:text-gray-400">{product.slug}</div>
                     </td>
-                    <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">
+                    <td className="py-3 px-4 text-base font-medium text-gray-900 dark:text-gray-100">
                       {product.category?.name || '-'}
                     </td>
                     <td className="py-3 px-4">

@@ -77,7 +77,11 @@ export const createProduct = async (req, res, next) => {
       variants,
     } = req.body;
 
-    if (!name || !category || !price || stock === undefined) {
+    // If product has variants, stock is optional (variants have their own stock)
+    const hasVariants = Array.isArray(variants) && variants.length > 0;
+    const stockValue = hasVariants ? (stock !== undefined ? Number(stock) : 0) : Number(stock);
+
+    if (!name || !category || !price || (!hasVariants && stock === undefined)) {
       return res.status(400).json({
         success: false,
         message: 'يرجى إدخال جميع الحقول المطلوبة',
@@ -90,7 +94,7 @@ export const createProduct = async (req, res, next) => {
       supplierId: supplierId || undefined,
       price: Number(price),
       cost: cost ? Number(cost) : 0,
-      stock: Number(stock),
+      stock: stockValue,
       unit: 'piece', // Always piece
       wholesalePrice: wholesalePrice ? Number(wholesalePrice) : 0,
       wholesaleUnit: 'piece', // Always piece
@@ -150,12 +154,18 @@ export const updateProduct = async (req, res, next) => {
       variants,
     } = req.body;
 
+    // Check if product has variants
+    const hasVariants = Array.isArray(variants) && variants.length > 0;
+    
     if (name) product.name = name;
     if (category) product.category = category;
     if (supplierId !== undefined) product.supplierId = supplierId || null;
     if (price !== undefined) product.price = Number(price);
     if (cost !== undefined) product.cost = Number(cost);
-    if (stock !== undefined) product.stock = Number(stock);
+    // If product has variants, stock is optional (variants have their own stock)
+    if (stock !== undefined) {
+      product.stock = hasVariants ? (Number(stock) || 0) : Number(stock);
+    }
     product.unit = 'piece'; // Always piece
     if (wholesalePrice !== undefined) product.wholesalePrice = Number(wholesalePrice);
     product.wholesaleUnit = 'piece'; // Always piece

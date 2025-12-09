@@ -216,12 +216,28 @@ export const getProfitability = async (req, res, next) => {
 export const getLowStock = async (req, res, next) => {
   try {
     const threshold = parseInt(req.query.threshold) || 10;
-    const products = await Product.find({ stock: { $lte: threshold } })
+    
+    // Get products with low general stock (no variants or variants with low stock)
+    const products = await Product.find()
       .populate('category', 'name')
       .sort({ stock: 1 })
-      .limit(20);
+      .limit(100); // Get more to filter by variants
 
-    res.json({ success: true, data: products });
+    // Filter products that have low stock (either general stock or variant stock)
+    const lowStockProducts = products.filter((product) => {
+      // If product has variants, check variant stocks
+      if (product.variants && product.variants.length > 0) {
+        // Return true if any variant has low stock
+        return product.variants.some((variant) => variant.stock <= threshold);
+      }
+      // If no variants, check general stock
+      return product.stock <= threshold;
+    });
+
+    // Limit to 20 products
+    const limitedProducts = lowStockProducts.slice(0, 20);
+
+    res.json({ success: true, data: limitedProducts });
   } catch (error) {
     next(error);
   }

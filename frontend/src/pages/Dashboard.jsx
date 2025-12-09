@@ -87,6 +87,7 @@ const Dashboard = () => {
       const [topProducts, setTopProducts] = useState([]);
   const [stockData, setStockData] = useState([]);
   const [loadingCharts, setLoadingCharts] = useState(true);
+  const [stockFilter, setStockFilter] = useState('all'); // 'all', 'low', 'out'
 
   useEffect(() => {
     fetchStats();
@@ -199,7 +200,6 @@ const Dashboard = () => {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">لوحة التحكم</h1>
-        <p className="text-gray-600 dark:text-gray-400 mt-1">نظرة عامة على النظام</p>
       </div>
 
       {/* Stats Grid */}
@@ -221,62 +221,6 @@ const Dashboard = () => {
           );
         })}
       </div>
-
-      {/* Low Stock Products Table */}
-      {lowStockProducts.length > 0 && (
-        <div className="card">
-          <div className="flex items-center gap-2 mb-4">
-            <AlertTriangle className="text-red-500" size={24} />
-            <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">المنتجات ذات المخزون المنخفض</h2>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-              <thead className="bg-gray-50 dark:bg-gray-700">
-                <tr>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                    اسم المنتج
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                    الفئة
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                    المخزون المتاح
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                    الحالة
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                {lowStockProducts.map((product) => (
-                  <tr key={product._id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
-                      {product.name}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                      {product.category?.name || 'غير محدد'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                      {product.stock || 0}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span
-                        className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                          product.stock === 0
-                            ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-                            : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
-                        }`}
-                      >
-                        {product.stock === 0 ? 'نفد' : 'منخفض'}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
 
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -394,6 +338,116 @@ const Dashboard = () => {
           )}
         </div>
       </div>
+
+      {/* Low Stock Products Table */}
+      {lowStockProducts.length > 0 && (
+        <div className="card">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="text-red-500" size={24} />
+              <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">المنتجات ذات المخزون المنخفض</h2>
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">فلتر:</label>
+              <select
+                value={stockFilter}
+                onChange={(e) => setStockFilter(e.target.value)}
+                className="px-4 py-2 rounded-lg text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-gold-500"
+              >
+                <option value="all">الكل</option>
+                <option value="low">منخفض</option>
+                <option value="out">نفد</option>
+              </select>
+            </div>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+              <thead className="bg-gray-50 dark:bg-gray-700">
+                <tr>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    اسم المنتج
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    الفئة
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    المخزون المتاح
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    الحالة
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                {lowStockProducts
+                  .flatMap((product) => {
+                    // If product has variants, create a row for each variant with low stock
+                    if (product.variants && product.variants.length > 0) {
+                      return product.variants
+                        .map((variant) => ({
+                          productId: product._id,
+                          productName: product.name,
+                          category: product.category,
+                          variantName: product.variantName || 'المتغير',
+                          variantValue: variant.value,
+                          stock: variant.stock,
+                          isVariant: true,
+                        }));
+                    }
+                    // If no variants, show general product stock
+                    return [{
+                      productId: product._id,
+                      productName: product.name,
+                      category: product.category,
+                      variantName: null,
+                      variantValue: null,
+                      stock: product.stock || 0,
+                      isVariant: false,
+                    }];
+                  })
+                  .filter((item) => {
+                    // Apply filter based on stockFilter state
+                    if (stockFilter === 'low') {
+                      return item.stock > 0; // Only low stock (not out)
+                    } else if (stockFilter === 'out') {
+                      return item.stock === 0; // Only out of stock
+                    }
+                    return true; // Show all
+                  })
+                  .map((item, index) => (
+                    <tr key={`${item.productId}-${item.variantValue || 'general'}-${index}`} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
+                        {item.productName}
+                        {item.isVariant && (
+                          <span className="block text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            {item.variantName}: {item.variantValue}
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                        {item.category?.name || 'غير محدد'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                        {item.stock || 0}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span
+                          className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                            item.stock === 0
+                              ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                              : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+                          }`}
+                        >
+                          {item.stock === 0 ? 'نفد' : 'منخفض'}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

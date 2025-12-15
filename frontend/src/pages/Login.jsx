@@ -45,24 +45,100 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 p-4">
+    <div className="min-h-screen flex items-center justify-center relative overflow-hidden p-4">
+      {/* Background Gradient */}
+      <div 
+        className={`absolute inset-0 transition-all duration-1000 ${
+          isDark 
+            ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900' 
+            : 'bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50'
+        }`}
+      />
+
+      {/* Floating Abstract Shapes */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {/* Shape 1 */}
+        <div 
+          className={`absolute top-20 left-10 w-72 h-72 rounded-full blur-3xl opacity-20 animate-pulse ${
+            isDark 
+              ? 'bg-gold-500' 
+              : 'bg-blue-400'
+          }`}
+          style={{ animationDuration: '8s' }}
+        />
+        
+        {/* Shape 2 */}
+        <div 
+          className={`absolute bottom-20 right-10 w-96 h-96 rounded-full blur-3xl opacity-20 animate-pulse ${
+            isDark 
+              ? 'bg-gold-400' 
+              : 'bg-purple-400'
+          }`}
+          style={{ animationDuration: '10s', animationDelay: '2s' }}
+        />
+        
+        {/* Shape 3 */}
+        <div 
+          className={`absolute top-1/2 left-1/2 w-80 h-80 rounded-full blur-3xl opacity-15 animate-pulse ${
+            isDark 
+              ? 'bg-gold-600' 
+              : 'bg-indigo-400'
+          }`}
+          style={{ animationDuration: '12s', animationDelay: '4s' }}
+        />
+      </div>
+
+      {/* Theme Toggle Button */}
       <button
         onClick={toggleTheme}
-        className="fixed top-4 left-4 p-2 rounded-lg bg-white dark:bg-gray-800 shadow-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+        className={`fixed top-4 left-4 z-50 p-3 rounded-xl backdrop-blur-md transition-all duration-300 hover:scale-110 ${
+          isDark
+            ? 'bg-white/10 text-gold-400 hover:bg-white/20 border border-white/20'
+            : 'bg-white/80 text-gray-700 hover:bg-white border border-gray-200/50 shadow-lg'
+        }`}
+        aria-label="Toggle theme"
       >
         {isDark ? <Sun size={20} /> : <Moon size={20} />}
       </button>
 
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8 space-y-2">
-          <h1 className="text-4xl font-bold text-gold-600">Les Rois Du Bois</h1>
-          <p className="text-gray-600 dark:text-gray-400">تسجيل الدخول للوصول إلى حسابك</p>
-        </div>
+      {/* Login Card */}
+      <div className="relative z-10 w-full max-w-md">
+        <div 
+          className={`backdrop-blur-xl rounded-3xl p-8 md:p-10 transition-all duration-500 ${
+            isDark
+              ? 'bg-gray-900/40 border border-white/10 shadow-2xl'
+              : 'bg-white/70 border border-white/20 shadow-2xl'
+          }`}
+          style={{ 
+            animation: 'fadeInUp 0.6s ease-out',
+          }}
+        >
+          {/* Header */}
+          <div className="text-center mb-8 space-y-3">
+            <h1 className={`text-4xl md:text-5xl font-bold bg-gradient-to-r ${
+              isDark
+                ? 'from-gold-400 to-gold-600 bg-clip-text text-transparent'
+                : 'from-gold-600 to-gold-700 bg-clip-text text-transparent'
+            }`}>
+              Les Rois Du Bois
+            </h1>
+            <p className={`text-sm md:text-base ${
+              isDark ? 'text-gray-400' : 'text-gray-600'
+            }`}>
+              تسجيل الدخول للوصول إلى حسابك
+            </p>
+          </div>
 
-        <div className="card">
+          {/* Login Form */}
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            {/* Email Field */}
+            <div className="space-y-2">
+              <label 
+                htmlFor="email" 
+                className={`block text-sm font-medium ${
+                  isDark ? 'text-gray-300' : 'text-gray-700'
+                }`}
+              >
                 البريد الإلكتروني
               </label>
               <input
@@ -70,14 +146,24 @@ const Login = () => {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="input-field"
                 required
                 placeholder="example@email.com"
+                className={`w-full px-4 py-3 rounded-xl border transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-0 ${
+                  isDark
+                    ? 'bg-white/10 border-white/20 text-white placeholder-gray-300 focus:border-gold-500 focus:ring-gold-500/50'
+                    : 'bg-white/60 border-gray-300/60 text-gray-900 placeholder-gray-600 focus:border-gold-500 focus:ring-gold-500/30'
+                }`}
               />
             </div>
 
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            {/* Password Field */}
+            <div className="space-y-2">
+              <label 
+                htmlFor="password" 
+                className={`block text-sm font-medium ${
+                  isDark ? 'text-gray-300' : 'text-gray-700'
+                }`}
+              >
                 كلمة المرور
               </label>
               <input
@@ -85,22 +171,32 @@ const Login = () => {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="input-field"
                 required
                 placeholder="••••••••"
+                className={`w-full px-4 py-3 rounded-xl border transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-0 ${
+                  isDark
+                    ? 'bg-white/10 border-white/20 text-white placeholder-gray-300 focus:border-gold-500 focus:ring-gold-500/50'
+                    : 'bg-white/60 border-gray-300/60 text-gray-900 placeholder-gray-600 focus:border-gold-500 focus:ring-gold-500/30'
+                }`}
               />
             </div>
 
+            {/* Submit Button */}
             <button
               type="submit"
               disabled={loading}
-              className="w-full btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+              className={`w-full py-3.5 rounded-xl font-semibold text-white transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed ${
+                isDark
+                  ? 'bg-gradient-to-r from-gold-600 to-gold-700 hover:from-gold-500 hover:to-gold-600 shadow-lg shadow-gold-500/25 hover:shadow-gold-500/40 hover:scale-[1.02] active:scale-[0.98]'
+                  : 'bg-gradient-to-r from-gold-600 to-gold-700 hover:from-gold-500 hover:to-gold-600 shadow-lg shadow-gold-500/30 hover:shadow-gold-500/50 hover:scale-[1.02] active:scale-[0.98]'
+              }`}
             >
               {loading ? 'جار تسجيل الدخول...' : 'تسجيل الدخول'}
             </button>
           </form>
         </div>
       </div>
+
     </div>
   );
 };

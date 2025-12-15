@@ -6,10 +6,6 @@ import path from 'path';
 import cookieParser from 'cookie-parser';
 import { fileURLToPath } from 'url';
 import { securityHeaders } from './middleware/security.middleware.js';
-// Temporarily disable rate limiting to fix connection issues
-// import { apiLimiter, authLimiter, clientLimiter } from './middleware/rateLimiter.middleware.js';
-
-// Import routes
 import authRoutes from './routes/auth.routes.js';
 import categoryRoutes from './routes/category.routes.js';
 import productRoutes from './routes/product.routes.js';
@@ -121,8 +117,29 @@ app.get('/api/health', (req, res) => {
 app.use(errorHandler);
 
 // Connect to MongoDB
+let mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/les-rois-des-bois';
+
+// Determine if we should use SSL based on the connection string
+const isMongoAtlas = mongoUri.includes('mongodb+srv://') || mongoUri.includes('mongodb.net');
+
+// For non-Atlas connections, ensure SSL is disabled in the URI
+if (!isMongoAtlas) {
+  // Remove any existing ssl/tls parameters to avoid conflicts
+  mongoUri = mongoUri.replace(/[?&](ssl|tls)=[^&]*/g, '');
+  
+  // Add ssl=false to explicitly disable SSL
+  const separator = mongoUri.includes('?') ? '&' : '?';
+  mongoUri = `${mongoUri}${separator}ssl=false`;
+}
+
+// Connection options - only set timeout options, don't set SSL here to avoid conflicts
+const mongooseOptions = {
+  serverSelectionTimeoutMS: 10000,
+  socketTimeoutMS: 45000,
+};
+
 mongoose
-  .connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/les-rois-des-bois')
+  .connect(mongoUri, mongooseOptions)
   .then(() => {
     console.log('✅ Connected to MongoDB');
     const PORT = process.env.PORT || 5000;

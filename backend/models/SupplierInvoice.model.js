@@ -109,7 +109,7 @@ supplierInvoiceSchema.pre('save', async function (next) {
 
 // Indexes
 supplierInvoiceSchema.index({ supplierId: 1, createdAt: -1 });
-supplierInvoiceSchema.index({ invoiceNumber: 1 });
+// Note: invoiceNumber already has unique: true, which creates an index automatically
 
 export default mongoose.model('SupplierInvoice', supplierInvoiceSchema);
 

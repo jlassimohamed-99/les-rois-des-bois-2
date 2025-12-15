@@ -754,52 +754,68 @@ const POSInterface = () => {
     }
   };
 
+  const [showCartOnMobile, setShowCartOnMobile] = useState(false);
+
   return (
     <div className="h-screen flex flex-col bg-white dark:bg-gray-900 text-gray-900 dark:text-white overflow-hidden">
       {/* Header */}
-      <div className="bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">نقطة البيع (POS)</h1>
-          <p className="text-gray-600 dark:text-gray-400 text-sm mt-1">
+      <div className="bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-3 md:px-6 py-2 md:py-4 flex items-center justify-between flex-shrink-0">
+        <div className="flex-1 min-w-0">
+          <h1 className="text-lg md:text-2xl font-bold text-gray-900 dark:text-white truncate">نقطة البيع (POS)</h1>
+          <p className="text-gray-600 dark:text-gray-400 text-xs md:text-sm mt-1 truncate">
             {user?.name || 'Caissier'} • {new Date().toLocaleDateString('ar-TN')}
           </p>
         </div>
-        <button
-          onClick={() => {
-            const backPath = getBackPath(user?.role);
-            if (backPath && backPath !== window.location.pathname) {
-              navigate(backPath, { replace: true });
-            }
-          }}
-          className="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-lg transition-colors flex items-center gap-2 text-gray-900 dark:text-white"
-        >
-          <ArrowLeft size={20} />
-          <span>العودة</span>
-        </button>
+        <div className="flex items-center gap-2">
+          {/* Mobile Cart Toggle Button */}
+          <button
+            onClick={() => setShowCartOnMobile(!showCartOnMobile)}
+            className="md:hidden relative px-3 py-2 bg-gold-600 hover:bg-gold-700 rounded-lg transition-colors flex items-center gap-2 text-white"
+          >
+            <ShoppingCart size={18} />
+            {cart.length > 0 && (
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                {cart.length}
+              </span>
+            )}
+          </button>
+          <button
+            onClick={() => {
+              const backPath = getBackPath(user?.role);
+              if (backPath && backPath !== window.location.pathname) {
+                navigate(backPath, { replace: true });
+              }
+            }}
+            className="px-3 md:px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-lg transition-colors flex items-center gap-2 text-gray-900 dark:text-white"
+          >
+            <ArrowLeft size={18} className="md:w-5 md:h-5" />
+            <span className="hidden md:inline">العودة</span>
+          </button>
+        </div>
       </div>
 
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
         {/* LEFT PANEL - Product Browser */}
-        <div className="w-2/3 flex flex-col border-r border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+        <div className={`${showCartOnMobile ? 'hidden' : 'flex'} md:flex w-full md:w-2/3 flex-col border-r border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900`}>
           {/* Search and Filters */}
-          <div className="p-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 space-y-4">
+          <div className="p-2 md:p-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 space-y-2 md:space-y-4">
             <div className="relative">
-              <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500" size={20} />
+              <Search className="absolute right-2 md:right-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500" size={18} />
               <input
                 type="text"
                 placeholder="ابحث عن منتج..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pr-10 pl-4 py-3 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gold-500"
+                className="w-full pr-8 md:pr-10 pl-3 md:pl-4 py-2 md:py-3 text-sm md:text-base bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gold-500"
               />
             </div>
 
             {/* Category Filter */}
             {activeTab === 'regular' && (
-              <div className="flex items-center gap-2 overflow-x-auto pb-2">
+              <div className="flex items-center gap-1 md:gap-2 overflow-x-auto pb-2 scrollbar-hide">
                 <button
                   onClick={() => setSelectedCategory('all')}
-                  className={`px-4 py-2 rounded-lg whitespace-nowrap transition-colors ${
+                  className={`px-3 md:px-4 py-1.5 md:py-2 text-xs md:text-sm rounded-lg whitespace-nowrap transition-colors flex-shrink-0 ${
                     selectedCategory === 'all'
                       ? 'bg-gold-600 text-white'
                       : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
@@ -811,7 +827,7 @@ const POSInterface = () => {
                   <button
                     key={cat._id}
                     onClick={() => setSelectedCategory(cat._id)}
-                    className={`px-4 py-2 rounded-lg whitespace-nowrap transition-colors ${
+                    className={`px-3 md:px-4 py-1.5 md:py-2 text-xs md:text-sm rounded-lg whitespace-nowrap transition-colors flex-shrink-0 ${
                       selectedCategory === cat._id
                         ? 'bg-gold-600 text-white'
                         : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
@@ -824,69 +840,73 @@ const POSInterface = () => {
             )}
 
             {/* Price Type Toggle */}
-            <div className="flex items-center gap-4">
-              <span className="text-gray-700 dark:text-gray-300 text-sm">نوع السعر:</span>
-              <div className="flex gap-2 bg-gray-200 dark:bg-gray-700 rounded-lg p-1">
+            <div className="flex items-center gap-2 md:gap-4">
+              <span className="text-gray-700 dark:text-gray-300 text-xs md:text-sm whitespace-nowrap">نوع السعر:</span>
+              <div className="flex gap-1 md:gap-2 bg-gray-200 dark:bg-gray-700 rounded-lg p-0.5 md:p-1 flex-1">
                 <button
                   onClick={() => setPriceType('retail')}
-                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  className={`flex-1 px-2 md:px-4 py-1.5 md:py-2 rounded-md text-xs md:text-sm font-medium transition-colors ${
                     priceType === 'retail'
                       ? 'bg-gold-600 text-white'
                       : 'text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
                   }`}
                 >
-                  السعر بالتجزئة
+                  <span className="hidden sm:inline">السعر بالتجزئة</span>
+                  <span className="sm:hidden">تجزئة</span>
                 </button>
                 <button
                   onClick={() => setPriceType('wholesale')}
-                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  className={`flex-1 px-2 md:px-4 py-1.5 md:py-2 rounded-md text-xs md:text-sm font-medium transition-colors ${
                     priceType === 'wholesale'
                       ? 'bg-gold-600 text-white'
                       : 'text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
                   }`}
                 >
-                  السعر بالجملة
+                  <span className="hidden sm:inline">السعر بالجملة</span>
+                  <span className="sm:hidden">جملة</span>
                 </button>
               </div>
             </div>
 
             {/* Tabs */}
-            <div className="flex gap-2">
+            <div className="flex gap-1 md:gap-2">
               <button
                 onClick={() => {
                   setActiveTab('regular');
                   setSelectedSpecialProduct(null);
                   setSpecialProductStep(1);
                 }}
-                className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${
+                className={`flex-1 py-1.5 md:py-2 px-2 md:px-4 rounded-lg text-xs md:text-sm font-medium transition-colors ${
                   activeTab === 'regular'
                     ? 'bg-gold-600 text-white'
                     : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
                 }`}
               >
-                <Package size={18} className="inline ml-2" />
-                المنتجات العادية
+                <Package size={16} className="inline ml-1 md:ml-2" />
+                <span className="hidden sm:inline">المنتجات العادية</span>
+                <span className="sm:hidden">عادية</span>
               </button>
               <button
                 onClick={() => setActiveTab('special')}
-                className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${
+                className={`flex-1 py-1.5 md:py-2 px-2 md:px-4 rounded-lg text-xs md:text-sm font-medium transition-colors ${
                   activeTab === 'special'
                     ? 'bg-gold-600 text-white'
                     : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
                 }`}
               >
-                <Sparkles size={18} className="inline ml-2" />
-                المنتجات الخاصة
+                <Sparkles size={16} className="inline ml-1 md:ml-2" />
+                <span className="hidden sm:inline">المنتجات الخاصة</span>
+                <span className="sm:hidden">خاصة</span>
               </button>
             </div>
           </div>
 
           {/* Products List */}
-          <div className="flex-1 overflow-y-auto p-4">
+          <div className="flex-1 overflow-y-auto p-2 md:p-4">
             {loadingProducts ? (
-              <div className="text-center py-12 text-gray-600 dark:text-gray-400">جاري التحميل...</div>
+              <div className="text-center py-12 text-gray-600 dark:text-gray-400 text-sm md:text-base">جاري التحميل...</div>
             ) : activeTab === 'regular' ? (
-              <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 md:gap-4">
                 {filteredRegularProducts.map((product) => (
                   <div
                     key={product._id}
@@ -897,7 +917,7 @@ const POSInterface = () => {
                       }
                       addRegularProductToCart(product);
                     }}
-                    className={`bg-white dark:bg-gray-800 rounded-lg p-4 transition-colors border ${
+                    className={`bg-white dark:bg-gray-800 rounded-lg p-2 md:p-4 transition-colors border ${
                       product.stock <= 0
                         ? 'opacity-50 cursor-not-allowed border-red-300 dark:border-red-700'
                         : 'cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 border-gray-200 dark:border-gray-700 hover:border-gold-600'
@@ -908,7 +928,7 @@ const POSInterface = () => {
                         <img
                           src={withBase(product.images[0])}
                           alt={product.name}
-                          className={`w-full h-40 object-cover rounded-lg mb-3 ${
+                          className={`w-full h-24 md:h-40 object-cover rounded-lg mb-2 md:mb-3 ${
                             product.stock <= 0 ? 'grayscale' : ''
                           }`}
                         />
@@ -919,29 +939,29 @@ const POSInterface = () => {
                         )}
                       </div>
                     )}
-                    <h3 className={`font-medium text-base mb-2 line-clamp-2 ${
+                    <h3 className={`font-medium text-xs md:text-base mb-1 md:mb-2 line-clamp-2 ${
                       product.stock <= 0
                         ? 'text-gray-400 dark:text-gray-500 line-through'
                         : 'text-gray-900 dark:text-white'
                     }`}>
                       {product.name}
                     </h3>
-                    <p className="text-gold-500 font-bold text-base">
+                    <p className="text-gold-500 font-bold text-sm md:text-base">
                       {priceType === 'wholesale' && product.wholesalePrice > 0 
                         ? product.wholesalePrice 
                         : product.price} TND
                       {priceType === 'wholesale' && product.wholesalePrice > 0 && (
-                        <span className="text-xs text-gray-600 dark:text-gray-400 block mt-1">
+                        <span className="text-xs text-gray-600 dark:text-gray-400 block mt-0.5 md:mt-1">
                           (جملة)
                         </span>
                       )}
                       {priceType === 'wholesale' && (!product.wholesalePrice || product.wholesalePrice === 0) && (
-                        <span className="text-xs text-gray-600 dark:text-gray-400 block mt-1">
+                        <span className="text-xs text-gray-600 dark:text-gray-400 block mt-0.5 md:mt-1">
                           (لا يوجد سعر جملة)
                         </span>
                       )}
                     </p>
-                    <p className={`text-sm mt-2 ${
+                    <p className={`text-xs md:text-sm mt-1 md:mt-2 ${
                       product.stock <= 0
                         ? 'text-red-600 dark:text-red-400 font-semibold'
                         : product.stock <= 10
@@ -955,7 +975,7 @@ const POSInterface = () => {
                   </div>
                 ))}
                 {filteredRegularProducts.length === 0 && (
-                  <div className="col-span-3 text-center py-12 text-gray-600 dark:text-gray-400">
+                  <div className="col-span-2 sm:col-span-3 text-center py-12 text-gray-600 dark:text-gray-400 text-sm md:text-base">
                     لا توجد منتجات
                   </div>
                 )}
@@ -963,28 +983,28 @@ const POSInterface = () => {
             ) : (
               <div>
                 {!selectedSpecialProduct ? (
-                  <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 md:gap-4">
                     {filteredSpecialProducts.map((product) => (
                       <div
                         key={product._id}
                         onClick={() => startSpecialProductSelection(product)}
-                        className="bg-white dark:bg-gray-800 rounded-lg p-4 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors border border-gray-200 dark:border-gray-700 hover:border-gold-600"
+                        className="bg-white dark:bg-gray-800 rounded-lg p-2 md:p-4 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors border border-gray-200 dark:border-gray-700 hover:border-gold-600"
                       >
                         {product.baseProductA?.images?.[0] && (
                           <img
                             src={withBase(product.baseProductA.images[0])}
                             alt={product.name}
-                            className="w-full h-40 object-cover rounded-lg mb-3"
+                            className="w-full h-24 md:h-40 object-cover rounded-lg mb-2 md:mb-3"
                           />
                         )}
-                        <h3 className="font-medium text-gray-900 dark:text-white text-base mb-2 line-clamp-2">{product.name}</h3>
-                        <p className="text-gold-500 font-bold text-base">
+                        <h3 className="font-medium text-gray-900 dark:text-white text-xs md:text-base mb-1 md:mb-2 line-clamp-2">{product.name}</h3>
+                        <p className="text-gold-500 font-bold text-sm md:text-base">
                           ابتداءً من {product.finalPrice} TND
                         </p>
                       </div>
                     ))}
                     {filteredSpecialProducts.length === 0 && (
-                      <div className="col-span-3 text-center py-12 text-gray-400">
+                      <div className="col-span-2 sm:col-span-3 text-center py-12 text-gray-400 text-sm md:text-base">
                         لا توجد منتجات خاصة
                       </div>
                     )}
@@ -993,10 +1013,10 @@ const POSInterface = () => {
                   <div className="max-w-4xl mx-auto">
                     {/* Special Product Configuration Steps */}
                     {specialProductStep === 1 && (
-                      <div className="bg-gray-800 rounded-lg p-6">
-                        <h2 className="text-xl font-bold mb-4">{selectedSpecialProduct.name}</h2>
-                        <p className="text-gray-400 mb-6">اختر الجزء الأول</p>
-                        <div className="grid grid-cols-4 md:grid-cols-5 gap-3">
+                      <div className="bg-gray-800 rounded-lg p-3 md:p-6">
+                        <h2 className="text-lg md:text-xl font-bold mb-3 md:mb-4">{selectedSpecialProduct.name}</h2>
+                        <p className="text-gray-400 text-sm md:text-base mb-4 md:mb-6">اختر الجزء الأول</p>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 md:gap-3">
                           {(() => {
                             const availableVariants = getAvailableVariantsFromCombinations(
                               selectedSpecialProduct.combinations,
@@ -1016,7 +1036,7 @@ const POSInterface = () => {
                                     className="w-full h-32 object-cover rounded-lg mb-3"
                                   />
                                 )}
-                                <p className="text-white font-medium text-sm">{variant.name || variant.value}</p>
+                                <p className="text-white font-medium text-xs md:text-sm">{variant.name || variant.value}</p>
                               </div>
                             ))
                             ) : (
@@ -1030,13 +1050,13 @@ const POSInterface = () => {
                     )}
 
                     {specialProductStep === 2 && (
-                      <div className="bg-gray-800 rounded-lg p-6">
-                        <div className="flex items-center gap-2 mb-4">
-                          <CheckCircle2 className="text-gold-500" size={20} />
-                          <span className="text-gold-500">تم اختيار: {selectedOptionA?.name}</span>
+                      <div className="bg-gray-800 rounded-lg p-3 md:p-6">
+                        <div className="flex items-center gap-2 mb-3 md:mb-4">
+                          <CheckCircle2 className="text-gold-500" size={18} />
+                          <span className="text-gold-500 text-sm md:text-base">تم اختيار: {selectedOptionA?.name}</span>
                         </div>
-                        <p className="text-gray-400 mb-6">اختر الجزء الثاني</p>
-                        <div className="grid grid-cols-4 md:grid-cols-5 gap-3">
+                        <p className="text-gray-400 text-sm md:text-base mb-4 md:mb-6">اختر الجزء الثاني</p>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 md:gap-3">
                           {(() => {
                             const availableVariants = getAvailableVariantsFromCombinations(
                               selectedSpecialProduct.combinations,
@@ -1069,7 +1089,7 @@ const POSInterface = () => {
                                     className="w-full h-32 object-cover rounded-lg mb-3"
                                   />
                                 )}
-                                <p className="text-white font-medium text-sm">{variant.name || variant.value}</p>
+                                <p className="text-white font-medium text-xs md:text-sm">{variant.name || variant.value}</p>
                               </div>
                             ))
                             ) : (
@@ -1083,13 +1103,13 @@ const POSInterface = () => {
                     )}
 
                     {specialProductStep === 3 && (
-                      <div className="bg-gray-800 rounded-lg p-6">
+                      <div className="bg-gray-800 rounded-lg p-3 md:p-6">
                         {selectedCombination ? (
                           <>
-                            <div className="flex items-center justify-between mb-6">
-                              <div>
-                                <h3 className="text-xl font-bold">التركيبة المختارة</h3>
-                                <p className="text-gray-400">
+                            <div className="flex items-center justify-between mb-4 md:mb-6">
+                              <div className="flex-1 min-w-0">
+                                <h3 className="text-lg md:text-xl font-bold">التركيبة المختارة</h3>
+                                <p className="text-gray-400 text-sm md:text-base truncate">
                                   {selectedCombination.optionA?.variant?.name || 
                                    selectedOptionA?.name || 
                                    selectedCombination.optionA?.name || 'غير محدد'} +{' '}
@@ -1106,13 +1126,13 @@ const POSInterface = () => {
                                   setSelectedOptionB(null);
                                   setSelectedCombination(null);
                                 }}
-                                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg"
+                                className="px-3 md:px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg flex-shrink-0"
                               >
-                                <X size={20} />
+                                <X size={18} className="md:w-5 md:h-5" />
                               </button>
                             </div>
                             {selectedCombination.finalImage && (
-                              <div className="w-full h-64 bg-gray-700 rounded-lg mb-4 flex items-center justify-center overflow-hidden">
+                              <div className="w-full h-48 md:h-64 bg-gray-700 rounded-lg mb-3 md:mb-4 flex items-center justify-center overflow-hidden">
                                 <img
                                   src={withBase(selectedCombination.finalImage)}
                                   alt="Combination"
@@ -1121,16 +1141,16 @@ const POSInterface = () => {
                               </div>
                             )}
                             {/* Quantity Selector */}
-                            <div className="bg-gray-700 rounded-lg p-4 mb-4">
-                              <label className="block text-sm font-semibold text-white mb-3">
+                            <div className="bg-gray-700 rounded-lg p-3 md:p-4 mb-3 md:mb-4">
+                              <label className="block text-xs md:text-sm font-semibold text-white mb-2 md:mb-3">
                                 الكمية:
                               </label>
-                              <div className="flex items-center gap-4">
+                              <div className="flex items-center gap-2 md:gap-4">
                                 <button
                                   onClick={() => setQuantityToAdd(Math.max(1, quantityToAdd - 1))}
-                                  className="w-10 h-10 bg-gray-600 hover:bg-gray-500 rounded-lg flex items-center justify-center text-white font-bold"
+                                  className="w-9 h-9 md:w-10 md:h-10 bg-gray-600 hover:bg-gray-500 rounded-lg flex items-center justify-center text-white font-bold"
                                 >
-                                  <Minus size={20} />
+                                  <Minus size={18} className="md:w-5 md:h-5" />
                                 </button>
                                 <input
                                   type="number"
@@ -1141,27 +1161,27 @@ const POSInterface = () => {
                                     const val = parseInt(e.target.value) || 1;
                                     setQuantityToAdd(Math.max(1, Math.min(val, 999)));
                                   }}
-                                  className="w-20 text-center bg-gray-600 text-white rounded-lg py-2 px-3 font-bold text-lg focus:outline-none focus:ring-2 focus:ring-gold-500"
+                                  className="w-16 md:w-20 text-center bg-gray-600 text-white rounded-lg py-2 px-2 md:px-3 font-bold text-base md:text-lg focus:outline-none focus:ring-2 focus:ring-gold-500"
                                 />
                                 <button
                                   onClick={() => setQuantityToAdd(Math.min(999, quantityToAdd + 1))}
-                                  className="w-10 h-10 bg-gray-600 hover:bg-gray-500 rounded-lg flex items-center justify-center text-white font-bold"
+                                  className="w-9 h-9 md:w-10 md:h-10 bg-gray-600 hover:bg-gray-500 rounded-lg flex items-center justify-center text-white font-bold"
                                 >
-                                  <Plus size={20} />
+                                  <Plus size={18} className="md:w-5 md:h-5" />
                                 </button>
                               </div>
                             </div>
                             
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <p className="text-gray-400">السعر للقطعة الواحدة</p>
-                                <p className="text-2xl font-bold text-gold-500">
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 md:gap-4">
+                              <div className="flex-1">
+                                <p className="text-gray-400 text-sm md:text-base">السعر للقطعة الواحدة</p>
+                                <p className="text-xl md:text-2xl font-bold text-gold-500">
                                   {selectedSpecialProduct.finalPrice +
                                     (selectedCombination.additionalPrice || 0)}{' '}
                                   TND
                                 </p>
                                 {quantityToAdd > 1 && (
-                                  <p className="text-sm text-gray-400 mt-1">
+                                  <p className="text-xs md:text-sm text-gray-400 mt-1">
                                     الإجمالي ({quantityToAdd} {quantityToAdd > 1 ? 'قطعة' : 'قطعة'}): {' '}
                                     <span className="text-gold-500 font-bold">
                                       {(selectedSpecialProduct.finalPrice + (selectedCombination.additionalPrice || 0)) * quantityToAdd} TND
@@ -1171,9 +1191,9 @@ const POSInterface = () => {
                               </div>
                               <button
                                 onClick={() => addSpecialProductToCart(quantityToAdd)}
-                                className="px-6 py-3 bg-gold-600 hover:bg-gold-700 rounded-lg font-semibold flex items-center gap-2"
+                                className="w-full sm:w-auto px-4 md:px-6 py-2 md:py-3 bg-gold-600 hover:bg-gold-700 rounded-lg font-semibold flex items-center justify-center gap-2 text-white text-sm md:text-base"
                               >
-                                <Plus size={20} />
+                                <Plus size={18} className="md:w-5 md:h-5" />
                                 إضافة للسلة
                               </button>
                             </div>
@@ -1204,44 +1224,50 @@ const POSInterface = () => {
         </div>
 
         {/* RIGHT PANEL - Cart */}
-        <div className="w-1/3 flex flex-col bg-gray-100 dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700">
-          <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-            <h2 className="text-xl font-bold flex items-center gap-2 text-gray-900 dark:text-white">
-              <ShoppingCart size={24} />
+        <div className={`${showCartOnMobile ? 'flex' : 'hidden'} md:flex w-full md:w-1/3 flex-col bg-gray-100 dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700`}>
+          <div className="p-3 md:p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+            <h2 className="text-lg md:text-xl font-bold flex items-center gap-2 text-gray-900 dark:text-white">
+              <ShoppingCart size={20} className="md:w-6 md:h-6" />
               السلة ({cart.length})
             </h2>
+            <button
+              onClick={() => setShowCartOnMobile(false)}
+              className="md:hidden text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+            >
+              <X size={20} />
+            </button>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-4 space-y-3">
+          <div className="flex-1 overflow-y-auto p-2 md:p-4 space-y-2 md:space-y-3">
             {cart.length === 0 ? (
               <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-                <ShoppingCart size={48} className="mx-auto mb-4 opacity-50" />
-                <p>السلة فارغة</p>
+                <ShoppingCart size={40} className="md:w-12 md:h-12 mx-auto mb-4 opacity-50" />
+                <p className="text-sm md:text-base">السلة فارغة</p>
               </div>
             ) : (
               cart.map((item, index) => (
                 <div
                   key={index}
-                  className="bg-white dark:bg-gray-700 rounded-lg p-3 flex gap-3 border border-gray-200 dark:border-gray-600"
+                  className="bg-white dark:bg-gray-700 rounded-lg p-2 md:p-3 flex gap-2 md:gap-3 border border-gray-200 dark:border-gray-600"
                 >
                   {item.image && (
                     <img
                       src={withBase(item.image)}
                       alt={item.productName}
-                      className="w-20 h-20 object-cover rounded-lg"
+                      className="w-16 h-16 md:w-20 md:h-20 object-cover rounded-lg flex-shrink-0"
                     />
                   )}
-                  <div className="flex-1">
-                    <p className="font-medium text-gray-900 dark:text-white">{item.productName}</p>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm md:text-base text-gray-900 dark:text-white truncate">{item.productName}</p>
                     {item.variant && (
-                      <p className="text-xs text-[#fda63a] dark:text-gold-400 font-medium">
+                      <p className="text-xs text-[#fda63a] dark:text-gold-400 font-medium truncate">
                         المتغير: {item.variant.name || item.variant.value}
                       </p>
                     )}
                     {item.combinationTitle && (
-                      <p className="text-xs text-gray-600 dark:text-gray-400">{item.combinationTitle}</p>
+                      <p className="text-xs text-gray-600 dark:text-gray-400 truncate">{item.combinationTitle}</p>
                     )}
-                    <p className="text-gold-600 dark:text-gold-500 font-bold">{item.price} TND</p>
+                    <p className="text-gold-600 dark:text-gold-500 font-bold text-sm md:text-base">{item.price} TND</p>
                     {item.productType === 'regular' && (item.variant?.stock !== undefined || item.stock !== undefined) && (
                       <p className={`text-xs font-semibold ${
                         (item.variant?.stock !== undefined ? item.variant.stock : item.stock || 0) <= 10
@@ -1252,14 +1278,14 @@ const POSInterface = () => {
                         {(item.variant?.stock !== undefined ? item.variant.stock : item.stock || 0) <= 10 && ' (منخفض)'}
                       </p>
                     )}
-                    <div className="flex items-center gap-2 mt-2">
+                    <div className="flex items-center gap-1 md:gap-2 mt-2">
                       <button
                         onClick={() => updateQuantity(index, -1)}
-                        className="w-8 h-8 flex items-center justify-center bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 rounded text-gray-900 dark:text-white"
+                        className="w-7 h-7 md:w-8 md:h-8 flex items-center justify-center bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 rounded text-gray-900 dark:text-white"
                       >
-                        <Minus size={16} />
+                        <Minus size={14} className="md:w-4 md:h-4" />
                       </button>
-                      <span className="w-8 text-center font-medium text-gray-900 dark:text-white">{item.quantity}</span>
+                      <span className="w-6 md:w-8 text-center text-sm md:text-base font-medium text-gray-900 dark:text-white">{item.quantity}</span>
                       <button
                         onClick={() => updateQuantity(index, 1)}
                         disabled={
@@ -1267,15 +1293,15 @@ const POSInterface = () => {
                           (item.variant?.stock !== undefined || item.stock !== undefined) &&
                           item.quantity >= (item.variant?.stock !== undefined ? item.variant.stock : item.stock || 0)
                         }
-                        className="w-8 h-8 flex items-center justify-center bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 rounded text-gray-900 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-7 h-7 md:w-8 md:h-8 flex items-center justify-center bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 rounded text-gray-900 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        <Plus size={16} />
+                        <Plus size={14} className="md:w-4 md:h-4" />
                       </button>
                       <button
                         onClick={() => removeFromCart(index)}
                         className="ml-auto p-1 text-[#fda63a] dark:text-gold-400 hover:text-[#e8952d] dark:hover:text-gold-300"
                       >
-                        <Trash2 size={16} />
+                        <Trash2 size={14} className="md:w-4 md:h-4" />
                       </button>
                     </div>
                   </div>
@@ -1285,24 +1311,24 @@ const POSInterface = () => {
           </div>
 
           {cart.length > 0 && (
-            <div className="p-4 border-t border-gray-200 dark:border-gray-700 space-y-4 bg-white dark:bg-gray-900">
+            <div className="p-3 md:p-4 border-t border-gray-200 dark:border-gray-700 space-y-3 md:space-y-4 bg-white dark:bg-gray-900 flex-shrink-0">
               <div className="space-y-2">
-                <div className="flex justify-between text-gray-600 dark:text-gray-400">
+                <div className="flex justify-between text-sm md:text-base text-gray-600 dark:text-gray-400">
                   <span>المجموع الفرعي:</span>
                   <span>{calculations.subtotal.toFixed(2)} TND</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-600 dark:text-gray-400">الخصم:</span>
+                  <span className="text-sm md:text-base text-gray-600 dark:text-gray-400">الخصم:</span>
                   <input
                     type="number"
                     value={discount}
                     onChange={(e) => setDiscount(Math.max(0, parseFloat(e.target.value) || 0))}
-                    className="w-24 px-2 py-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-right text-gray-900 dark:text-white"
+                    className="w-20 md:w-24 px-2 py-1 text-sm md:text-base bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-right text-gray-900 dark:text-white"
                     min="0"
                     step="0.01"
                   />
                 </div>
-                <div className="flex justify-between text-xl font-bold text-gold-600 dark:text-gold-500 pt-2 border-t border-gray-200 dark:border-gray-700">
+                <div className="flex justify-between text-lg md:text-xl font-bold text-gold-600 dark:text-gold-500 pt-2 border-t border-gray-200 dark:border-gray-700">
                   <span>الإجمالي:</span>
                   <span>{calculations.total.toFixed(2)} TND</span>
                 </div>
@@ -1364,21 +1390,22 @@ const POSInterface = () => {
               <div className="flex gap-2">
                 <button
                   onClick={clearCart}
-                  className="flex-1 px-4 py-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-lg font-semibold transition-colors text-gray-900 dark:text-white"
+                  className="flex-1 px-3 md:px-4 py-2 md:py-3 text-sm md:text-base bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-lg font-semibold transition-colors text-gray-900 dark:text-white"
                 >
                   إفراغ السلة
                 </button>
                 <button
                   onClick={handleCheckout}
                   disabled={loading}
-                  className="flex-1 px-4 py-3 bg-gold-600 hover:bg-gold-700 disabled:bg-gray-600 disabled:cursor-not-allowed rounded-lg font-semibold transition-colors flex items-center justify-center gap-2"
+                  className="flex-1 px-3 md:px-4 py-2 md:py-3 text-sm md:text-base bg-gold-600 hover:bg-gold-700 disabled:bg-gray-600 disabled:cursor-not-allowed rounded-lg font-semibold transition-colors flex items-center justify-center gap-2 text-white"
                 >
                   {loading ? (
                     'جاري المعالجة...'
                   ) : (
                     <>
-                      <Check size={20} />
-                      إتمام البيع
+                      <Check size={18} className="md:w-5 md:h-5" />
+                      <span className="hidden sm:inline">إتمام البيع</span>
+                      <span className="sm:hidden">بيع</span>
                     </>
                   )}
                 </button>
@@ -1441,9 +1468,9 @@ const POSInterface = () => {
               </button>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-3 md:space-y-4">
               {/* Product Image */}
-              <div className="w-full h-72 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden flex items-center justify-center">
+              <div className="w-full h-48 md:h-72 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden flex items-center justify-center">
                 {(selectedVariant?.image || selectedProductForVariant.images?.[0]) ? (
                   <img
                     src={withBase(selectedVariant?.image || selectedProductForVariant.images[0])}
@@ -1460,10 +1487,10 @@ const POSInterface = () => {
               {/* Variants Selection */}
               {selectedProductForVariant.variants && selectedProductForVariant.variants.length > 0 && (
                 <div>
-                  <label className="block text-sm font-semibold text-gray-900 dark:text-white mb-3">
+                  <label className="block text-xs md:text-sm font-semibold text-gray-900 dark:text-white mb-2 md:mb-3">
                     اختر المتغير:
                   </label>
-                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 md:gap-3">
                     {selectedProductForVariant.variants.map((variant, idx) => {
                       const variantStock = variant.stock !== undefined ? variant.stock : selectedProductForVariant.stock || 0;
                       const isOutOfStock = variantStock <= 0;

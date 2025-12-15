@@ -11,11 +11,12 @@ const __dirname = path.dirname(__filename);
 
 export const getInvoices = async (req, res, next) => {
   try {
-    const { status, startDate, endDate, type } = req.query;
+    const { status, startDate, endDate, type, orderId } = req.query;
     
     // Get client invoices
     const invoiceQuery = {};
     if (status) invoiceQuery.status = status;
+    if (orderId) invoiceQuery.orderId = orderId;
     if (startDate || endDate) {
       invoiceQuery.createdAt = {};
       if (startDate) invoiceQuery.createdAt.$gte = new Date(startDate);
@@ -41,7 +42,7 @@ export const getInvoices = async (req, res, next) => {
     // Fetch based on type filter
     if (!type || type === 'client') {
       clientInvoices = await Invoice.find(invoiceQuery)
-        .populate('orderId', 'orderNumber')
+        .populate('orderId', 'orderNumber profit total')
         .populate('clientId', 'name email')
         .sort({ createdAt: -1 });
     }
@@ -165,7 +166,7 @@ export const createInvoiceFromOrder = async (req, res, next) => {
       dueDate: dueDate ? new Date(dueDate) : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days default
       notes: notes || '',
       createdBy: req.user._id,
-      status: 'draft',
+      status: 'pending', // Default to unpaid/pending status
     });
 
     res.status(201).json({ success: true, data: invoice });
@@ -228,7 +229,7 @@ export const createInvoice = async (req, res, next) => {
       dueDate: dueDate ? new Date(dueDate) : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days default
       notes: notes || '',
       createdBy: req.user._id,
-      status: 'draft',
+      status: 'pending', // Default to unpaid/pending status
     });
 
     res.status(201).json({ success: true, data: invoice });

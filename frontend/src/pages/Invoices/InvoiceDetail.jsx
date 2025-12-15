@@ -20,11 +20,35 @@ const InvoiceDetail = () => {
 
   const fetchInvoice = async () => {
     try {
-      const response = await api.get(`/invoices/${id}`);
-      setInvoice(response.data.data);
+      setLoading(true);
+      // Try to fetch as client invoice first
+      let response = await api.get(`/invoices/${id}`).catch((err) => {
+        console.log('Client invoice not found, trying supplier invoice...', err);
+        return null;
+      });
+      
+      // If not found, try as supplier invoice
+      if (!response || !response.data || !response.data.success) {
+        console.log('Trying supplier invoice...');
+        response = await api.get(`/supplier-invoices/${id}`).catch((err) => {
+          console.log('Supplier invoice not found either', err);
+          return null;
+        });
+      }
+      
+      if (response && response.data && response.data.success) {
+        console.log('Invoice found:', response.data.data);
+        setInvoice(response.data.data);
+      } else {
+        console.error('Invoice not found for ID:', id);
+        toast.error('الفاتورة غير موجودة');
+        setTimeout(() => navigate('/admin/invoices'), 2000);
+      }
     } catch (error) {
-      toast.error('حدث خطأ');
-      navigate('/invoices');
+      console.error('Error fetching invoice:', error);
+      const errorMessage = error.response?.data?.message || 'حدث خطأ أثناء جلب الفاتورة';
+      toast.error(errorMessage);
+      setTimeout(() => navigate('/admin/invoices'), 2000);
     } finally {
       setLoading(false);
     }
@@ -52,7 +76,7 @@ const InvoiceDetail = () => {
       <div className="flex items-center justify-between">
         <div>
           <button
-            onClick={() => navigate('/invoices')}
+            onClick={() => navigate('/admin/invoices')}
             className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 mb-2"
           >
             <ArrowRight size={20} />

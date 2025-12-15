@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import api from '../../utils/axios';
 import toast from 'react-hot-toast';
-import { Package, AlertTriangle, TrendingUp, TrendingDown } from 'lucide-react';
+import { Package, AlertTriangle, TrendingUp, TrendingDown, FileText, List } from 'lucide-react';
 import StockAdjustModal from '../../components/Inventory/StockAdjustModal';
 import InventoryLogTable from '../../components/Inventory/InventoryLogTable';
 
@@ -11,6 +11,7 @@ const InventoryManagement = () => {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
+  const [showLogTable, setShowLogTable] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -56,13 +57,33 @@ const InventoryManagement = () => {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">إدارة المخزون</h1>
-        <p className="text-gray-600 dark:text-gray-400 mt-1">إدارة المخزون والتنبيهات</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">إدارة المخزون</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">إدارة المخزون والتنبيهات</p>
+        </div>
+        <button
+          onClick={() => setShowLogTable(!showLogTable)}
+          className={`btn-primary flex items-center gap-2 ${showLogTable ? 'bg-gold-600' : ''}`}
+        >
+          {showLogTable ? (
+            <>
+              <List size={20} />
+              <span>عرض المنتجات</span>
+            </>
+          ) : (
+            <>
+              <FileText size={20} />
+              <span>سجل المخزون</span>
+            </>
+          )}
+        </button>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      {!showLogTable ? (
+        <>
+          {/* Stats Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="card">
           <div className="flex items-center justify-between">
             <div>
@@ -234,9 +255,10 @@ const InventoryManagement = () => {
           </table>
         </div>
       </div>
-
-      {/* Inventory Logs */}
-      <InventoryLogTable />
+        </>
+      ) : (
+        <InventoryLogTable />
+      )}
 
       {isModalOpen && (
         <StockAdjustModal product={selectedProduct} onClose={handleCloseModal} />

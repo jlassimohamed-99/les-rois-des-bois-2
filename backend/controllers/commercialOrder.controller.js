@@ -268,7 +268,7 @@ export const createInvoice = async (req, res, next) => {
       dueDate: dueDate ? new Date(dueDate) : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days default
       notes: notes || '',
       createdBy: commercialId,
-      status: 'draft',
+      status: 'pending', // Default to unpaid/pending status
     });
 
     res.status(201).json({

@@ -23,10 +23,24 @@ const OrderDetail = () => {
   const checkInvoice = async () => {
     try {
       const response = await api.get(`/invoices?orderId=${id}`);
-      if (response.data.success && response.data.data.length > 0) {
-        setInvoice(response.data.data[0]);
+      console.log('Invoice check response:', response.data);
+      if (response.data.success && response.data.data && response.data.data.length > 0) {
+        // Filter to get only client invoices (not supplier invoices)
+        const clientInvoices = response.data.data.filter(inv => 
+          !inv.invoiceType || inv.invoiceType === 'client'
+        );
+        if (clientInvoices.length > 0) {
+          const foundInvoice = clientInvoices[0];
+          console.log('Found invoice:', foundInvoice);
+          setInvoice(foundInvoice);
+        } else {
+          console.log('No client invoice found for order:', id);
+        }
+      } else {
+        console.log('No invoice found for order:', id);
       }
     } catch (error) {
+      console.error('Error checking invoice:', error);
       // Silent error
     }
   };
@@ -183,11 +197,46 @@ const OrderDetail = () => {
           {invoice ? (
             <>
               <button
-                onClick={() => navigate(`/admin/invoices/${invoice._id}`)}
+                onClick={async (e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  if (invoice && invoice._id) {
+                    try {
+                      const invoiceUrl = `/admin/invoices/${invoice._id}`;
+                      console.log('Navigating to:', invoiceUrl, 'Invoice:', invoice);
+                      navigate(invoiceUrl);
+                    } catch (error) {
+                      console.error('Error navigating to invoice:', error);
+                      toast.error('حدث خطأ أثناء فتح الفاتورة');
+                    }
+                  } else {
+                    // Generate invoice if it doesn't exist
+                    try {
+                      setLoadingInvoice(true);
+                      const dueDate = new Date();
+                      dueDate.setDate(dueDate.getDate() + 30);
+                      const response = await api.post(`/invoices/from-order/${id}`, {
+                        dueDate: dueDate.toISOString(),
+                      });
+                      if (response.data.success) {
+                        toast.success('تم إنشاء الفاتورة بنجاح');
+                        setInvoice(response.data.data);
+                        navigate(`/admin/invoices/${response.data.data._id}`);
+                      }
+                    } catch (error) {
+                      const message = error.response?.data?.message || 'حدث خطأ أثناء إنشاء الفاتورة';
+                      toast.error(message);
+                    } finally {
+                      setLoadingInvoice(false);
+                    }
+                  }
+                }}
                 className="btn-primary flex items-center gap-2"
+                type="button"
+                disabled={loadingInvoice}
               >
                 <FileText size={18} />
-                <span>عرض الفاتورة</span>
+                <span>{loadingInvoice ? 'جاري الإنشاء...' : 'عرض الفاتورة'}</span>
               </button>
               <button
                 onClick={downloadInvoicePDF}

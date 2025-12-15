@@ -51,7 +51,6 @@ const Layout = () => {
     { path: '/admin/invoices', icon: Receipt, label: 'الفواتير' },
     { path: '/admin/pos', icon: ShoppingCart, label: 'نقطة البيع' },
     { path: '/admin/suppliers', icon: Truck, label: 'الموردون' },
-    { path: '/admin/purchase-orders', icon: FileText, label: 'طلبات شراء' },
     { path: '/admin/expenses', icon: DollarSign, label: 'المصاريف' },
     { path: '/admin/returns', icon: RotateCcw, label: 'الإرجاعات' },
     { path: '/admin/crm', icon: Briefcase, label: 'إدارة العملاء' },

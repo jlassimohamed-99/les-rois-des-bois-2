@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import api from '../../utils/axios';
-import { Activity, Filter } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { Activity, Filter, Trash2 } from 'lucide-react';
 
 const AuditLogs = () => {
   const [logs, setLogs] = useState([]);
@@ -34,6 +35,43 @@ const AuditLogs = () => {
     }
   };
 
+  const handleDeleteLogs = async () => {
+    // Check if any filters are active
+    const hasFilters = filters.resourceType || filters.action || filters.startDate || filters.endDate;
+    
+    const confirmMessage = hasFilters
+      ? 'هل أنت متأكد من حذف جميع السجلات المطابقة للفلاتر الحالية؟ هذه العملية لا يمكن التراجع عنها.'
+      : 'هل أنت متأكد من حذف جميع السجلات؟ هذه العملية لا يمكن التراجع عنها.';
+
+    if (!window.confirm(confirmMessage)) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const params = {};
+      
+      // If no filters, delete all
+      if (!hasFilters) {
+        params.deleteAll = 'true';
+      } else {
+        // Otherwise, use filters
+        if (filters.resourceType) params.resourceType = filters.resourceType;
+        if (filters.action) params.action = filters.action;
+        if (filters.startDate) params.startDate = filters.startDate;
+        if (filters.endDate) params.endDate = filters.endDate;
+      }
+
+      const response = await api.delete('/audit-logs', { params });
+      toast.success(response.data.message || 'تم حذف السجلات بنجاح');
+      fetchLogs(); // Refresh the list
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'حدث خطأ أثناء حذف السجلات');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const actionLabels = {
     create: 'إنشاء',
     update: 'تحديث',
@@ -45,9 +83,19 @@ const AuditLogs = () => {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">سجل التدقيق</h1>
-        <p className="text-gray-600 dark:text-gray-400 mt-1">سجل جميع العمليات في النظام</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">سجل التدقيق</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">سجل جميع العمليات في النظام</p>
+        </div>
+        <button
+          onClick={handleDeleteLogs}
+          className="btn-danger flex items-center gap-2"
+          disabled={loading}
+        >
+          <Trash2 size={18} />
+          <span>حذف السجلات المفلترة</span>
+        </button>
       </div>
 
       {/* Filters */}
@@ -114,7 +162,11 @@ const AuditLogs = () => {
                     className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50"
                   >
                     <td className="py-3 px-4 text-sm">
-                      {new Date(log.createdAt).toLocaleString('ar-SA')}
+                      {new Date(log.createdAt).toLocaleDateString('fr-FR', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric'
+                      })}
                     </td>
                     <td className="py-3 px-4 text-sm">{log.userEmail}</td>
                     <td className="py-3 px-4 text-sm">{log.resourceType}</td>

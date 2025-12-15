@@ -24,7 +24,6 @@ import SpecialProducts from './pages/SpecialProducts';
 import InventoryManagement from './pages/Inventory/InventoryManagement';
 import OrdersList from './pages/Orders/OrdersList';
 import OrderDetail from './pages/Orders/OrderDetail';
-import CreateOrder from './pages/Orders/CreateOrder';
 import InvoicesList from './pages/Invoices/InvoicesList';
 import InvoiceDetail from './pages/Invoices/InvoiceDetail';
 import AnalyticsDashboard from './pages/Analytics/AnalyticsDashboard';
@@ -35,7 +34,6 @@ import CommercialDetail from './pages/Analytics/CommercialDetail';
 import AuditLogs from './pages/AuditLogs/AuditLogs';
 import POSDashboard from './pages/POS/POSDashboard';
 import SuppliersList from './pages/Suppliers/SuppliersList';
-import POList from './pages/PurchaseOrders/POList';
 import ExpensesList from './pages/Expenses/ExpensesList';
 import ExpenseCategories from './pages/Expenses/ExpenseCategories';
 import ReturnsList from './pages/Returns/ReturnsList';
@@ -197,13 +195,11 @@ function App() {
                   <Route path="special-products" element={<SpecialProducts />} />
                   <Route path="inventory" element={<InventoryManagement />} />
                   <Route path="orders" element={<OrdersList />} />
-                  <Route path="orders/create" element={<CreateOrder />} />
                   <Route path="orders/:id" element={<OrderDetail />} />
                   <Route path="invoices" element={<InvoicesList />} />
                   <Route path="invoices/:id" element={<InvoiceDetail />} />
                   <Route path="pos" element={<POSDashboard />} />
                   <Route path="suppliers" element={<SuppliersList />} />
-                  <Route path="purchase-orders" element={<POList />} />
                   <Route path="expenses" element={<ExpensesList />} />
                   <Route path="expenses/categories" element={<ExpenseCategories />} />
                   <Route path="returns" element={<ReturnsList />} />

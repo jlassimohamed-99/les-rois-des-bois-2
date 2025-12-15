@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../utils/axios';
 import toast from 'react-hot-toast';
-import { Plus, Search, Eye, Edit } from 'lucide-react';
+import { Search, Eye } from 'lucide-react';
 
 const OrdersList = () => {
   const [orders, setOrders] = useState([]);
@@ -80,18 +80,9 @@ const OrdersList = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">الطلبات</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">إدارة جميع الطلبات</p>
-        </div>
-        <button
-          onClick={() => navigate('/admin/orders/create')}
-          className="btn-primary flex items-center gap-2"
-        >
-          <Plus size={20} />
-          <span>إنشاء طلب جديد</span>
-        </button>
+      <div>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">الطلبات</h1>
+        <p className="text-gray-600 dark:text-gray-400 mt-1">إدارة جميع الطلبات</p>
       </div>
 
       {/* Filters */}

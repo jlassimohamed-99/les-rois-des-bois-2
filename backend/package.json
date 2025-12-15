@@ -8,7 +8,10 @@
     "create-admin": "node scripts/createAdmin.js",
     "seed-client": "node scripts/seedClientData.js",
     "seed": "node scripts/seedDatabase.js",
-    "init-commercial-expenses": "node scripts/initCommercialExpenseCategory.js"
+    "init-commercial-expenses": "node scripts/initCommercialExpenseCategory.js",
+    "view-orders-invoices": "node scripts/viewOrdersAndInvoices.js",
+    "delete-orders-invoices": "node scripts/deleteOrdersAndInvoices.js",
+    "delete-audit-logs": "node scripts/deleteAuditLogs.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

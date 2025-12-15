@@ -247,12 +247,36 @@ export const getStockDistribution = async (req, res, next) => {
   try {
     const threshold = parseInt(req.query.threshold) || 10;
     
-    // Count products by stock status
-    const [available, lowStock, outOfStock] = await Promise.all([
-      Product.countDocuments({ stock: { $gt: threshold } }),
-      Product.countDocuments({ stock: { $gt: 0, $lte: threshold } }),
-      Product.countDocuments({ stock: 0 }),
-    ]);
+    // Get all products to check both general stock and variant stock
+    const products = await Product.find({});
+    
+    let available = 0;
+    let lowStock = 0;
+    let outOfStock = 0;
+    
+    products.forEach((product) => {
+      // If product has variants, count each variant separately
+      if (product.variants && product.variants.length > 0) {
+        product.variants.forEach((variant) => {
+          if (variant.stock === 0) {
+            outOfStock++;
+          } else if (variant.stock > threshold) {
+            available++;
+          } else if (variant.stock > 0 && variant.stock <= threshold) {
+            lowStock++;
+          }
+        });
+      } else {
+        // No variants, count the product's general stock
+        if (product.stock === 0) {
+          outOfStock++;
+        } else if (product.stock > threshold) {
+          available++;
+        } else if (product.stock > 0 && product.stock <= threshold) {
+          lowStock++;
+        }
+      }
+    });
 
     const total = available + lowStock + outOfStock;
 

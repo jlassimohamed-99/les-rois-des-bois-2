@@ -21,6 +21,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { useScrollDirection } from '../../hooks/useScrollDirection';
 import clientApi from '../../utils/clientAxios';
 import { slideDown, fadeIn, staggerContainer } from '../../utils/animations';
+import Logo from '../shared/Logo';
 
 const EnhancedHeader = () => {
   const { logout, isAuthenticated, user } = useClientAuth();
@@ -107,18 +108,12 @@ const EnhancedHeader = () => {
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.5, ease: [0.0, 0.0, 0.2, 1] }}
             >
-              <Link
-                to="/shop"
-                className="flex items-center space-x-2 rtl:space-x-reverse group"
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                transition={{ duration: 0.2 }}
               >
-                <motion.span
-                  className="text-2xl font-bold text-gold-500"
-                  whileHover={{ scale: 1.05 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  Les Rois Du Bois
-                </motion.span>
-              </Link>
+                <Logo size="md" to="/shop" showText={false} />
+              </motion.div>
             </motion.div>
 
             {/* Navigation Links */}
@@ -356,9 +351,13 @@ const EnhancedHeader = () => {
             <Menu size={24} className="text-gray-700 dark:text-gray-300" />
           </motion.button>
 
-          <Link to="/shop" className="text-xl font-bold text-gold-600">
-            Les Rois Du Bois
-          </Link>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3 }}
+          >
+            <Logo size="sm" to="/shop" />
+          </motion.div>
 
           <div className="flex items-center gap-3">
             <button
@@ -401,7 +400,10 @@ const EnhancedHeader = () => {
               >
                 <div className="p-4">
                   <div className="flex items-center justify-between mb-6">
-                    <span className="text-xl font-bold text-gold-600">القائمة</span>
+                    <div className="flex items-center gap-3">
+                      <Logo size="md" to="/shop" className="flex-shrink-0" />
+                      <span className="text-base font-bold text-gold-600 dark:text-gold-500">Les Rois Du Bois</span>
+                    </div>
                     <button
                       onClick={() => setMobileMenuOpen(false)}
                       className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"

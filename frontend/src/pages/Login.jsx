@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { Moon, Sun } from 'lucide-react';
+import Logo from '../components/shared/Logo';
 
 const redirectByRole = (role) => {
   switch (role) {
@@ -114,19 +115,28 @@ const Login = () => {
           }}
         >
           {/* Header */}
-          <div className="text-center mb-8 space-y-3">
-            <h1 className={`text-4xl md:text-5xl font-bold bg-gradient-to-r ${
+          <div className="text-center mb-8 space-y-4">
+            <div className="flex justify-center mb-3">
+              <div className="h-28 w-28 relative transition-all duration-300">
+                <img
+                  src="/logo-dark.webp"
+                  alt="Les Rois Du Bois Logo"
+                  className="h-full w-full object-contain"
+                  onError={(e) => {
+                    // Fallback to regular logo if dark version doesn't exist
+                    e.target.src = '/logo.webp';
+                  }}
+                />
+              </div>
+            </div>
+            <h1 className={`text-3xl md:text-4xl font-bold bg-gradient-to-r ${
               isDark
                 ? 'from-gold-400 to-gold-600 bg-clip-text text-transparent'
                 : 'from-gold-600 to-gold-700 bg-clip-text text-transparent'
             }`}>
               Les Rois Du Bois
             </h1>
-            <p className={`text-sm md:text-base ${
-              isDark ? 'text-gray-400' : 'text-gray-600'
-            }`}>
-              تسجيل الدخول للوصول إلى حسابك
-            </p>
+
           </div>
 
           {/* Login Form */}

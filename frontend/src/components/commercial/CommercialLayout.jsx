@@ -2,6 +2,7 @@ import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
+import Logo from '../shared/Logo';
 import {
   LayoutDashboard,
   Users,
@@ -50,13 +51,16 @@ const CommercialLayout = () => {
           open ? 'translate-x-0' : 'translate-x-full md:translate-x-0'
         }`}
       >
-        <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex-shrink-0 flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gold-600">Les Rois Du Bois</h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">لوحة التجاري</p>
+        <div className="p-4 md:p-6 border-b border-gray-200 dark:border-gray-700 flex-shrink-0 flex items-center justify-between gap-3">
+          <div className="flex flex-col items-center gap-2 min-w-0 flex-1 w-full">
+            <Logo size="lg" to="/commercial" className="flex-shrink-0" />
+            <div className="text-center w-full px-2">
+              <h1 className="text-sm md:text-base lg:text-lg font-bold text-gold-600 dark:text-gold-500 leading-tight break-words w-full">Les Rois Du Bois</h1>
+              <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400 mt-1">لوحة التجاري</p>
+            </div>
           </div>
-          <button className="md:hidden" onClick={() => setOpen(false)}>
-            <X />
+          <button className="md:hidden flex-shrink-0 p-1" onClick={() => setOpen(false)}>
+            <X size={20} />
           </button>
         </div>
 
@@ -115,7 +119,10 @@ const CommercialLayout = () => {
             >
               <Menu size={24} />
             </button>
-            <div className="flex-1"></div>
+            <div className="flex-1 flex justify-center md:hidden">
+              <Logo size="md" to="/commercial" className="flex-shrink-0" />
+            </div>
+            <div className="hidden md:flex flex-1"></div>
             <div className="flex items-center gap-4">
               <span className="text-sm text-gray-600 dark:text-gray-400">
                 {new Date().toLocaleDateString('ar-TN', {

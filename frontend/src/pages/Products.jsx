@@ -3,6 +3,7 @@ import api from '../utils/axios';
 import toast from 'react-hot-toast';
 import { Plus, Search, Edit, Trash2, Package } from 'lucide-react';
 import ProductModal from '../components/ProductModal';
+import { withBase } from '@/utils/imageUrl';
 
 const Products = () => {
   const [products, setProducts] = useState([]);
@@ -166,7 +167,7 @@ const Products = () => {
                     <td className="py-3 px-4">
                       {product.images && product.images.length > 0 ? (
                         <img
-                          src={`http://localhost:5000${product.images[0]}`}
+                          src={withBase(product.images[0])}
                           alt={product.name}
                           className="w-16 h-16 object-cover rounded-lg"
                         />

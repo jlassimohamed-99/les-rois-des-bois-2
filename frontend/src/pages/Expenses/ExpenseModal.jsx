@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { X, Upload, FileText, XCircle } from 'lucide-react';
 import api from '../../utils/axios';
 import toast from 'react-hot-toast';
+import { withBase } from '@/utils/imageUrl';
 
 const ExpenseModal = ({ expense, onClose }) => {
   const [formData, setFormData] = useState({
@@ -62,7 +63,7 @@ const ExpenseModal = ({ expense, onClose }) => {
       
       // Set receipt preview if exists
       if (expense.receiptPath) {
-        setReceiptPreview(`http://localhost:5000${expense.receiptPath}`);
+        setReceiptPreview(withBase(expense.receiptPath));
       }
       
       // Find and set selected category

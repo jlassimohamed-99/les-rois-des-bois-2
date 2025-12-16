@@ -46,7 +46,6 @@ const POSDashboard = () => {
         // Don't redirect to login immediately - keep token and stay on POS
         // This allows user to continue working if backend comes back online
         // Only redirect if we're absolutely sure the token is invalid
-        console.log('Token exists but user not loaded - backend might be unavailable');
         return;
       }
       // If no token and no user, redirect will happen above

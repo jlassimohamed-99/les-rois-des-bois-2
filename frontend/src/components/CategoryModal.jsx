@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import api from '../utils/axios';
 import toast from 'react-hot-toast';
 import { X, Upload, Image as ImageIcon } from 'lucide-react';
+import { withBase } from '@/utils/imageUrl';
 
 const CategoryModal = ({ category, onClose }) => {
   const [formData, setFormData] = useState({
@@ -21,7 +22,7 @@ const CategoryModal = ({ category, onClose }) => {
         description: category.description || '',
         image: category.image || '',
       });
-      setImagePreview(category.image ? `http://localhost:5000${category.image}` : '');
+      setImagePreview(category.image ? withBase(category.image) : '');
     }
   }, [category]);
 

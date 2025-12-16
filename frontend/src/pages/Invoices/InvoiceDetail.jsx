@@ -22,22 +22,18 @@ const InvoiceDetail = () => {
     try {
       setLoading(true);
       // Try to fetch as client invoice first
-      let response = await api.get(`/invoices/${id}`).catch((err) => {
-        console.log('Client invoice not found, trying supplier invoice...', err);
+      let response = await api.get(`/invoices/${id}`).catch(() => {
         return null;
       });
       
       // If not found, try as supplier invoice
       if (!response || !response.data || !response.data.success) {
-        console.log('Trying supplier invoice...');
-        response = await api.get(`/supplier-invoices/${id}`).catch((err) => {
-          console.log('Supplier invoice not found either', err);
+        response = await api.get(`/supplier-invoices/${id}`).catch(() => {
           return null;
         });
       }
       
       if (response && response.data && response.data.success) {
-        console.log('Invoice found:', response.data.data);
         setInvoice(response.data.data);
       } else {
         console.error('Invoice not found for ID:', id);

@@ -1,6 +1,7 @@
 import express from 'express';
 import multer from 'multer';
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { protect } from '../middleware/auth.middleware.js';
 
@@ -11,7 +12,7 @@ const __dirname = path.dirname(__filename);
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     let uploadPath = path.join(__dirname, '../uploads');
-    
+
     if (req.path.includes('/category')) {
       uploadPath = path.join(uploadPath, 'categories');
     } else if (req.path.includes('/product')) {
@@ -25,7 +26,10 @@ const storage = multer.diskStorage({
     } else {
       uploadPath = path.join(uploadPath, 'general');
     }
-    
+
+    // Ensure the upload directory exists
+    fs.mkdirSync(uploadPath, { recursive: true });
+
     cb(null, uploadPath);
   },
   filename: function (req, file, cb) {

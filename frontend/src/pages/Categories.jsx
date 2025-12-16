@@ -3,6 +3,7 @@ import api from '../utils/axios';
 import toast from 'react-hot-toast';
 import { Plus, Search, Edit, Trash2, Image as ImageIcon } from 'lucide-react';
 import CategoryModal from '../components/CategoryModal';
+import { withBase } from '@/utils/imageUrl';
 
 const Categories = () => {
   const [categories, setCategories] = useState([]);
@@ -113,7 +114,7 @@ const Categories = () => {
                     <td className="py-3 px-4">
                       {category.image ? (
                         <img
-                          src={`http://localhost:5000${category.image}`}
+                          src={withBase(category.image)}
                           alt={category.name}
                           className="w-16 h-16 object-cover rounded-lg"
                         />

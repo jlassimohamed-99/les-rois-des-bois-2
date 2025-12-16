@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import api from '../utils/axios';
 import toast from 'react-hot-toast';
 import { X, Upload, Plus, Trash2 } from 'lucide-react';
+import { withBase } from '@/utils/imageUrl';
 
 const ProductModal = ({ product, categories, suppliers = [], onClose }) => {
   const [formData, setFormData] = useState({
@@ -46,9 +47,7 @@ const ProductModal = ({ product, categories, suppliers = [], onClose }) => {
         variantName: product.variantName || '',
         variants: product.variants || [],
       });
-      setImagePreviews(
-        (product.images || []).map((img) => `http://localhost:5000${img}`)
-      );
+      setImagePreviews((product.images || []).map((img) => withBase(img)));
     }
   }, [product]);
 
@@ -477,7 +476,7 @@ const ProductModal = ({ product, categories, suppliers = [], onClose }) => {
                     {variant.image ? (
                       <div className="relative w-24 h-24">
                         <img
-                          src={`http://localhost:5000${variant.image}`}
+                          src={withBase(variant.image)}
                           alt={variant.value}
                           className="w-full h-full object-cover rounded-lg border border-gray-300 dark:border-gray-600"
                         />

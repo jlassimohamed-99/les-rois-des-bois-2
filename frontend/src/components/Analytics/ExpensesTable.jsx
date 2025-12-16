@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import api from '../../utils/axios';
 import toast from 'react-hot-toast';
 import { FileText, Download, ChevronLeft, ChevronRight, Search, Image as ImageIcon } from 'lucide-react';
+import { withBase } from '@/utils/imageUrl';
 
 const ExpensesTable = ({ filters, onExport }) => {
   const [expenses, setExpenses] = useState([]);
@@ -68,7 +69,7 @@ const ExpensesTable = ({ filters, onExport }) => {
 
   const handleReceiptPreview = (receiptUrl) => {
     if (receiptUrl) {
-      setReceiptPreview(`http://localhost:5000${receiptUrl}`);
+      setReceiptPreview(withBase(receiptUrl));
     }
   };
 

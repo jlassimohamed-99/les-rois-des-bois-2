@@ -41,12 +41,33 @@ import { errorHandler } from './middleware/errorHandler.middleware.js';
 
 dotenv.config();
 
-// Check for required environment variables
-if (!process.env.JWT_SECRET) {
-  console.error('❌ ERROR: JWT_SECRET is not defined in .env file');
-  console.error('📝 Please create a .env file in the backend directory with:');
-  console.error('   JWT_SECRET=your-super-secret-jwt-key-change-in-production');
-  console.error('   See backend/ENV_SETUP.md for more details');
+// Validate required environment variables (with backward-compatible aliases)
+const requiredEnvVars = ['NODE_ENV', 'PORT', 'JWT_SECRET', 'FRONTEND_URL'];
+const missingVars = [];
+
+// Basic required vars
+requiredEnvVars.forEach((name) => {
+  if (!process.env[name]) {
+    missingVars.push(name);
+  }
+});
+
+// Mongo URI: support both MONGO_URI and MONGODB_URI
+const mongoUriEnv = process.env.MONGO_URI || process.env.MONGODB_URI;
+if (!mongoUriEnv) {
+  missingVars.push('MONGO_URI (or MONGODB_URI)');
+}
+
+// JWT expiration: support JWT_EXPIRES_IN and legacy JWT_EXPIRE
+const jwtExpiresEnv = process.env.JWT_EXPIRES_IN || process.env.JWT_EXPIRE;
+if (!jwtExpiresEnv) {
+  missingVars.push('JWT_EXPIRES_IN (or JWT_EXPIRE)');
+}
+
+if (missingVars.length > 0) {
+  console.error('❌ ERROR: Missing required environment variables:');
+  missingVars.forEach((name) => console.error(`- ${name}`));
+  console.error('📝 Please update your backend .env file before starting the server.');
   process.exit(1);
 }
 
@@ -55,14 +76,43 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 
+// Trust proxy when running behind a reverse proxy (e.g. Hostinger, Nginx)
+if (process.env.NODE_ENV === 'production') {
+  app.set('trust proxy', 1);
+}
+
 // Security headers
 app.use(securityHeaders);
 
-// Middleware
-app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
-  credentials: true,
-}));
+// CORS configuration
+const allowedOrigins = [];
+
+if (process.env.FRONTEND_URL) {
+  allowedOrigins.push(process.env.FRONTEND_URL);
+}
+
+// Allow localhost origins only in non-production environments for development
+if (process.env.NODE_ENV !== 'production') {
+  allowedOrigins.push('http://localhost:5173', 'http://localhost:3000');
+}
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow non-browser clients with no Origin header (e.g. curl, Postman)
+      if (!origin) {
+        return callback(null, true);
+      }
+
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(new Error('Not allowed by CORS'));
+    },
+    credentials: true,
+  })
+);
 app.use(cookieParser());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
@@ -117,7 +167,7 @@ app.get('/api/health', (req, res) => {
 app.use(errorHandler);
 
 // Connect to MongoDB
-let mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/les-rois-des-bois';
+let mongoUri = mongoUriEnv;
 
 // Determine if we should use SSL based on the connection string
 const isMongoAtlas = mongoUri.includes('mongodb+srv://') || mongoUri.includes('mongodb.net');

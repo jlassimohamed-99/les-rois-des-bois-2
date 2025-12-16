@@ -79,7 +79,6 @@ const POSInterface = () => {
         // Don't redirect to login immediately - keep token and stay on POS
         // This allows user to continue working if backend comes back online
         // Only redirect if we're absolutely sure the token is invalid
-        console.log('Token exists but user not loaded - backend might be unavailable');
         return;
       }
       // If no token and no user, redirect will happen above
@@ -511,7 +510,6 @@ const POSInterface = () => {
       
       // Last resort: use first combination if available
       if (!combination && selectedSpecialProduct.combinations.length > 0) {
-        console.log('Using first available combination as fallback');
         combination = selectedSpecialProduct.combinations[0];
       }
     }
@@ -748,7 +746,6 @@ const POSInterface = () => {
       const response = await api.post(`/pos/invoice/${lastOrder.order._id}`);
       toast.success('تم إنشاء الفاتورة بنجاح');
       // In a real implementation, you would download the PDF here
-      console.log('Invoice data:', response.data);
     } catch (error) {
       toast.error('حدث خطأ أثناء إنشاء الفاتورة');
     }

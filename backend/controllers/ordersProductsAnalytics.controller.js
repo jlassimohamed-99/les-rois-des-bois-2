@@ -96,10 +96,8 @@ export const getOrdersProductsAnalytics = async (req, res, next) => {
       } else if (source === 'pos') {
         sourceFilter.source = { $in: ['pos', 'commercial_pos', 'admin'] };
       } else if (source === 'page') {
-        // Page orders - for now, we'll need to add tracking
-        // Using a placeholder logic
+        // Page / social orders currently mapped to catalog source until dedicated tracking is added
         sourceFilter.source = 'catalog';
-        // TODO: Add page/social tracking field
       }
     }
 

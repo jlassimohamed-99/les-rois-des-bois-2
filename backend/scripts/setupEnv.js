@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import crypto from 'crypto';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -8,7 +9,7 @@ const __dirname = path.dirname(__filename);
 const envPath = path.join(__dirname, '..', '.env');
 const envExamplePath = path.join(__dirname, '..', 'ENV_SETUP.md');
 
-// Default environment variables
+// Default environment variables (development-friendly)
 const defaultEnv = `PORT=5000
 MONGODB_URI=mongodb://localhost:27017/les-rois-des-bois
 JWT_SECRET=${generateRandomSecret()}
@@ -17,7 +18,7 @@ NODE_ENV=development
 `;
 
 function generateRandomSecret() {
-  return require('crypto').randomBytes(64).toString('hex');
+  return crypto.randomBytes(64).toString('hex');
 }
 
 try {

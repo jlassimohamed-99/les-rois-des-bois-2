@@ -3,6 +3,7 @@ import api from '../../utils/axios';
 import toast from 'react-hot-toast';
 import { Settings as SettingsIcon, Save, Mail, Lock, DollarSign, Truck, Image as ImageIcon } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { withBase } from '@/utils/imageUrl';
 
 const Settings = () => {
   const { user } = useAuth();
@@ -299,7 +300,7 @@ const Settings = () => {
             {settings.storeLogo && (
               <div className="w-full h-32 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center overflow-hidden">
                 <img
-                  src={`http://localhost:5000${settings.storeLogo}`}
+                  src={withBase(settings.storeLogo)}
                   alt="Store Logo"
                   className="max-w-full max-h-full object-contain"
                 />

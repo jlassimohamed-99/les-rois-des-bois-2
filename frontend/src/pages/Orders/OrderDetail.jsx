@@ -23,7 +23,6 @@ const OrderDetail = () => {
   const checkInvoice = async () => {
     try {
       const response = await api.get(`/invoices?orderId=${id}`);
-      console.log('Invoice check response:', response.data);
       if (response.data.success && response.data.data && response.data.data.length > 0) {
         // Filter to get only client invoices (not supplier invoices)
         const clientInvoices = response.data.data.filter(inv => 
@@ -31,13 +30,12 @@ const OrderDetail = () => {
         );
         if (clientInvoices.length > 0) {
           const foundInvoice = clientInvoices[0];
-          console.log('Found invoice:', foundInvoice);
           setInvoice(foundInvoice);
         } else {
-          console.log('No client invoice found for order:', id);
+          // No client invoice found for this order
         }
       } else {
-        console.log('No invoice found for order:', id);
+        // No invoice found for this order
       }
     } catch (error) {
       console.error('Error checking invoice:', error);
@@ -203,7 +201,6 @@ const OrderDetail = () => {
                   if (invoice && invoice._id) {
                     try {
                       const invoiceUrl = `/admin/invoices/${invoice._id}`;
-                      console.log('Navigating to:', invoiceUrl, 'Invoice:', invoice);
                       navigate(invoiceUrl);
                     } catch (error) {
                       console.error('Error navigating to invoice:', error);

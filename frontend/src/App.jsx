@@ -38,7 +38,6 @@ import ExpensesList from './pages/Expenses/ExpensesList';
 import ExpenseCategories from './pages/Expenses/ExpenseCategories';
 import ReturnsList from './pages/Returns/ReturnsList';
 import ClientsList from './pages/CRM/ClientsList';
-import JobQueue from './pages/Jobs/JobQueue';
 import UsersList from './pages/Users/UsersList';
 import Settings from './pages/Settings/Settings';
 import HeroBanner from './pages/Homepage/HeroBanner';
@@ -216,7 +215,6 @@ function App() {
                   <Route path="homepage/featured" element={<FeaturedProducts />} />
                   <Route path="homepage/top-sellers" element={<TopSellers />} />
                   <Route path="settings" element={<Settings />} />
-                  <Route path="jobs" element={<JobQueue />} />
                 </Route>
 
                 {/* Commercial Dashboard */}

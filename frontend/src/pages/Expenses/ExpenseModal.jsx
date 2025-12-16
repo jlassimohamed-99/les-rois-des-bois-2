@@ -269,19 +269,19 @@ const ExpenseModal = ({ expense, onClose }) => {
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+        <div className="flex items-center justify-between p-4 md:p-6 border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800">
+          <h2 className="text-lg md:text-2xl font-bold text-gray-900 dark:text-gray-100">
             {expense ? 'تعديل مصروف' : 'إضافة مصروف جديد'}
           </h2>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors flex-shrink-0"
           >
-            <X size={24} />
+            <X size={20} className="md:w-6 md:h-6" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="p-4 md:p-6 space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -373,7 +373,7 @@ const ExpenseModal = ({ expense, onClose }) => {
                       <img
                         src={receiptPreview}
                         alt="Receipt preview"
-                        className="w-full max-w-md h-64 object-contain rounded-lg border border-gray-300 dark:border-gray-600"
+                        className="w-full max-w-full md:max-w-md h-auto md:h-64 object-contain rounded-lg border border-gray-300 dark:border-gray-600"
                       />
                       <button
                         type="button"
@@ -402,9 +402,9 @@ const ExpenseModal = ({ expense, onClose }) => {
                   )}
 
                   {!receiptPreview && (
-                    <label className="flex items-center gap-2 btn-secondary cursor-pointer w-fit">
-                      <Upload size={20} />
-                      <span>{uploadingReceipt ? 'جاري الرفع...' : 'رفع إيصال (صورة أو PDF)'}</span>
+                    <label className="flex items-center gap-2 btn-secondary cursor-pointer w-full sm:w-fit text-sm md:text-base px-3 md:px-4 py-2">
+                      <Upload size={18} className="md:w-5 md:h-5" />
+                      <span className="text-xs sm:text-sm md:text-base">{uploadingReceipt ? 'جاري الرفع...' : 'رفع إيصال (صورة أو PDF)'}</span>
                       <input
                         type="file"
                         accept="image/*,application/pdf"
@@ -549,16 +549,16 @@ const ExpenseModal = ({ expense, onClose }) => {
             </div>
           </div>
 
-          <div className="flex items-center justify-end gap-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-3 md:gap-4 pt-4 border-t border-gray-200 dark:border-gray-700">
             <button
               type="button"
               onClick={onClose}
-              className="btn-secondary"
+              className="btn-secondary text-sm md:text-base px-4 py-2 order-2 sm:order-1"
               disabled={loading}
             >
               إلغاء
             </button>
-            <button type="submit" className="btn-primary" disabled={loading}>
+            <button type="submit" className="btn-primary text-sm md:text-base px-4 py-2 order-1 sm:order-2" disabled={loading}>
               {loading ? 'جاري الحفظ...' : expense ? 'تحديث' : 'إضافة'}
             </button>
           </div>

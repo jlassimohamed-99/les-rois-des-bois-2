@@ -128,39 +128,42 @@ const ExpensesList = () => {
   const totalExpenses = expenses.reduce((sum, exp) => sum + (parseFloat(exp.amount) || 0), 0);
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4 md:space-y-6 p-4 md:p-0">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">المصروفات</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">إدارة المصروفات والنفقات</p>
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-gray-100">المصروفات</h1>
+          <p className="text-sm md:text-base text-gray-600 dark:text-gray-400 mt-1">إدارة المصروفات والنفقات</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2 md:gap-3">
           <button
             onClick={() => navigate('/admin/expenses/categories')}
-            className="btn-secondary flex items-center gap-2"
+            className="btn-secondary flex items-center justify-center gap-2 text-sm md:text-base px-3 md:px-4 py-2"
           >
-            <Tag size={20} />
-            <span>إدارة الفئات</span>
+            <Tag size={18} className="md:w-5 md:h-5" />
+            <span className="hidden sm:inline">إدارة الفئات</span>
+            <span className="sm:hidden">الفئات</span>
           </button>
           <button
             onClick={() => setShowPdfModal(true)}
-            className="btn-secondary flex items-center gap-2"
+            className="btn-secondary flex items-center justify-center gap-2 text-sm md:text-base px-3 md:px-4 py-2"
           >
-            <FileText size={20} />
-            <span>توليد تقرير PDF</span>
+            <FileText size={18} className="md:w-5 md:h-5" />
+            <span className="hidden sm:inline">توليد تقرير PDF</span>
+            <span className="sm:hidden">PDF</span>
           </button>
           <button
             onClick={() => setIsModalOpen(true)}
-            className="btn-primary flex items-center gap-2"
+            className="btn-primary flex items-center justify-center gap-2 text-sm md:text-base px-3 md:px-4 py-2"
           >
-            <Plus size={20} />
-            <span>إضافة مصروف</span>
+            <Plus size={18} className="md:w-5 md:h-5" />
+            <span className="hidden sm:inline">إضافة مصروف</span>
+            <span className="sm:hidden">إضافة</span>
           </button>
         </div>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
         <div className="card">
           <div className="flex items-center justify-between">
             <div>
@@ -186,8 +189,8 @@ const ExpensesList = () => {
       </div>
 
       {/* Filters */}
-      <div className="card">
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+      <div className="card p-4 md:p-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 md:gap-4">
           <select
             value={filters.categoryId}
             onChange={(e) => setFilters({ ...filters, categoryId: e.target.value, subcategory: '' })}
@@ -245,7 +248,7 @@ const ExpensesList = () => {
         </div>
       </div>
 
-      <div className="card">
+      <div className="card p-4 md:p-6">
         {loading ? (
           <div className="flex items-center justify-center h-64">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gold-600"></div>
@@ -256,8 +259,9 @@ const ExpensesList = () => {
             <p className="text-gray-500">لا توجد مصروفات</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
+          <div className="overflow-x-auto -mx-4 md:mx-0">
+            <div className="inline-block min-w-full align-middle px-4 md:px-0">
+              <table className="w-full min-w-[700px]">
               <thead>
                 <tr className="border-b border-gray-200 dark:border-gray-700">
                   <th className="text-right py-3 px-4 text-sm font-medium">رقم المصروف</th>
@@ -308,18 +312,20 @@ const ExpensesList = () => {
                       })}
                     </td>
                     <td className="py-3 px-4">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1 md:gap-2">
                         <button
                           onClick={() => handleEdit(expense)}
-                          className="p-2 text-gold-600 hover:bg-gold-50 dark:hover:bg-gold-900/20 rounded-lg transition-colors"
+                          className="p-1.5 md:p-2 text-gold-600 hover:bg-gold-50 dark:hover:bg-gold-900/20 rounded-lg transition-colors"
+                          title="تعديل"
                         >
-                          <Edit size={18} />
+                          <Edit size={16} className="md:w-[18px] md:h-[18px]" />
                         </button>
                         <button
                           onClick={() => handleDelete(expense._id)}
-                          className="p-2 text-gold-600 hover:bg-gold-50 dark:hover:bg-gold-900/20 rounded-lg transition-colors"
+                          className="p-1.5 md:p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                          title="حذف"
                         >
-                          <Trash2 size={18} />
+                          <Trash2 size={16} className="md:w-[18px] md:h-[18px]" />
                         </button>
                       </div>
                     </td>
@@ -327,6 +333,7 @@ const ExpensesList = () => {
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
         )}
       </div>
@@ -337,20 +344,20 @@ const ExpensesList = () => {
 
       {showPdfModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-md">
-            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-4 md:p-6 border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800">
+              <h2 className="text-lg md:text-2xl font-bold text-gray-900 dark:text-gray-100">
                 توليد تقرير المصروفات
               </h2>
               <button
                 onClick={() => setShowPdfModal(false)}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors flex-shrink-0"
               >
-                <X size={24} />
+                <X size={20} className="md:w-6 md:h-6" />
               </button>
             </div>
 
-            <div className="p-6 space-y-4">
+            <div className="p-4 md:p-6 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   الشهر
@@ -397,20 +404,20 @@ const ExpensesList = () => {
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-3 md:gap-4 pt-4 border-t border-gray-200 dark:border-gray-700">
                 <button
                   type="button"
                   onClick={() => setShowPdfModal(false)}
-                  className="btn-secondary"
+                  className="btn-secondary text-sm md:text-base px-4 py-2 order-2 sm:order-1"
                 >
                   إلغاء
                 </button>
                 <button
                   type="button"
                   onClick={handleGeneratePDF}
-                  className="btn-primary flex items-center gap-2"
+                  className="btn-primary flex items-center justify-center gap-2 text-sm md:text-base px-4 py-2 order-1 sm:order-2"
                 >
-                  <Download size={20} />
+                  <Download size={18} className="md:w-5 md:h-5" />
                   <span>تحميل PDF</span>
                 </button>
               </div>

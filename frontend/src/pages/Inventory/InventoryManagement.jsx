@@ -56,24 +56,24 @@ const InventoryManagement = () => {
   const totalValue = products.reduce((sum, p) => sum + (p.stock || 0) * (p.price || 0), 0);
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4 md:space-y-6 p-4 md:p-0">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">إدارة المخزون</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">إدارة المخزون والتنبيهات</p>
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-gray-100">إدارة المخزون</h1>
+          <p className="text-sm md:text-base text-gray-600 dark:text-gray-400 mt-1">إدارة المخزون والتنبيهات</p>
         </div>
         <button
           onClick={() => setShowLogTable(!showLogTable)}
-          className={`btn-primary flex items-center gap-2 ${showLogTable ? 'bg-gold-600' : ''}`}
+          className={`btn-primary flex items-center justify-center gap-2 text-sm md:text-base px-4 py-2 ${showLogTable ? 'bg-gold-600' : ''}`}
         >
           {showLogTable ? (
             <>
-              <List size={20} />
+              <List size={18} className="md:w-5 md:h-5" />
               <span>عرض المنتجات</span>
             </>
           ) : (
             <>
-              <FileText size={20} />
+              <FileText size={18} className="md:w-5 md:h-5" />
               <span>سجل المخزون</span>
             </>
           )}
@@ -174,10 +174,11 @@ const InventoryManagement = () => {
       )}
 
       {/* Products Table */}
-      <div className="card">
-        <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">المنتجات</h2>
-        <div className="overflow-x-auto">
-          <table className="w-full">
+      <div className="card p-4 md:p-6">
+        <h2 className="text-lg md:text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">المنتجات</h2>
+        <div className="overflow-x-auto -mx-4 md:mx-0">
+          <div className="inline-block min-w-full align-middle px-4 md:px-0">
+            <table className="w-full min-w-[600px]">
             <thead>
               <tr className="border-b border-gray-200 dark:border-gray-700">
                 <th className="text-right py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -253,6 +254,7 @@ const InventoryManagement = () => {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       </div>
         </>

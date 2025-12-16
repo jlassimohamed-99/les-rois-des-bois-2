@@ -60,7 +60,6 @@ const Layout = () => {
     { path: '/admin/audit-logs', icon: Activity, label: 'سجل التدقيق' },
     { path: '/admin/homepage', icon: Home, label: 'إدارة الصفحة الرئيسية' },
     { path: '/admin/settings', icon: Settings, label: 'الإعدادات' },
-    { path: '/admin/jobs', icon: Settings, label: 'المهام' },
   ];
 
   return (

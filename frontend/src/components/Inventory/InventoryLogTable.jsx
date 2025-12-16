@@ -42,14 +42,14 @@ const InventoryLogTable = () => {
   };
 
   return (
-    <div className="card">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">سجل المخزون</h2>
-        <div className="flex items-center gap-4">
+    <div className="card p-4 md:p-6">
+      <div className="mb-4 md:mb-6">
+        <h2 className="text-lg md:text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">سجل المخزون</h2>
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 md:gap-4">
           <select
             value={filters.changeType}
             onChange={(e) => setFilters({ ...filters, changeType: e.target.value })}
-            className="input-field text-sm"
+            className="input-field text-sm md:text-base px-3 py-2 flex-1 sm:flex-none"
           >
             <option value="">جميع الأنواع</option>
             <option value="increase">زيادة</option>
@@ -63,14 +63,14 @@ const InventoryLogTable = () => {
             type="date"
             value={filters.startDate}
             onChange={(e) => setFilters({ ...filters, startDate: e.target.value })}
-            className="input-field text-sm"
+            className="input-field text-sm md:text-base px-3 py-2 flex-1 sm:flex-none"
             placeholder="من تاريخ"
           />
           <input
             type="date"
             value={filters.endDate}
             onChange={(e) => setFilters({ ...filters, endDate: e.target.value })}
-            className="input-field text-sm"
+            className="input-field text-sm md:text-base px-3 py-2 flex-1 sm:flex-none"
             placeholder="إلى تاريخ"
           />
         </div>
@@ -81,8 +81,9 @@ const InventoryLogTable = () => {
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gold-600"></div>
         </div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full">
+        <div className="overflow-x-auto -mx-4 md:mx-0">
+          <div className="inline-block min-w-full align-middle px-4 md:px-0">
+            <table className="w-full min-w-[800px]">
             <thead>
               <tr className="border-b border-gray-200 dark:border-gray-700">
                 <th className="text-right py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -148,8 +149,8 @@ const InventoryLogTable = () => {
                     <span
                       className={`text-sm font-medium ${
                         log.quantityChange > 0
-                          ? 'text-gold-600 dark:text-gold-400'
-                          : 'text-gold-600 dark:text-gold-400'
+                          ? 'text-green-600 dark:text-green-400'
+                          : 'text-red-600 dark:text-red-400'
                       }`}
                     >
                       {log.quantityChange > 0 ? '+' : ''}
@@ -166,6 +167,7 @@ const InventoryLogTable = () => {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       )}
     </div>

@@ -203,6 +203,37 @@ orderSchema.pre('save', async function (next) {
   next();
 });
 
+// Auto-set orderSource and priceType based on source
+orderSchema.pre('save', function (next) {
+  // Only set if not already set (allow manual override)
+  if (!this.orderSource || !this.priceType) {
+    switch (this.source) {
+      case 'catalog':
+        // Catalog orders are e-commerce with gros (wholesale) pricing
+        if (!this.orderSource) this.orderSource = 'ecommerce';
+        if (!this.priceType) this.priceType = 'gros';
+        break;
+      case 'pos':
+      case 'commercial_pos':
+      case 'admin':
+        // POS/commercial/admin orders are POS with detail (retail) pricing
+        if (!this.orderSource) this.orderSource = 'pos';
+        if (!this.priceType) this.priceType = 'detail';
+        break;
+      case 'page':
+        // Page/social orders are page with page pricing
+        if (!this.orderSource) this.orderSource = 'page';
+        if (!this.priceType) this.priceType = 'page';
+        break;
+      default:
+        // Default fallback
+        if (!this.orderSource) this.orderSource = 'ecommerce';
+        if (!this.priceType) this.priceType = 'gros';
+    }
+  }
+  next();
+});
+
 // Indexes
 // Note: orderNumber already has unique: true, which creates an index automatically
 orderSchema.index({ clientId: 1, createdAt: -1 });

@@ -27,7 +27,7 @@ export const calculateOrderTotals = (items, discount = 0, taxRate = 0) => {
   };
 };
 
-export const buildOrderItems = async (itemsData) => {
+export const buildOrderItems = async (itemsData, priceType = 'detail') => {
   const items = [];
 
   for (const itemData of itemsData) {
@@ -47,13 +47,36 @@ export const buildOrderItems = async (itemsData) => {
       throw new Error(`Product not found: ${itemData.productId}`);
     }
 
+    // Select price based on priceType
+    let basePrice;
+    if (productType === 'regular') {
+      switch (priceType) {
+        case 'gros':
+          // E-commerce: use wholesale price (prix en gros)
+          basePrice = product.wholesalePrice > 0 ? product.wholesalePrice : product.price;
+          break;
+        case 'page':
+          // Page/Social: use facebook price (prix sur page)
+          basePrice = product.facebookPrice > 0 ? product.facebookPrice : product.price;
+          break;
+        case 'detail':
+        default:
+          // POS/Store: use regular price (prix en détail)
+          basePrice = product.price;
+          break;
+      }
+    } else {
+      // Special products use finalPrice
+      basePrice = product.finalPrice;
+    }
+
     const item = {
       productId: product._id,
       productType,
       productName: product.name,
       quantity: itemData.quantity,
-      unitPrice: itemData.unitPrice || product.price || product.finalPrice,
-      cost: product.cost || product.finalPrice * 0.6, // Default cost calculation
+      unitPrice: itemData.unitPrice || basePrice,
+      cost: product.cost || (productType === 'special' ? product.finalPrice * 0.6 : product.price * 0.6), // Default cost calculation
       discount: itemData.discount || 0,
     };
 
@@ -74,7 +97,8 @@ export const buildOrderItems = async (itemsData) => {
     // Handle regular product variants
     if (productType === 'regular' && itemData.variant) {
       const variantPrice = itemData.variant.additionalPrice || 0;
-      item.unitPrice = (itemData.unitPrice || product.price) + variantPrice;
+      // Use the base price selected according to priceType, not always product.price
+      item.unitPrice = (itemData.unitPrice || basePrice) + variantPrice;
       // Store variant info in the item for reference (including variant image)
       item.variant = itemData.variant;
     }

@@ -27,7 +27,9 @@ export const protect = async (req, res, next) => {
         });
       }
 
-      if (!req.user.isAdmin) {
+      // Check if user is admin (either by role or isAdmin flag for backward compatibility)
+      const isAdmin = req.user.role === 'admin' || req.user.isAdmin;
+      if (!isAdmin) {
         return res.status(403).json({
           success: false,
           message: 'ليس لديك صلاحية للوصول إلى هذا المورد',

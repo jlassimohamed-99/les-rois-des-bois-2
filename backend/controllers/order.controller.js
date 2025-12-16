@@ -82,6 +82,14 @@ export const getOrders = async (req, res, next) => {
 
 export const getOrder = async (req, res, next) => {
   try {
+    // Validate order ID
+    if (!req.params.id || !req.params.id.match(/^[0-9a-fA-F]{24}$/)) {
+      return res.status(400).json({
+        success: false,
+        message: 'معرف الطلب غير صحيح',
+      });
+    }
+    
     const order = await Order.findById(req.params.id)
       .populate('clientId', 'name email phone address')
       .populate('commercialId', 'name email')
@@ -139,8 +147,11 @@ export const createOrder = async (req, res, next) => {
       });
     }
 
-    // Build order items
-    const orderItems = await buildOrderItems(items);
+    // Determine priceType based on source (admin orders use detail pricing)
+    const priceType = source === 'catalog' ? 'gros' : source === 'page' ? 'page' : 'detail';
+
+    // Build order items with correct price type
+    const orderItems = await buildOrderItems(items, priceType);
 
     // Calculate totals
     const totals = calculateOrderTotals(orderItems, discount || 0);
@@ -202,6 +213,14 @@ export const createOrder = async (req, res, next) => {
 
 export const updateOrder = async (req, res, next) => {
   try {
+    // Validate order ID
+    if (!req.params.id || !req.params.id.match(/^[0-9a-fA-F]{24}$/)) {
+      return res.status(400).json({
+        success: false,
+        message: 'معرف الطلب غير صحيح',
+      });
+    }
+    
     const order = await Order.findById(req.params.id);
 
     if (!order) {
@@ -214,8 +233,11 @@ export const updateOrder = async (req, res, next) => {
     const { items, discount, notes, commercialId, storeId } = req.body;
 
     if (items && Array.isArray(items)) {
-      // Rebuild order items
-      const orderItems = await buildOrderItems(items);
+      // Determine priceType from existing order or source
+      const priceType = order.priceType || (order.source === 'catalog' ? 'gros' : order.source === 'page' ? 'page' : 'detail');
+      
+      // Rebuild order items with correct price type
+      const orderItems = await buildOrderItems(items, priceType);
       order.items = orderItems;
       
       // Recalculate totals
@@ -264,6 +286,24 @@ export const updateOrder = async (req, res, next) => {
 export const updateOrderStatus = async (req, res, next) => {
   try {
     const { status, notes } = req.body;
+    
+    // Validate order ID
+    if (!req.params.id || !req.params.id.match(/^[0-9a-fA-F]{24}$/)) {
+      return res.status(400).json({
+        success: false,
+        message: 'معرف الطلب غير صحيح',
+      });
+    }
+    
+    // Validate status
+    const validStatuses = ['pending', 'preparing', 'ready', 'delivered', 'completed', 'canceled'];
+    if (!status || !validStatuses.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: 'حالة الطلب غير صحيحة',
+      });
+    }
+    
     const order = await Order.findById(req.params.id);
 
     if (!order) {

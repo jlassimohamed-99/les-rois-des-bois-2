@@ -241,34 +241,48 @@ export const createInvoice = async (req, res, next) => {
 export const recordPayment = async (req, res, next) => {
   try {
     const { amount, paymentMethod, notes } = req.body;
+    
+    // Validate invoice ID
+    if (!req.params.id || !req.params.id.match(/^[0-9a-fA-F]{24}$/)) {
+      return res.status(400).json({ success: false, message: 'معرف الفاتورة غير صحيح' });
+    }
+    
     const invoice = await Invoice.findById(req.params.id);
     
     if (!invoice) {
       return res.status(404).json({ success: false, message: 'الفاتورة غير موجودة' });
     }
 
-    if (!amount || amount <= 0) {
-      return res.status(400).json({ success: false, message: 'المبلغ يجب أن يكون أكبر من صفر' });
+    // Validate amount
+    if (!amount || isNaN(amount) || amount <= 0) {
+      return res.status(400).json({ success: false, message: 'المبلغ يجب أن يكون رقماً أكبر من صفر' });
     }
 
-    if (amount > invoice.remainingAmount) {
+    const paymentAmount = parseFloat(amount);
+    if (paymentAmount > invoice.remainingAmount) {
       return res.status(400).json({ 
         success: false, 
-        message: `المبلغ المدفوع (${amount}) أكبر من المبلغ المتبقي (${invoice.remainingAmount})` 
+        message: `المبلغ المدفوع (${paymentAmount.toFixed(2)}) أكبر من المبلغ المتبقي (${invoice.remainingAmount.toFixed(2)})` 
       });
     }
 
+    // Validate payment method
+    const validPaymentMethods = ['cash', 'card', 'bank_transfer', 'check'];
+    const finalPaymentMethod = paymentMethod && validPaymentMethods.includes(paymentMethod) 
+      ? paymentMethod 
+      : 'cash';
+
     // Add payment to payments array
     const paymentRecord = {
-      amount,
-      paymentMethod: paymentMethod || 'cash',
+      amount: paymentAmount,
+      paymentMethod: finalPaymentMethod,
       paidAt: new Date(),
-      notes: notes || '',
+      notes: (notes || '').trim().substring(0, 500), // Limit notes length
       recordedBy: req.user._id,
     };
 
     invoice.payments.push(paymentRecord);
-    invoice.paidAmount = (invoice.paidAmount || 0) + amount;
+    invoice.paidAmount = (invoice.paidAmount || 0) + paymentAmount;
     invoice.remainingAmount = invoice.total - invoice.paidAmount;
     
     // Update status
@@ -284,10 +298,10 @@ export const recordPayment = async (req, res, next) => {
     // Also create Payment record for tracking
     await Payment.create({
       invoiceId: invoice._id,
-      amount,
-      paymentMethod: paymentMethod || 'cash',
+      amount: paymentAmount,
+      paymentMethod: finalPaymentMethod,
       paymentDate: new Date(),
-      notes: notes || '',
+      notes: (notes || '').trim().substring(0, 500),
       recordedBy: req.user._id,
     });
 

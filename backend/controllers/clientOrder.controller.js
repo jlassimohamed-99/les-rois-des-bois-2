@@ -40,8 +40,8 @@ export const createClientOrder = async (req, res, next) => {
       });
     }
 
-    // Build order items
-    const orderItems = await buildOrderItems(items);
+    // Build order items - catalog orders use gros (wholesale) pricing
+    const orderItems = await buildOrderItems(items, 'gros');
 
     // Calculate totals
     const totals = calculateOrderTotals(orderItems, discount || 0);

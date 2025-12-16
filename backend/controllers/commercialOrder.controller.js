@@ -383,8 +383,8 @@ export const createCommercialOrder = async (req, res, next) => {
       });
     }
 
-    // Build order items
-    const orderItems = await buildOrderItems(items);
+    // Build order items - commercial POS orders use detail (retail) pricing
+    const orderItems = await buildOrderItems(items, 'detail');
 
     // Calculate totals
     const totals = calculateOrderTotals(orderItems, discount || 0);

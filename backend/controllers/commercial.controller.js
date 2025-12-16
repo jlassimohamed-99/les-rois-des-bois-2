@@ -71,17 +71,18 @@ export const getDashboardStats = async (req, res, next) => {
       status: { $in: ['sent', 'partial', 'overdue'] },
     });
 
-    // Calculate total revenue
-    const revenueData = await Order.aggregate([
-      { $match: { ...ordersFilter, status: { $ne: 'canceled' } } },
-      {
-        $group: {
-          _id: null,
-          total: { $sum: '$total' },
-        },
-      },
-    ]);
-    const totalRevenue = revenueData.length > 0 ? revenueData[0].total : 0;
+    // Calculate total revenue from fully paid invoices only
+    // Get order IDs first
+    const orderIds = await Order.find(ordersFilter).distinct('_id');
+    
+    // Get all paid invoices for these orders
+    const paidInvoices = await Invoice.find({
+      orderId: { $in: orderIds },
+      status: 'paid',
+    }).select('total');
+    
+    // Calculate revenue from paid invoices only
+    const totalRevenue = paidInvoices.reduce((sum, inv) => sum + (inv.total || 0), 0);
 
     // Get orders over time (last 12 months)
     const twelveMonthsAgo = new Date();

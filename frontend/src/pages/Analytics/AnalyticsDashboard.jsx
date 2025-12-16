@@ -61,44 +61,48 @@ const AnalyticsDashboard = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4 md:space-y-6 p-4 md:p-0">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">التقارير والتحليلات</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">تحليل شامل للأداء</p>
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-gray-100">التقارير والتحليلات</h1>
+          <p className="text-sm md:text-base text-gray-600 dark:text-gray-400 mt-1">تحليل شامل للأداء</p>
         </div>
-        <div className="flex gap-4">
+        <div className="flex flex-col sm:flex-row gap-2 md:gap-4">
           <button
             onClick={() => navigate('/admin/analytics/orders-products')}
-            className="btn-secondary flex items-center gap-2"
+            className="btn-secondary flex items-center justify-center gap-2 text-sm md:text-base px-3 md:px-4 py-2"
           >
-            <Package size={20} />
-            <span>تحليلات الطلبيات والمنتجات</span>
+            <Package size={18} className="md:w-5 md:h-5" />
+            <span className="hidden sm:inline">تحليلات الطلبيات والمنتجات</span>
+            <span className="sm:hidden">الطلبيات</span>
           </button>
           <button
             onClick={() => navigate('/admin/analytics/commercials')}
-            className="btn-secondary flex items-center gap-2"
+            className="btn-secondary flex items-center justify-center gap-2 text-sm md:text-base px-3 md:px-4 py-2"
           >
-            <Users size={20} />
-            <span>تحليلات المندوبين</span>
+            <Users size={18} className="md:w-5 md:h-5" />
+            <span className="hidden sm:inline">تحليلات المندوبين</span>
+            <span className="sm:hidden">المندوبين</span>
           </button>
-          <input
-            type="date"
-            value={dateRange.startDate}
-            onChange={(e) => setDateRange({ ...dateRange, startDate: e.target.value })}
-            className="input-field"
-          />
-          <input
-            type="date"
-            value={dateRange.endDate}
-            onChange={(e) => setDateRange({ ...dateRange, endDate: e.target.value })}
-            className="input-field"
-          />
+          <div className="flex gap-2">
+            <input
+              type="date"
+              value={dateRange.startDate}
+              onChange={(e) => setDateRange({ ...dateRange, startDate: e.target.value })}
+              className="input-field text-sm md:text-base px-2 md:px-3 py-2"
+            />
+            <input
+              type="date"
+              value={dateRange.endDate}
+              onChange={(e) => setDateRange({ ...dateRange, endDate: e.target.value })}
+              className="input-field text-sm md:text-base px-2 md:px-3 py-2"
+            />
+          </div>
         </div>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 md:gap-6">
         <div className="card">
           <div className="flex items-center justify-between">
             <div>
@@ -147,10 +151,10 @@ const AnalyticsDashboard = () => {
       </div>
 
       {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="card">
-          <h2 className="text-xl font-bold mb-4">المبيعات والإيرادات</h2>
-          <ResponsiveContainer width="100%" height={300}>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
+        <div className="card p-4 md:p-6">
+          <h2 className="text-lg md:text-xl font-bold mb-4">المبيعات والإيرادات</h2>
+          <ResponsiveContainer width="100%" height={250} className="md:h-[300px]">
             <LineChart data={salesData}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="date" />
@@ -163,9 +167,9 @@ const AnalyticsDashboard = () => {
           </ResponsiveContainer>
         </div>
 
-        <div className="card">
-          <h2 className="text-xl font-bold mb-4">الإيرادات حسب الفئة</h2>
-          <ResponsiveContainer width="100%" height={300}>
+        <div className="card p-4 md:p-6">
+          <h2 className="text-lg md:text-xl font-bold mb-4">الإيرادات حسب الفئة</h2>
+          <ResponsiveContainer width="100%" height={250} className="md:h-[300px]">
             <PieChart>
               <Pie
                 data={revenueByCategory}
@@ -189,9 +193,9 @@ const AnalyticsDashboard = () => {
           </ResponsiveContainer>
         </div>
 
-        <div className="card lg:col-span-2">
-          <h2 className="text-xl font-bold mb-4">أفضل المنتجات</h2>
-          <ResponsiveContainer width="100%" height={300}>
+        <div className="card lg:col-span-2 p-4 md:p-6">
+          <h2 className="text-lg md:text-xl font-bold mb-4">أفضل المنتجات</h2>
+          <ResponsiveContainer width="100%" height={250} className="md:h-[300px]">
             <BarChart data={topProducts}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="name" />

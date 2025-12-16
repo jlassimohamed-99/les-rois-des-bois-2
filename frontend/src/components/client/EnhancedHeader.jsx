@@ -21,6 +21,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { useScrollDirection } from '../../hooks/useScrollDirection';
 import clientApi from '../../utils/clientAxios';
 import { slideDown, fadeIn, staggerContainer } from '../../utils/animations';
+import Logo from '../shared/Logo';
 
 const EnhancedHeader = () => {
   const { logout, isAuthenticated, user } = useClientAuth();
@@ -106,19 +107,9 @@ const EnhancedHeader = () => {
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.5, ease: [0.0, 0.0, 0.2, 1] }}
+              className="flex justify-center items-center"
             >
-              <Link
-                to="/shop"
-                className="flex items-center space-x-2 rtl:space-x-reverse group"
-              >
-                <motion.span
-                  className="text-2xl font-bold text-gold-500"
-                  whileHover={{ scale: 1.05 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  Les Rois Du Bois
-                </motion.span>
-              </Link>
+              <Logo size="md" showText={false} to="/shop" clickable={true} />
             </motion.div>
 
             {/* Navigation Links */}
@@ -356,9 +347,9 @@ const EnhancedHeader = () => {
             <Menu size={24} className="text-gray-700 dark:text-gray-300" />
           </motion.button>
 
-          <Link to="/shop" className="text-xl font-bold text-gold-600">
-            Les Rois Du Bois
-          </Link>
+          <div className="flex-1 flex justify-center">
+            <Logo size="sm" showText={false} to="/shop" clickable={true} />
+          </div>
 
           <div className="flex items-center gap-3">
             <button

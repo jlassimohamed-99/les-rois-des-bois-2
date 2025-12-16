@@ -120,12 +120,23 @@ const Login = () => {
                 <img
                   src="/logo-dark.webp"
                   alt="Les Rois Du Bois Logo"
-                  className="h-full w-full object-contain"
+                  className="h-full w-full object-contain relative z-10"
                   onError={(e) => {
-                    // Fallback to regular logo if dark version doesn't exist
-                    e.target.src = '/logo.webp';
+                    // Fallback to light logo if dark version doesn't exist
+                    if (e.target.src !== '/logo-light.webp') {
+                      e.target.src = '/logo-light.webp';
+                    } else {
+                      // If both fail, show placeholder
+                      e.target.style.display = 'none';
+                      const placeholder = e.target.parentElement?.querySelector('.logo-placeholder');
+                      if (placeholder) placeholder.classList.remove('hidden');
+                    }
                   }}
                 />
+                {/* Placeholder if image fails to load */}
+                <div className="logo-placeholder hidden absolute inset-0 h-full w-full bg-gold-100 dark:bg-gold-900/20 rounded-lg flex items-center justify-center z-0">
+                  <span className="text-gold-600 dark:text-gold-400 font-bold text-xs">LRDB</span>
+                </div>
               </div>
             </div>
             <h1 className={`text-3xl md:text-4xl font-bold bg-gradient-to-r ${

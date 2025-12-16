@@ -52,24 +52,24 @@ const CommercialAnalyticsDashboard = () => {
   const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4', '#84CC16'];
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4 md:space-y-6 p-4 md:p-0">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-gray-100">
             تحليلات المندوبين التجاريين
           </h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">
+          <p className="text-sm md:text-base text-gray-600 dark:text-gray-400 mt-1">
             نظرة شاملة على أداء جميع المندوبين
           </p>
         </div>
-        <div className="flex gap-4">
+        <div className="flex flex-col sm:flex-row gap-2 md:gap-4">
           <div>
             <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">من تاريخ</label>
             <input
               type="date"
               value={dateRange.startDate}
               onChange={(e) => setDateRange({ ...dateRange, startDate: e.target.value })}
-              className="input-field"
+              className="input-field text-sm md:text-base px-2 md:px-3 py-2"
             />
           </div>
           <div>
@@ -78,14 +78,14 @@ const CommercialAnalyticsDashboard = () => {
               type="date"
               value={dateRange.endDate}
               onChange={(e) => setDateRange({ ...dateRange, endDate: e.target.value })}
-              className="input-field"
+              className="input-field text-sm md:text-base px-2 md:px-3 py-2"
             />
           </div>
         </div>
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 md:gap-6">
         <div className="card">
           <div className="flex items-center justify-between">
             <div>
@@ -148,9 +148,9 @@ const CommercialAnalyticsDashboard = () => {
       </div>
 
       {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="card">
-          <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
+        <div className="card p-4 md:p-6">
+          <h2 className="text-lg md:text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">
             الإيرادات والمصروفات حسب المندوب
           </h2>
           {loading ? (
@@ -158,7 +158,7 @@ const CommercialAnalyticsDashboard = () => {
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gold-600"></div>
             </div>
           ) : revenueChartData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={300}>
+            <ResponsiveContainer width="100%" height={250} className="md:h-[300px]">
               <BarChart data={revenueChartData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" />
@@ -177,8 +177,8 @@ const CommercialAnalyticsDashboard = () => {
           )}
         </div>
 
-        <div className="card">
-          <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">
+        <div className="card p-4 md:p-6">
+          <h2 className="text-lg md:text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">
             توزيع الإيرادات
           </h2>
           {loading ? (
@@ -186,7 +186,7 @@ const CommercialAnalyticsDashboard = () => {
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gold-600"></div>
             </div>
           ) : revenueChartData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={300}>
+            <ResponsiveContainer width="100%" height={250} className="md:h-[300px]">
               <PieChart>
                 <Pie
                   data={revenueChartData}
@@ -214,8 +214,8 @@ const CommercialAnalyticsDashboard = () => {
       </div>
 
       {/* Commercials Table */}
-      <div className="card">
-        <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">
+      <div className="card p-4 md:p-6">
+        <h2 className="text-lg md:text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">
           قائمة المندوبين التجاريين
         </h2>
         {loading ? (
@@ -228,7 +228,8 @@ const CommercialAnalyticsDashboard = () => {
             <p className="text-gray-500">لا يوجد مندوبين تجاريين</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto -mx-4 md:mx-0">
+            <div className="inline-block min-w-full align-middle">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-gray-200 dark:border-gray-700">
@@ -285,6 +286,7 @@ const CommercialAnalyticsDashboard = () => {
                   ))}
               </tbody>
             </table>
+            </div>
           </div>
         )}
       </div>

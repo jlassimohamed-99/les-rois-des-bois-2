@@ -2,6 +2,7 @@ import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
+import Logo from '../components/shared/Logo';
 import {
   LayoutDashboard,
   FolderTree,
@@ -70,14 +71,17 @@ const Layout = () => {
           open ? 'translate-x-0' : 'translate-x-full md:translate-x-0'
         }`}
       >
-        <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex-shrink-0 flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gold-600">Les Rois Du Bois</h1>
+        <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex-shrink-0 flex flex-col items-center gap-3">
+          <div className="flex items-center justify-center w-full relative">
+            <Logo size="lg" showText={false} to="/admin/dashboard" clickable={true} />
+            <button className="md:hidden absolute left-0 top-1/2 -translate-y-1/2" onClick={() => setOpen(false)}>
+              <X />
+            </button>
+          </div>
+          <div className="w-full text-center">
+            <h1 className="text-xl font-bold text-gold-600 dark:text-gold-400 break-words">Les Rois Du Bois</h1>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">لوحة التحكم</p>
           </div>
-          <button className="md:hidden" onClick={() => setOpen(false)}>
-            <X />
-          </button>
         </div>
 
         <nav className="p-4 space-y-2 overflow-y-auto flex-1 min-h-0">
@@ -173,7 +177,9 @@ const Layout = () => {
           <button onClick={() => setOpen(true)}>
             <Menu />
           </button>
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">لوحة التحكم</h2>
+          <div className="flex-1 flex justify-center">
+            <Logo size="sm" showText={false} to="/admin/dashboard" clickable={true} />
+          </div>
           <button onClick={toggleTheme}>{isDark ? <Sun size={20} /> : <Moon size={20} />}</button>
         </header>
         <main className="p-4 md:p-8">

@@ -277,51 +277,53 @@ const AdvancedCommercialAnalyticsDashboard = () => {
   ].filter(item => item.value > 0) : [];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6 p-4 md:p-0">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-gray-100">
             لوحة تحليلات المندوبين المتقدمة
           </h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">
+          <p className="text-sm md:text-base text-gray-600 dark:text-gray-400 mt-1">
             تحليل شامل لأداء المندوبين التجاريين مع فلاتر متقدمة
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2 md:gap-3">
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className="btn-secondary flex items-center gap-2"
+            className="btn-secondary flex items-center justify-center gap-2 text-sm md:text-base px-3 md:px-4 py-2"
           >
-            <Filter size={20} />
-            <span>{showFilters ? 'إخفاء الفلاتر' : 'عرض الفلاتر'}</span>
+            <Filter size={18} className="md:w-5 md:h-5" />
+            <span className="hidden sm:inline">{showFilters ? 'إخفاء الفلاتر' : 'عرض الفلاتر'}</span>
+            <span className="sm:hidden">فلاتر</span>
           </button>
           <button
             onClick={handleExportPDF}
-            className="btn-secondary flex items-center gap-2"
+            className="btn-secondary flex items-center justify-center gap-2 text-sm md:text-base px-3 md:px-4 py-2"
           >
-            <Download size={20} />
-            <span>تصدير PDF</span>
+            <Download size={18} className="md:w-5 md:h-5" />
+            <span className="hidden sm:inline">تصدير PDF</span>
+            <span className="sm:hidden">PDF</span>
           </button>
           <button
             onClick={fetchAllAnalytics}
-            className="btn-secondary flex items-center gap-2"
+            className="btn-secondary flex items-center justify-center gap-2 text-sm md:text-base px-3 md:px-4 py-2"
           >
-            <RefreshCw size={20} />
-            <span>تحديث</span>
+            <RefreshCw size={18} className="md:w-5 md:h-5" />
+            <span className="hidden sm:inline">تحديث</span>
           </button>
         </div>
       </div>
 
       {/* Filters Panel */}
       {showFilters && (
-        <div className="card p-6">
-          <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
-            <Filter size={24} />
+        <div className="card p-4 md:p-6">
+          <h2 className="text-lg md:text-xl font-bold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
+            <Filter size={20} className="md:w-6 md:h-6" />
             الفلاتر
           </h2>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Commercial Filter */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -472,7 +474,7 @@ const AdvancedCommercialAnalyticsDashboard = () => {
           <SmartAlerts analytics={analytics} />
 
           {/* KPI Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 md:gap-6">
             <KPICard
               title="إجمالي الإيرادات"
               value={`${aggregatedKPIs.totalRevenue.toFixed(2)} TND`}
@@ -530,12 +532,12 @@ const AdvancedCommercialAnalyticsDashboard = () => {
           </div>
 
           {/* Revenue Over Time Chart */}
-          <div className="card">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">
+          <div className="card p-4 md:p-6">
+            <h2 className="text-lg md:text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">
               الإيرادات عبر الزمن
             </h2>
             {revenueData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={300}>
+              <ResponsiveContainer width="100%" height={250} className="md:h-[300px]">
                 <LineChart data={revenueData}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="date" />
@@ -566,14 +568,14 @@ const AdvancedCommercialAnalyticsDashboard = () => {
           </div>
 
           {/* Orders Breakdown and Expense Analytics */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
             {/* Orders Breakdown */}
-            <div className="card">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">
+            <div className="card p-4 md:p-6">
+              <h2 className="text-lg md:text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">
                 تفصيل الطلبيات
               </h2>
               {ordersBreakdown ? (
-                <ResponsiveContainer width="100%" height={300}>
+                <ResponsiveContainer width="100%" height={250} className="md:h-[300px]">
                   <BarChart data={[
                     { name: 'POS', ...ordersBreakdown.pos },
                     { name: 'E-commerce', ...ordersBreakdown.ecommerce },
@@ -597,12 +599,12 @@ const AdvancedCommercialAnalyticsDashboard = () => {
             </div>
 
             {/* Expense Breakdown */}
-            <div className="card">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">
+            <div className="card p-4 md:p-6">
+              <h2 className="text-lg md:text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">
                 توزيع المصروفات
               </h2>
               {expenseBreakdown.length > 0 ? (
-                <ResponsiveContainer width="100%" height={300}>
+                <ResponsiveContainer width="100%" height={250} className="md:h-[300px]">
                   <PieChart>
                     <Pie
                       data={expenseBreakdown}
@@ -631,11 +633,11 @@ const AdvancedCommercialAnalyticsDashboard = () => {
 
           {/* Top Products */}
           {topProducts.length > 0 && (
-            <div className="card">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">
+            <div className="card p-4 md:p-6">
+              <h2 className="text-lg md:text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">
                 أفضل المنتجات مبيعاً
               </h2>
-              <ResponsiveContainer width="100%" height={300}>
+              <ResponsiveContainer width="100%" height={250} className="md:h-[300px]">
                 <BarChart data={topProducts} layout="vertical">
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis type="number" />
@@ -651,11 +653,12 @@ const AdvancedCommercialAnalyticsDashboard = () => {
 
           {/* Leaderboard */}
           {leaderboard.length > 0 && (
-            <div className="card">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">
+            <div className="card p-4 md:p-6">
+              <h2 className="text-lg md:text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">
                 ترتيب المندوبين
               </h2>
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto -mx-4 md:mx-0">
+                <div className="inline-block min-w-full align-middle">
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-gray-200 dark:border-gray-700">
@@ -706,17 +709,18 @@ const AdvancedCommercialAnalyticsDashboard = () => {
                     ))}
                   </tbody>
                 </table>
+                </div>
               </div>
             </div>
           )}
 
           {/* Tabs for Orders and Expenses Tables */}
-          <div className="card">
+          <div className="card p-4 md:p-6">
             <div className="border-b border-gray-200 dark:border-gray-700 mb-4">
-              <div className="flex gap-4">
+              <div className="flex gap-2 md:gap-4 overflow-x-auto scrollbar-hide">
                 <button
                   onClick={() => setActiveTab('overview')}
-                  className={`px-4 py-2 font-medium border-b-2 transition-colors ${
+                  className={`px-3 md:px-4 py-2 text-sm md:text-base font-medium border-b-2 transition-colors whitespace-nowrap ${
                     activeTab === 'overview'
                       ? 'border-gold-600 text-gold-600'
                       : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
@@ -726,7 +730,7 @@ const AdvancedCommercialAnalyticsDashboard = () => {
                 </button>
                 <button
                   onClick={() => setActiveTab('orders')}
-                  className={`px-4 py-2 font-medium border-b-2 transition-colors ${
+                  className={`px-3 md:px-4 py-2 text-sm md:text-base font-medium border-b-2 transition-colors whitespace-nowrap ${
                     activeTab === 'orders'
                       ? 'border-gold-600 text-gold-600'
                       : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
@@ -736,7 +740,7 @@ const AdvancedCommercialAnalyticsDashboard = () => {
                 </button>
                 <button
                   onClick={() => setActiveTab('expenses')}
-                  className={`px-4 py-2 font-medium border-b-2 transition-colors ${
+                  className={`px-3 md:px-4 py-2 text-sm md:text-base font-medium border-b-2 transition-colors whitespace-nowrap ${
                     activeTab === 'expenses'
                       ? 'border-gold-600 text-gold-600'
                       : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'

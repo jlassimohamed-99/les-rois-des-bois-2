@@ -1,7 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import clientApi from '../utils/clientAxios';
-import axios from 'axios';
 import toast from 'react-hot-toast';
 
 const ClientAuthContext = createContext();
@@ -35,11 +34,10 @@ export const ClientAuthProvider = ({ children }) => {
     if (token) {
       try {
         clientApi.defaults.headers.common.Authorization = `Bearer ${token}`;
-        axios.defaults.headers.common.Authorization = `Bearer ${token}`;
         const response = await clientApi.get('/auth/me');
         const u = response.data.user || {};
         const role = u.role || 'client';
-        
+
         // Don't store cashiers/staff in ClientAuthContext - they should use AuthContext only
         const cashierRoles = ['cashier', 'store_cashier', 'saler', 'admin', 'commercial'];
         if (cashierRoles.includes(role)) {
@@ -63,7 +61,6 @@ export const ClientAuthProvider = ({ children }) => {
       const { token, user: loggedUser } = response.data;
       localStorage.setItem('token', token);
       clientApi.defaults.headers.common.Authorization = `Bearer ${token}`;
-      axios.defaults.headers.common.Authorization = `Bearer ${token}`;
       setUser({ ...(loggedUser || {}), role: loggedUser?.role || 'client' });
       try {
         const meRes = await clientApi.get('/auth/me');
@@ -84,7 +81,6 @@ export const ClientAuthProvider = ({ children }) => {
   const logout = () => {
     localStorage.removeItem('token');
     delete clientApi.defaults.headers.common.Authorization;
-    delete axios.defaults.headers.common.Authorization;
     setUser(null);
     toast.success('تم تسجيل الخروج');
     window.location.href = '/login';

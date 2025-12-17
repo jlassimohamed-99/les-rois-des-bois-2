@@ -20,6 +20,14 @@ self.addEventListener('install', (event) => {
 
 // Fetch event - serve from cache, fallback to network
 self.addEventListener('fetch', (event) => {
+  const url = new URL(event.request.url);
+
+  // Always bypass the service worker cache for API and cross-origin (backend) requests
+  // so that API calls always hit the real backend domain.
+  if (url.pathname.startsWith('/api') || url.origin !== self.location.origin) {
+    return;
+  }
+
   event.respondWith(
     caches.match(event.request)
       .then((response) => {

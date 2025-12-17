@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import axios from 'axios';
 import clientApi from '../../utils/clientAxios';
+import api from '../../utils/axios';
 import { useCart } from '../../contexts/CartContext';
 import toast from 'react-hot-toast';
 import { withBase } from '../../utils/imageUrl';
@@ -24,11 +24,9 @@ const Home = () => {
   const fetchData = async () => {
     try {
       // Try to fetch from homepage management first, fallback to auto-calculated
-      const publicApi = axios.create({ baseURL: '/api' });
-      
       const [featuredRes, topSellersRes, categoriesRes] = await Promise.all([
-        publicApi.get('/homepage/featured?limit=12').catch(() => clientApi.get('/products/new?limit=12')),
-        publicApi.get('/homepage/top-sellers?limit=12').catch(() => clientApi.get('/products/top-selling?limit=12')),
+        api.get('/homepage/featured?limit=12').catch(() => clientApi.get('/products/new?limit=12')),
+        api.get('/homepage/top-sellers?limit=12').catch(() => clientApi.get('/products/top-selling?limit=12')),
         clientApi.get('/categories'),
       ]);
       

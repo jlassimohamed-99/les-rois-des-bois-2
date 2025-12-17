@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import api from '../../utils/axios';
+import api, { API_BASE } from '../../utils/axios';
 import toast from 'react-hot-toast';
 import { ArrowRight, Package, FileText, Download, Mail } from 'lucide-react';
 import { withBase } from '../../utils/imageUrl';
@@ -101,7 +101,8 @@ const OrderDetail = () => {
   const downloadInvoicePDF = async () => {
     if (!invoice) return;
     try {
-      window.open(`/api/invoices/${invoice._id}/pdf`, '_blank');
+      const url = `${API_BASE}/invoices/${invoice._id}/pdf`;
+      window.open(url, '_blank');
     } catch (error) {
       toast.error('حدث خطأ أثناء تحميل الفاتورة');
     }

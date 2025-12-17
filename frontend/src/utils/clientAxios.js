@@ -1,7 +1,9 @@
 import axios from 'axios';
+import { API_BASE } from './axios';
 
+// Client-facing API base (e.g. https://backend/api/client)
 const clientApi = axios.create({
-  baseURL: '/api/client',
+  baseURL: `${API_BASE}/client`,
   headers: {
     'Content-Type': 'application/json',
   },

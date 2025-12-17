@@ -1,7 +1,14 @@
 import axios from 'axios';
 
+// Base backend URL host (ex: https://api.mondomaine.com).
+// In dev, you can leave VITE_API_URL empty and rely on Vite proxy + /api.
+const API_HOST = import.meta.env.VITE_API_URL || '';
+
+// Ensure we don't end with a trailing slash before adding /api
+const API_BASE = `${API_HOST.replace(/\/$/, '')}/api`;
+
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: API_BASE,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -33,5 +40,6 @@ api.interceptors.response.use(
   }
 );
 
+export { API_BASE };
 export default api;
 

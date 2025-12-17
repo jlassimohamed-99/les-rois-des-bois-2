@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Sparkles } from 'lucide-react';
-import axios from 'axios';
 import { fadeIn, slideInRight } from '../../utils/animations';
 import clientApi from '../../utils/clientAxios';
+import api from '../../utils/axios';
 import { withBase } from '../../utils/imageUrl';
 
 const Hero = () => {
@@ -15,10 +15,9 @@ const Hero = () => {
   useEffect(() => {
     const fetchHeroConfig = async () => {
       try {
-        // Use public API endpoint
-        const publicApi = axios.create({ baseURL: '/api' });
-        const res = await publicApi.get('/homepage/hero');
-        if (res.data.success && res.data.data) {
+        // Use configured backend API base (VITE_API_URL + /api)
+        const res = await api.get('/homepage/hero');
+        if (res.data?.success && res.data?.data) {
           const config = res.data.data;
           setHeroConfig(config);
           if (config.hero_image) {

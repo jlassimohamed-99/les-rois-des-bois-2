@@ -15,7 +15,7 @@ const Hero = () => {
   useEffect(() => {
     const fetchHeroConfig = async () => {
       try {
-        // Use configured backend API base (VITE_API_URL + /api)
+        // Use relative API path (/api) - same origin
         const res = await api.get('/homepage/hero');
         if (res.data?.success && res.data?.data) {
           const config = res.data.data;

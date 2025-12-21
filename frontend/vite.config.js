@@ -12,6 +12,11 @@ export default defineConfig(({ mode }) => {
         '@': path.resolve(__dirname, './src'),
       },
     },
+    // Build output to ../dist (root level)
+    build: {
+      outDir: '../dist',
+      emptyOutDir: true,
+    },
   };
 
   if (isDev) {

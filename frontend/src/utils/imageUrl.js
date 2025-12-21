@@ -1,7 +1,6 @@
-import { API_HOST } from './axios';
-
-// Use the same backend host as the API client (without /api suffix)
-const ASSET_BASE = API_HOST || '';
+// Use relative path for uploads - same origin, no CORS needed
+// Uploads are served at /uploads/* by Express
+const ASSET_BASE = '';
 
 export const withBase = (path = '') => {
   if (!path) return '';

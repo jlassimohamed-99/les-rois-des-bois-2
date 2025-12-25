@@ -14,7 +14,7 @@ export default defineConfig(({ mode }) => {
     },
     // Build output to ../dist (root level)
     build: {
-      outDir: '../dist',
+      outDir: 'dist',
       emptyOutDir: true,
     },
   };
@@ -22,14 +22,22 @@ export default defineConfig(({ mode }) => {
   if (isDev) {
     config.server = {
       port: 3000,
+      host: true, // Important: allows access from external hosts/domains
+      allowedHosts: [
+        'localhost',
+        '127.0.0.1',
+        'les-rois-du-bois-front.2bj94x.easypanel.host',
+        // Optional: allow all EasyPanel subdomains (useful if the subdomain changes)
+        // '.easypanel.host',
+      ],
       proxy: {
         '/api': {
-          target: 'http://localhost:5000',
+          target: 'https://les-rois-du-bois-back.2bj94x.easypanel.host/',
           changeOrigin: true,
         },
         // Proxy uploads in development so that frontend can use relative /uploads URLs
         '/uploads': {
-          target: 'http://localhost:5000',
+          target: 'https://les-rois-du-bois-back.2bj94x.easypanel.host/',
           changeOrigin: true,
         },
       },
@@ -38,4 +46,3 @@ export default defineConfig(({ mode }) => {
 
   return config;
 });
-

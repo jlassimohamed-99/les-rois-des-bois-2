@@ -1,15 +1,18 @@
 import axios from 'axios';
 
-// Use environment variable for production, fallback to relative for development
-// In production: VITE_API_URL should be set to absolute backend URL (e.g. https://backend.com/api)
-// In development: Falls back to /api which Vite proxy forwards to backend
-const API_BASE = import.meta.env.VITE_API_URL || '/api';
+// HARDCODED PRODUCTION API BASE URL
+// All API requests MUST go to this production backend
+const API_BASE = 'https://les-rois-du-bois-back.2bj94x.easypanel.host/api';
+
+// Log API base URL at runtime to confirm correctness
+console.log('[API Client] API Base URL:', API_BASE);
 
 const api = axios.create({
   baseURL: API_BASE,
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true,
 });
 
 // Request interceptor

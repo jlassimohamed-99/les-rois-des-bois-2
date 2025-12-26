@@ -75,16 +75,26 @@ if (missingVars.length > 0) {
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+console.log('📁 Server starting...');
+console.log('📁 __dirname:', __dirname);
+console.log('📁 NODE_ENV:', process.env.NODE_ENV);
+console.log('📁 PORT:', process.env.PORT || 5000);
+
 // Ensure uploads directory and subdirectories exist
 const uploadsDir = path.join(__dirname, 'uploads');
 const uploadSubdirs = ['categories', 'products', 'special-products', 'settings', 'expenses', 'general'];
 
+console.log('📁 Creating uploads directory:', uploadsDir);
 fs.mkdirSync(uploadsDir, { recursive: true });
+console.log('✅ Main uploads directory created');
+
 uploadSubdirs.forEach(subdir => {
-  fs.mkdirSync(path.join(uploadsDir, subdir), { recursive: true });
+  const subdirPath = path.join(uploadsDir, subdir);
+  fs.mkdirSync(subdirPath, { recursive: true });
+  console.log(`✅ Created upload subdirectory: ${subdir}`);
 });
 
-console.log('✅ Upload directories initialized');
+console.log('✅ All upload directories initialized');
 
 const app = express();
 
@@ -129,6 +139,31 @@ app.use(cookieParser());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// Request logging middleware - log all incoming requests
+app.use((req, res, next) => {
+  const timestamp = new Date().toISOString();
+  console.log(`📥 [${timestamp}] ${req.method} ${req.path}`);
+  console.log(`📥 [REQUEST] Headers:`, {
+    host: req.headers.host,
+    origin: req.headers.origin,
+    'content-type': req.headers['content-type'],
+    'content-length': req.headers['content-length'],
+    'user-agent': req.headers['user-agent']?.substring(0, 50),
+  });
+  if (Object.keys(req.query || {}).length > 0) {
+    console.log(`📥 [REQUEST] Query params:`, req.query);
+  }
+  if ((req.method === 'POST' || req.method === 'PUT' || req.method === 'PATCH') && req.body) {
+    const bodyKeys = Object.keys(req.body);
+    console.log(`📥 [REQUEST] Body keys (${bodyKeys.length}):`, bodyKeys);
+    // Don't log full body for large uploads, just keys
+    if (!req.headers['content-type']?.includes('multipart/form-data')) {
+      console.log(`📥 [REQUEST] Body preview:`, JSON.stringify(req.body).substring(0, 200));
+    }
+  }
+  next();
+});
+
 // Rate limiting (temporarily disabled to fix connection issues)
 // app.use('/api/', apiLimiter);
 // app.use('/api/auth', authLimiter);
@@ -136,25 +171,62 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Serve uploaded files - MUST be before API routes
 // This allows direct access to uploaded files via /uploads/* URLs
-app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
+const uploadsStaticPath = path.join(__dirname, 'uploads');
+console.log('📁 Configuring static file serving for uploads:', uploadsStaticPath);
+console.log('📁 Uploads will be accessible at: /uploads/*');
+
+app.use('/uploads', (req, res, next) => {
+  console.log(`📁 [STATIC] Request for upload file: ${req.path}`);
+  next();
+}, express.static(uploadsStaticPath, {
   setHeaders: (res, filePath) => {
+    console.log(`📁 [STATIC] Serving file: ${filePath}`);
     // Set proper headers for images
     if (filePath.endsWith('.jpg') || filePath.endsWith('.jpeg') || 
         filePath.endsWith('.png') || filePath.endsWith('.gif') || 
         filePath.endsWith('.webp')) {
-      res.setHeader('Content-Type', 'image/' + filePath.split('.').pop());
+      const ext = filePath.split('.').pop();
+      res.setHeader('Content-Type', `image/${ext}`);
       res.setHeader('Cache-Control', 'public, max-age=31536000'); // Cache for 1 year
+      console.log(`📁 [STATIC] Set image headers for: ${ext}`);
     }
-  }
+  },
+  fallthrough: false, // Don't continue to next middleware if file not found
 }));
 
 // Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/categories', categoryRoutes);
-app.use('/api/products', productRoutes);
-app.use('/api/special-products', specialProductRoutes);
-app.use('/api/uploads', uploadRoutes);
+console.log('🛣️  Registering API routes...');
+
+app.use('/api/auth', (req, res, next) => {
+  console.log(`🔐 [AUTH] ${req.method} ${req.path}`);
+  next();
+}, authRoutes);
+
+app.use('/api/users', (req, res, next) => {
+  console.log(`👥 [USERS] ${req.method} ${req.path}`);
+  next();
+}, userRoutes);
+
+app.use('/api/categories', (req, res, next) => {
+  console.log(`📂 [CATEGORIES] ${req.method} ${req.path}`);
+  next();
+}, categoryRoutes);
+
+app.use('/api/products', (req, res, next) => {
+  console.log(`📦 [PRODUCTS] ${req.method} ${req.path}`);
+  next();
+}, productRoutes);
+
+app.use('/api/special-products', (req, res, next) => {
+  console.log(`⭐ [SPECIAL-PRODUCTS] ${req.method} ${req.path}`);
+  next();
+}, specialProductRoutes);
+
+app.use('/api/uploads', (req, res, next) => {
+  console.log(`📤 [UPLOADS] ${req.method} ${req.path}`);
+  console.log(`📤 [UPLOADS] Content-Type: ${req.headers['content-type']}`);
+  next();
+}, uploadRoutes);
 app.use('/api/inventory', inventoryRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/invoices', invoiceRoutes);
@@ -183,24 +255,61 @@ app.use('/api/client/orders', clientOrderRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'OK', message: 'Server is running' });
+  console.log('🏥 [HEALTH] Health check requested');
+  const healthData = {
+    status: 'OK',
+    message: 'Server is running',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    environment: process.env.NODE_ENV || 'development',
+    port: process.env.PORT || 5000,
+  };
+  console.log('🏥 [HEALTH] Health check response:', healthData);
+  res.json(healthData);
 });
 
 // Root route - prevent "Cannot GET /" error
 app.get('/', (req, res) => {
-  res.json({ 
-    status: 'OK', 
+  console.log('🌐 [ROOT] Root route accessed');
+  console.log('🌐 [ROOT] Request headers:', {
+    host: req.headers.host,
+    'user-agent': req.headers['user-agent'],
+    origin: req.headers.origin,
+  });
+  
+  const rootData = {
+    status: 'OK',
     message: 'Les Rois des Bois API Server',
     version: '1.0.0',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development',
     endpoints: {
       health: '/api/health',
-      uploads: '/uploads'
+      uploads: '/uploads',
+      api: '/api/*',
+    },
+    server: {
+      nodeVersion: process.version,
+      platform: process.platform,
+      uptime: process.uptime(),
     }
-  });
+  };
+  
+  console.log('🌐 [ROOT] Root route response:', rootData);
+  res.json(rootData);
 });
 
-// Error handler
-app.use(errorHandler);
+// Error handler with logging
+app.use((err, req, res, next) => {
+  console.error('❌ [ERROR] Error occurred:', {
+    message: err.message,
+    stack: err.stack,
+    path: req.path,
+    method: req.method,
+    statusCode: err.statusCode || 500,
+  });
+  errorHandler(err, req, res, next);
+});
 
 // Connect to MongoDB
 let mongoUri = mongoUriEnv;
@@ -224,17 +333,44 @@ const mongooseOptions = {
   socketTimeoutMS: 45000,
 };
 
+console.log('🔌 Connecting to MongoDB...');
+console.log('🔌 MongoDB URI:', mongoUri.replace(/\/\/([^:]+):([^@]+)@/, '//$1:***@')); // Hide password
+
 mongoose
   .connect(mongoUri, mongooseOptions)
   .then(() => {
-    console.log('✅ Connected to MongoDB');
+    console.log('✅ Connected to MongoDB successfully');
     const PORT = process.env.PORT || 5000;
-    app.listen(PORT, () => {
-      console.log(`🚀 Server running on port ${PORT}`);
+    const server = app.listen(PORT, () => {
+      console.log('='.repeat(50));
+      console.log('🚀 SERVER STARTED SUCCESSFULLY');
+      console.log('='.repeat(50));
+      console.log(`🌐 Server running on port: ${PORT}`);
+      console.log(`🌐 Environment: ${process.env.NODE_ENV || 'development'}`);
+      console.log(`🌐 Frontend URL: ${process.env.FRONTEND_URL || 'Not set'}`);
+      console.log(`🌐 Root URL: http://localhost:${PORT}/`);
+      console.log(`🌐 Health check: http://localhost:${PORT}/api/health`);
+      console.log(`🌐 Uploads: http://localhost:${PORT}/uploads/`);
+      console.log('='.repeat(50));
+    });
+    
+    // Log server errors
+    server.on('error', (error) => {
+      console.error('❌ [SERVER] Server error:', error);
+    });
+    
+    // Log when server closes
+    server.on('close', () => {
+      console.log('🛑 [SERVER] Server closed');
     });
   })
   .catch((error) => {
     console.error('❌ MongoDB connection error:', error);
+    console.error('❌ Error details:', {
+      message: error.message,
+      name: error.name,
+      stack: error.stack,
+    });
     process.exit(1);
   });
 

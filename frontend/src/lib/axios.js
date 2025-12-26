@@ -1,9 +1,9 @@
 import axios from 'axios';
 
-// Use relative path - same origin, no CORS needed
-// In production: requests go to /api/* (served by Express)
-// In development: Vite proxy forwards /api/* to backend
-const API_BASE = '/api';
+// Use environment variable for production, fallback to relative for development
+// In production: VITE_API_URL should be set to absolute backend URL (e.g. https://backend.com/api)
+// In development: Falls back to /api which Vite proxy forwards to backend
+const API_BASE = import.meta.env.VITE_API_URL || '/api';
 
 const api = axios.create({
   baseURL: API_BASE,

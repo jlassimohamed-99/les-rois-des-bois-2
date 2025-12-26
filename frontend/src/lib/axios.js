@@ -1,11 +1,15 @@
 import axios from 'axios';
 
-// HARDCODED PRODUCTION API BASE URL
-// All API requests MUST go to this production backend
-const API_BASE = 'https://les-rois-du-bois-back.2bj94x.easypanel.host/api';
+// API Base URL from environment variable
+// Set VITE_API_URL in your .env file (e.g., VITE_API_URL=https://les-rois-du-bois-back.2bj94x.easypanel.host/api)
+// Falls back to production URL if not set
+const API_BASE = import.meta.env.VITE_API_URL || 'https://les-rois-du-bois-back.2bj94x.easypanel.host/api';
 
 // Log API base URL at runtime to confirm correctness
 console.log('[API Client] API Base URL:', API_BASE);
+if (!import.meta.env.VITE_API_URL) {
+  console.warn('[API Client] VITE_API_URL not set in environment, using fallback URL');
+}
 
 const api = axios.create({
   baseURL: API_BASE,

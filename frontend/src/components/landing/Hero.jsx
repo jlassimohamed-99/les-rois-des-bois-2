@@ -15,7 +15,7 @@ const Hero = () => {
   useEffect(() => {
     const fetchHeroConfig = async () => {
       try {
-        // Use relative API path (/api) - same origin
+        // API call uses centralized axios client with baseURL from VITE_API_URL
         const res = await api.get('/homepage/hero');
         if (res.data?.success && res.data?.data) {
           const config = res.data.data;

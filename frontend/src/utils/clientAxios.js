@@ -2,7 +2,7 @@ import axios from 'axios';
 import { API_BASE } from './axios';
 
 // Client-facing API base (e.g. https://backend/api/client)
-// Uses API_BASE from axios.js which is hardcoded to production URL
+// Uses API_BASE from axios.js which reads from VITE_API_URL environment variable
 const clientApi = axios.create({
   baseURL: `${API_BASE}/client`,
   headers: {

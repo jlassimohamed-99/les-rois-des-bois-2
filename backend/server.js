@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import cors from 'cors';
 import path from 'path';
+import fs from 'fs';
 import cookieParser from 'cookie-parser';
 import { fileURLToPath } from 'url';
 import { securityHeaders } from './middleware/security.middleware.js';
@@ -74,6 +75,17 @@ if (missingVars.length > 0) {
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Ensure uploads directory and subdirectories exist
+const uploadsDir = path.join(__dirname, 'uploads');
+const uploadSubdirs = ['categories', 'products', 'special-products', 'settings', 'expenses', 'general'];
+
+fs.mkdirSync(uploadsDir, { recursive: true });
+uploadSubdirs.forEach(subdir => {
+  fs.mkdirSync(path.join(uploadsDir, subdir), { recursive: true });
+});
+
+console.log('✅ Upload directories initialized');
+
 const app = express();
 
 // Trust proxy when running behind a reverse proxy (e.g. Hostinger, Nginx)
@@ -122,8 +134,19 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // app.use('/api/auth', authLimiter);
 // app.use('/api/client', clientLimiter);
 
-// Serve uploaded files
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// Serve uploaded files - MUST be before API routes
+// This allows direct access to uploaded files via /uploads/* URLs
+app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
+  setHeaders: (res, filePath) => {
+    // Set proper headers for images
+    if (filePath.endsWith('.jpg') || filePath.endsWith('.jpeg') || 
+        filePath.endsWith('.png') || filePath.endsWith('.gif') || 
+        filePath.endsWith('.webp')) {
+      res.setHeader('Content-Type', 'image/' + filePath.split('.').pop());
+      res.setHeader('Cache-Control', 'public, max-age=31536000'); // Cache for 1 year
+    }
+  }
+}));
 
 // Routes
 app.use('/api/auth', authRoutes);
@@ -161,6 +184,19 @@ app.use('/api/client/orders', clientOrderRoutes);
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', message: 'Server is running' });
+});
+
+// Root route - prevent "Cannot GET /" error
+app.get('/', (req, res) => {
+  res.json({ 
+    status: 'OK', 
+    message: 'Les Rois des Bois API Server',
+    version: '1.0.0',
+    endpoints: {
+      health: '/api/health',
+      uploads: '/uploads'
+    }
+  });
 });
 
 // Error handler

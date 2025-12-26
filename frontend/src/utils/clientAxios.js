@@ -2,12 +2,17 @@ import axios from 'axios';
 import { API_BASE } from './axios';
 
 // Client-facing API base (e.g. https://backend/api/client)
+// Uses API_BASE from axios.js which reads from VITE_API_URL environment variable
 const clientApi = axios.create({
   baseURL: `${API_BASE}/client`,
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true,
 });
+
+// Log client API base URL at runtime to confirm correctness
+console.log('[Client API] Base URL:', `${API_BASE}/client`);
 
 // Request interceptor
 clientApi.interceptors.request.use(

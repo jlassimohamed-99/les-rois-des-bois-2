@@ -1,0 +1,28 @@
+[33m8f844ba[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m Change npm command to install production dependencies
+[33mbbe11ff[m Add multi-stage Dockerfile for frontend and backend
+[33m8f4d65e[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m one service docker config
+[33m17befb8[m single service
+[33m55b67ea[m VITE_API_URL  V2
+[33m648b825[m VITE_API_URL update
+[33m2f96844[m update package for serve
+[33m8554671[m fro deply v3     "start": "serve -s dist -l $PORT"
+[33m74902d1[m for deploy v3 "dev": "vite --host"
+[33m6a8ab03[m for deply V1
+[33mdc29c45[m v18 before first deploy no factures
+[33mbf08d66[m v17
+[33m9e00013[m v16 pwa fix
+[33m2fada52[m V15 after ai test
+[33ma94bb82[m V14
+[33mf6e8d79[m V13
+[33m4fa5d88[m V12
+[33m4dec471[m v11
+[33m51a981e[m v10
+[33m9df86bd[m v9
+[33m8c9bf8b[m v8
+[33mf614fa6[m v7
+[33m13fbee3[m v6
+[33m33e992f[m v5
+[33mb439685[m v4
+[33m7c9ac67[m v3
+[33m3e306d4[m v2
+[33me05fd08[m v1 admin and e comm

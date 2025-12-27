@@ -7,12 +7,12 @@ const CategoryCard = ({ category }) => {
       to={`/shop/categories/${category._id}`}
       className="group bg-white dark:bg-gray-800 rounded-xl shadow-sm hover:shadow-lg transition overflow-hidden"
     >
-      <div className="h-32 bg-gray-100 dark:bg-gray-700 overflow-hidden flex items-center justify-center">
+      <div className="aspect-square bg-gray-100 dark:bg-gray-700 overflow-hidden">
         {category.image ? (
           <img
             src={withBase(category.image)}
             alt={category.name}
-            className="w-full h-full object-contain group-hover:scale-105 transition"
+            className="w-full h-full object-cover object-center group-hover:scale-105 transition"
             loading="lazy"
           />
         ) : (

@@ -58,7 +58,7 @@ const EnhancedProductCard = ({ product, onAdd, index = 0 }) => {
     >
       <Link to={`/shop/products/${product._id}`} className="block">
         <motion.div
-          className="relative h-64 bg-gray-100 dark:bg-gray-700 overflow-hidden flex items-center justify-center"
+          className="relative aspect-square bg-gray-100 dark:bg-gray-700 overflow-hidden"
           whileHover={product.stock > 0 ? "hover" : ""}
           variants={{
             hover: { scale: 1.05 },
@@ -70,7 +70,7 @@ const EnhancedProductCard = ({ product, onAdd, index = 0 }) => {
               <img
                 src={imageUrl}
                 alt={product.name}
-                className={`w-full h-full object-contain ${product.stock <= 0 ? 'grayscale' : ''}`}
+                className={`w-full h-full object-cover object-center ${product.stock <= 0 ? 'grayscale' : ''}`}
                 loading="lazy"
               />
               {product.stock <= 0 && (

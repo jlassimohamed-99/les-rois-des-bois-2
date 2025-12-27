@@ -55,12 +55,12 @@ const ProductCard = ({ product, onAdd }) => {
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm hover:shadow-lg transition overflow-hidden">
-      <div className="h-48 bg-gray-100 dark:bg-gray-700 overflow-hidden flex items-center justify-center">
+      <div className="aspect-square bg-gray-100 dark:bg-gray-700 overflow-hidden">
         {product.images?.length ? (
           <img
             src={withBase(product.images[0])}
             alt={product.name}
-            className="w-full h-full object-contain"
+            className="w-full h-full object-cover object-center"
             loading="lazy"
           />
         ) : (

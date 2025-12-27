@@ -87,12 +87,12 @@ const VariantSelectionModal = ({ isOpen, onClose, product, onAddToCart }) => {
               {/* Content */}
               <div className="p-6 space-y-6">
                 {/* Product Image */}
-                <div className="relative h-64 bg-gray-100 dark:bg-gray-700 rounded-xl overflow-hidden flex items-center justify-center">
+                <div className="relative aspect-square bg-gray-100 dark:bg-gray-700 rounded-xl overflow-hidden">
                   {selectedImage ? (
                     <img
                       src={withBase(selectedImage)}
                       alt={product.name}
-                      className="w-full h-full object-contain"
+                      className="w-full h-full object-cover object-center"
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-gray-400">
@@ -129,15 +129,15 @@ const VariantSelectionModal = ({ isOpen, onClose, product, onAddToCart }) => {
                           }`}
                         >
                           {variant.image ? (
-                            <div className="w-full h-24 bg-gray-100 dark:bg-gray-800 rounded-lg mb-2 flex items-center justify-center overflow-hidden">
+                            <div className="w-full aspect-square bg-gray-100 dark:bg-gray-800 rounded-lg mb-2 overflow-hidden">
                               <img
                                 src={withBase(variant.image)}
                                 alt={variant.value}
-                                className="w-full h-full object-contain"
+                                className="w-full h-full object-cover object-center"
                               />
                             </div>
                           ) : (
-                            <div className="w-full h-24 bg-gray-200 dark:bg-gray-600 rounded-lg mb-2 flex items-center justify-center text-xs text-gray-600 dark:text-gray-400">
+                            <div className="w-full aspect-square bg-gray-200 dark:bg-gray-600 rounded-lg mb-2 flex items-center justify-center text-xs text-gray-600 dark:text-gray-400">
                               {variant.value}
                             </div>
                           )}

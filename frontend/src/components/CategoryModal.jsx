@@ -139,11 +139,11 @@ const CategoryModal = ({ category, onClose }) => {
             </label>
             <div className="space-y-4">
               {imagePreview && (
-                <div className="relative w-32 h-32">
+                <div className="relative w-32 h-32 bg-gray-100 dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-600 flex items-center justify-center">
                   <img
                     src={imagePreview}
                     alt="Preview"
-                    className="w-full h-full object-cover rounded-lg border border-gray-300 dark:border-gray-600"
+                    className="w-full h-full object-contain rounded-lg"
                   />
                 </div>
               )}

@@ -371,11 +371,11 @@ const ProductModal = ({ product, categories, suppliers = [], onClose }) => {
               {imagePreviews.length > 0 && (
                 <div className="grid grid-cols-4 gap-4">
                   {imagePreviews.map((preview, index) => (
-                    <div key={index} className="relative">
+                    <div key={index} className="relative bg-gray-100 dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-600 flex items-center justify-center h-32">
                       <img
                         src={preview}
                         alt={`Preview ${index + 1}`}
-                        className="w-full h-32 object-cover rounded-lg border border-gray-300 dark:border-gray-600"
+                        className="w-full h-full object-contain rounded-lg"
                       />
                       <button
                         type="button"
@@ -474,11 +474,11 @@ const ProductModal = ({ product, categories, suppliers = [], onClose }) => {
                   </label>
                   <div className="flex items-center gap-4">
                     {variant.image ? (
-                      <div className="relative w-24 h-24">
+                      <div className="relative w-24 h-24 bg-gray-100 dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-600 flex items-center justify-center">
                         <img
                           src={withBase(variant.image)}
                           alt={variant.value}
-                          className="w-full h-full object-cover rounded-lg border border-gray-300 dark:border-gray-600"
+                          className="w-full h-full object-contain rounded-lg"
                         />
                         <button
                           type="button"

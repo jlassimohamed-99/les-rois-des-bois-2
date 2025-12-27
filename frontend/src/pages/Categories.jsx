@@ -116,7 +116,7 @@ const Categories = () => {
                         <img
                           src={withBase(category.image)}
                           alt={category.name}
-                          className="w-16 h-16 object-cover rounded-lg"
+                          className="w-16 h-16 object-contain rounded-lg bg-gray-100 dark:bg-gray-800"
                         />
                       ) : (
                         <div className="w-16 h-16 bg-gray-200 dark:bg-gray-700 rounded-lg flex items-center justify-center">

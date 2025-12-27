@@ -1,9 +1,9 @@
 import axios from 'axios';
 
 // API Base URL from environment variable
-// Set VITE_API_URL in your .env file (e.g., VITE_API_URL=https://les-rois-du-bois-back.2bj94x.easypanel.host/api)
+// Set VITE_API_URL in your .env file (e.g., VITE_API_URL=https://les-rois-du-bois-backend.2bj94x.easypanel.host/api)
 // Falls back to production URL if not set
-const API_BASE = import.meta.env.VITE_API_URL || 'https://les-rois-du-bois-back.2bj94x.easypanel.host/api';
+const API_BASE = import.meta.env.VITE_API_URL || 'https://les-rois-du-bois-backend.2bj94x.easypanel.host/api';
 
 // Log API base URL at runtime to confirm correctness
 console.log('[API Client] API Base URL:', API_BASE);

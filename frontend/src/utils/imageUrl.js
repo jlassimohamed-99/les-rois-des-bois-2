@@ -3,7 +3,7 @@
 // So we need to use the full backend URL for images
 const getBackendUrl = () => {
   // Check if we have VITE_API_URL set (which includes /api)
-  const apiUrl = import.meta.env.VITE_API_URL || 'https://les-rois-du-bois-back.2bj94x.easypanel.host/api';
+  const apiUrl = import.meta.env.VITE_API_URL || 'https://les-rois-du-bois-backend.2bj94x.easypanel.host/api';
   // Remove /api to get base backend URL
   return apiUrl.replace('/api', '');
 };

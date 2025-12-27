@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useParams } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -108,6 +109,14 @@ const OrderRedirect = () => {
 };
 
 function App() {
+  // Log app initialization
+  useEffect(() => {
+    console.log('✅ [APP] App component initialized');
+    console.log('✅ [APP] Providers mounted: ThemeProvider, Router, AuthProvider, ClientAuthProvider, CartProvider');
+    console.log('✅ [APP] Routes registered');
+    console.log('='.repeat(50));
+  }, []);
+
   return (
     <ThemeProvider>
       <Router>

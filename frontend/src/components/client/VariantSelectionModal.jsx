@@ -87,12 +87,12 @@ const VariantSelectionModal = ({ isOpen, onClose, product, onAddToCart }) => {
               {/* Content */}
               <div className="p-6 space-y-6">
                 {/* Product Image */}
-                <div className="relative h-64 bg-gray-100 dark:bg-gray-700 rounded-xl overflow-hidden">
+                <div className="relative h-64 bg-gray-100 dark:bg-gray-700 rounded-xl overflow-hidden flex items-center justify-center">
                   {selectedImage ? (
                     <img
                       src={withBase(selectedImage)}
                       alt={product.name}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-contain"
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-gray-400">
@@ -129,11 +129,13 @@ const VariantSelectionModal = ({ isOpen, onClose, product, onAddToCart }) => {
                           }`}
                         >
                           {variant.image ? (
-                            <img
-                              src={withBase(variant.image)}
-                              alt={variant.value}
-                              className="w-full h-24 object-cover rounded-lg mb-2"
-                            />
+                            <div className="w-full h-24 bg-gray-100 dark:bg-gray-800 rounded-lg mb-2 flex items-center justify-center overflow-hidden">
+                              <img
+                                src={withBase(variant.image)}
+                                alt={variant.value}
+                                className="w-full h-full object-contain"
+                              />
+                            </div>
                           ) : (
                             <div className="w-full h-24 bg-gray-200 dark:bg-gray-600 rounded-lg mb-2 flex items-center justify-center text-xs text-gray-600 dark:text-gray-400">
                               {variant.value}

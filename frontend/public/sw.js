@@ -22,10 +22,16 @@ self.addEventListener('install', (event) => {
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
-  // Always bypass the service worker cache for API and cross-origin (backend) requests
-  // so that API calls always hit the real backend domain.
-  if (url.pathname.startsWith('/api') || url.origin !== self.location.origin) {
-    return;
+  // Always bypass the service worker cache for:
+  // 1. API requests
+  // 2. Cross-origin requests (backend)
+  // 3. Non-GET requests (POST, PUT, DELETE, etc. cannot be cached)
+  if (
+    url.pathname.startsWith('/api') || 
+    url.origin !== self.location.origin ||
+    event.request.method !== 'GET'
+  ) {
+    return; // Let the request go through without caching
   }
 
   event.respondWith(
@@ -35,9 +41,10 @@ self.addEventListener('fetch', (event) => {
         if (response) {
           return response;
         }
+        // Cache miss - fetch from network
         return fetch(event.request).then(
           (response) => {
-            // Check if valid response
+            // Check if valid response (only cache GET requests with 200 status)
             if (!response || response.status !== 200 || response.type !== 'basic') {
               return response;
             }
@@ -45,11 +52,19 @@ self.addEventListener('fetch', (event) => {
             const responseToCache = response.clone();
             caches.open(CACHE_NAME)
               .then((cache) => {
-                cache.put(event.request, responseToCache);
+                // Only cache GET requests
+                if (event.request.method === 'GET') {
+                  cache.put(event.request, responseToCache);
+                }
               });
             return response;
           }
         );
+      })
+      .catch((error) => {
+        // If cache and network both fail, return error
+        console.error('[Service Worker] Fetch error:', error);
+        throw error;
       })
   );
 });
@@ -69,4 +84,3 @@ self.addEventListener('activate', (event) => {
     })
   );
 });
-

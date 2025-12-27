@@ -87,18 +87,20 @@ const VariantSelectionModal = ({ isOpen, onClose, product, onAddToCart }) => {
               {/* Content */}
               <div className="p-6 space-y-6">
                 {/* Product Image */}
-                <div className="relative aspect-square bg-gray-100 dark:bg-gray-700 rounded-xl overflow-hidden">
-                  {selectedImage ? (
-                    <img
-                      src={withBase(selectedImage)}
-                      alt={product.name}
-                      className="w-full h-full object-cover object-center"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-gray-400">
-                      لا توجد صورة
-                    </div>
-                  )}
+                <div className="flex justify-center">
+                  <div className="relative w-64 h-64 bg-gray-100 dark:bg-gray-700 rounded-xl overflow-hidden">
+                    {selectedImage ? (
+                      <img
+                        src={withBase(selectedImage)}
+                        alt={product.name}
+                        className="w-full h-full object-cover object-center"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-gray-400">
+                        لا توجد صورة
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* Variants Selection */}

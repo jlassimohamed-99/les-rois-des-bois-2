@@ -26,7 +26,7 @@ export default defineConfig(({ mode }) => {
       allowedHosts: [
         'localhost',
         '127.0.0.1',
-        'les-rois-du-bois-front.2bj94x.easypanel.host',
+        'les-rois-du-bois-frontend.2bj94x.easypanel.host',
         'lesroisdubois.com',
         // Optional: allow all EasyPanel subdomains (useful if the subdomain changes)
         // '.easypanel.host',

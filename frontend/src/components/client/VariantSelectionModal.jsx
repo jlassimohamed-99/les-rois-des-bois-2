@@ -88,7 +88,7 @@ const VariantSelectionModal = ({ isOpen, onClose, product, onAddToCart }) => {
               <div className="p-6 space-y-6">
                 {/* Product Image */}
                 <div className="flex justify-center">
-                  <div className="relative w-64 h-64 bg-gray-100 dark:bg-gray-700 rounded-xl overflow-hidden">
+                  <div className="relative w-72 h-72 bg-gray-100 dark:bg-gray-700 rounded-xl overflow-hidden">
                     {selectedImage ? (
                       <img
                         src={withBase(selectedImage)}

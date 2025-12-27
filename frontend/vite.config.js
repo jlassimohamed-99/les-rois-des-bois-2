@@ -33,12 +33,12 @@ export default defineConfig(({ mode }) => {
       ],
       proxy: {
         '/api': {
-          target: 'https://les-rois-du-bois-backend.2bj94x.easypanel.host/',
+          target: 'https://les-rois-du-bois-back.2bj94x.easypanel.host/',
           changeOrigin: true,
         },
         // Proxy uploads in development so that frontend can use relative /uploads URLs
         '/uploads': {
-          target: 'https://les-rois-du-bois-backend.2bj94x.easypanel.host/',
+          target: 'https://les-rois-du-bois-back.2bj94x.easypanel.host/',
           changeOrigin: true,
         },
       },

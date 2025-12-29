@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useState, useEffect, useRef } from 'react';
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { Moon, Sun } from 'lucide-react';
@@ -12,6 +12,8 @@ const redirectByRole = (role) => {
       return '/commercial';
     case 'saler':
       return '/pos';
+    case 'client':
+      return '/shop'; // Client users go to shop
     case 'user':
     default:
       return '/shop';
@@ -26,12 +28,54 @@ const Login = () => {
   const { isDark, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const autoSubmittedRef = useRef(false); // Prevent multiple auto-submits
+
+  // QR Code auto-fill and auto-submit
+  useEffect(() => {
+    const qrUsername = searchParams.get('u');
+    const qrPassword = searchParams.get('p');
+    
+    // Only process if both parameters exist and we haven't already auto-submitted
+    if (qrUsername && qrPassword && !autoSubmittedRef.current) {
+      console.log('📱 [QR CODE] Detected QR code login parameters');
+      
+      // Auto-fill form fields
+      setEmail(qrUsername);
+      setPassword(qrPassword);
+      
+      // Auto-submit after a small delay to ensure state is updated
+      autoSubmittedRef.current = true;
+      setTimeout(() => {
+        handleAutoSubmit(qrUsername, qrPassword);
+      }, 300);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     if (user) {
       navigate(redirectByRole(user.role));
     }
   }, [user, navigate]);
+
+  const handleAutoSubmit = async (emailValue, passwordValue) => {
+    console.log('📱 [QR CODE] Auto-submitting login form...');
+    setLoading(true);
+    const result = await login(emailValue, passwordValue);
+    setLoading(false);
+    
+    if (result.success) {
+      console.log('✅ [QR CODE] Auto-login successful');
+      // Clear URL parameters after successful login
+      setSearchParams({}, { replace: true });
+      const to = location.state?.from ? location.state.from : redirectByRole(result.user.role);
+      navigate(to, { replace: true });
+    } else {
+      console.error('❌ [QR CODE] Auto-login failed:', result.message);
+      // Reset auto-submit flag on failure so user can retry
+      autoSubmittedRef.current = false;
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();

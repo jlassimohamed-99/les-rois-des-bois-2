@@ -6,6 +6,7 @@
     "dev": "nodemon server.js",
     "start": "node server.js",
     "create-admin": "node scripts/createAdmin.js",
+    "create-qr-user": "node scripts/createQRUser.js",
     "seed-client": "node scripts/seedClientData.js",
     "seed": "node scripts/seedDatabase.js",
     "init-commercial-expenses": "node scripts/initCommercialExpenseCategory.js",

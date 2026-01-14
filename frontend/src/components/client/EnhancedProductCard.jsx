@@ -14,12 +14,33 @@ const EnhancedProductCard = ({ product, onAdd, index = 0 }) => {
 
   const imageUrl = product.images?.[0] ? withBase(product.images[0]) : null;
 
+  // Helper function to check if product is available (considers variants)
+  const isProductAvailable = () => {
+    // If product has variants, check if at least one variant has stock > 0
+    if (product.variants && product.variants.length > 0) {
+      return product.variants.some(variant => (variant.stock ?? 0) > 0);
+    }
+    // If no variants, check product stock
+    return (product.stock ?? 0) > 0;
+  };
+
+  // Helper function to get total available stock (sum of variant stocks or product stock)
+  const getTotalStock = () => {
+    if (product.variants && product.variants.length > 0) {
+      return product.variants.reduce((sum, variant) => sum + (variant.stock ?? 0), 0);
+    }
+    return product.stock ?? 0;
+  };
+
+  const isAvailable = isProductAvailable();
+  const totalStock = getTotalStock();
+
   const handleAddToCart = (e) => {
     e.preventDefault();
     e.stopPropagation();
     
     // Check if product is out of stock
-    if (product.stock <= 0) {
+    if (!isAvailable) {
       return; // Will be handled by the disabled button
     }
     
@@ -51,7 +72,7 @@ const EnhancedProductCard = ({ product, onAdd, index = 0 }) => {
       variants={fadeIn}
       transition={{ delay: index * 0.1 }}
       className={`group bg-white dark:bg-gray-800 rounded-2xl shadow-sm hover:shadow-xl border overflow-hidden transition-all duration-300 ${
-        product.stock <= 0
+        !isAvailable
           ? 'opacity-50 border-red-300 dark:border-red-700'
           : 'border-gray-100 dark:border-gray-700'
       }`}
@@ -59,7 +80,7 @@ const EnhancedProductCard = ({ product, onAdd, index = 0 }) => {
       <Link to={`/shop/products/${product._id}`} className="block">
         <motion.div
           className="relative aspect-square bg-gray-100 dark:bg-gray-700 overflow-hidden"
-          whileHover={product.stock > 0 ? "hover" : ""}
+          whileHover={isAvailable ? "hover" : ""}
           variants={{
             hover: { scale: 1.05 },
           }}
@@ -70,10 +91,10 @@ const EnhancedProductCard = ({ product, onAdd, index = 0 }) => {
               <img
                 src={imageUrl}
                 alt={product.name}
-                className={`w-full h-full object-cover object-center ${product.stock <= 0 ? 'grayscale' : ''}`}
+                className={`w-full h-full object-cover object-center ${!isAvailable ? 'grayscale' : ''}`}
                 loading="lazy"
               />
-              {product.stock <= 0 && (
+              {!isAvailable && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-60">
                   <span className="text-white font-bold text-xl">نفد</span>
                 </div>
@@ -84,7 +105,7 @@ const EnhancedProductCard = ({ product, onAdd, index = 0 }) => {
               لا توجد صورة
             </div>
           )}
-          {product.stock > 0 && (
+          {isAvailable && (
             <motion.div
               className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors"
               initial={false}
@@ -96,7 +117,7 @@ const EnhancedProductCard = ({ product, onAdd, index = 0 }) => {
       <div className="p-4 space-y-3">
         <Link to={`/shop/products/${product._id}`}>
           <h3 className={`text-lg font-semibold line-clamp-2 transition-colors ${
-            product.stock <= 0
+            !isAvailable
               ? 'text-gray-400 dark:text-gray-500 line-through'
               : 'text-gray-900 dark:text-gray-100 group-hover:text-gold-600'
           }`}>
@@ -129,24 +150,24 @@ const EnhancedProductCard = ({ product, onAdd, index = 0 }) => {
             <span className="text-gold-600 font-bold text-lg">{product.wholesalePrice || product.price} TND</span>
           </div>
           
-          {product.stock > 0 && product.stock <= 10 && (
+          {isAvailable && totalStock > 0 && totalStock <= 10 && (
             <p className="text-xs text-yellow-600 dark:text-yellow-400 font-semibold">
-              ⚠️ المخزون منخفض: {product.stock} متوفر فقط
+              ⚠️ المخزون منخفض: {totalStock} متوفر فقط
             </p>
           )}
-          {product.stock <= 0 && (
+          {!isAvailable && (
             <p className="text-xs text-red-600 dark:text-red-400 font-semibold">
               غير متوفر في المخزون
             </p>
           )}
           <div className="flex items-center justify-end gap-2 pt-1">
             <motion.button
-              whileHover={product.stock > 0 ? hoverScale : {}}
-              whileTap={product.stock > 0 ? { scale: 0.9 } : {}}
+              whileHover={isAvailable ? hoverScale : {}}
+              whileTap={isAvailable ? { scale: 0.9 } : {}}
               onClick={handleAddToCart}
-              disabled={product.stock <= 0}
+              disabled={!isAvailable}
               className={`p-2 rounded-lg transition-colors ${
-                product.stock <= 0
+                !isAvailable
                   ? 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed'
                   : 'bg-gold-600 text-white hover:bg-gold-700'
               }`}

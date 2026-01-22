@@ -191,8 +191,27 @@ export const getProfitability = async (req, res, next) => {
       },
     ];
 
-    const result = await Order.aggregate(pipeline);
+    // Pipeline to calculate total items sold
+    const itemsPipeline = [
+      {
+        $match: matchFilter,
+      },
+      { $unwind: '$items' },
+      {
+        $group: {
+          _id: null,
+          totalItems: { $sum: '$items.quantity' },
+        },
+      },
+    ];
+
+    const [result, itemsResult] = await Promise.all([
+      Order.aggregate(pipeline),
+      Order.aggregate(itemsPipeline),
+    ]);
+
     const data = result[0] || { revenue: 0, cost: 0, orders: 0 };
+    const itemsData = itemsResult[0] || { totalItems: 0 };
     const profit = data.revenue - data.cost;
     const margin = data.revenue > 0 ? (profit / data.revenue) * 100 : 0;
     const avgOrderValue = data.orders > 0 ? data.revenue / data.orders : 0;
@@ -206,6 +225,7 @@ export const getProfitability = async (req, res, next) => {
         margin: margin.toFixed(2),
         orders: data.orders,
         avgOrderValue: avgOrderValue.toFixed(2),
+        totalItemsSold: itemsData.totalItems || 0,
       },
     });
   } catch (error) {

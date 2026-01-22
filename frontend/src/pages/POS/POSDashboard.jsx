@@ -12,7 +12,6 @@ const POSDashboard = () => {
   const [stats, setStats] = useState({
     todaySales: 0,
     todayRevenue: 0,
-    activeOrders: 0,
   });
   const [showInterface, setShowInterface] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -84,21 +83,32 @@ const POSDashboard = () => {
 
   const fetchStats = async () => {
     try {
-      const today = new Date().toISOString().split('T')[0];
-      const [salesRes, ordersRes] = await Promise.all([
-        api.get('/pos/sales', { params: { startDate: today } }).catch(() => ({ data: { data: [] } })),
-        api.get('/orders', { params: { status: 'pending,preparing' } }).catch(() => ({ data: { data: [] } })),
-      ]);
+      // Get today's date range (start of day to end of day)
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const todayStart = today.toISOString();
+      const todayEnd = new Date(today);
+      todayEnd.setHours(23, 59, 59, 999);
+      const todayEndISO = todayEnd.toISOString();
 
-      const sales = salesRes.data.data || [];
+      // Fetch POS orders (source: 'pos' and status: 'completed') created today
+      const ordersRes = await api.get('/orders', { 
+        params: { 
+          source: 'pos',
+          status: 'completed',
+          startDate: todayStart,
+          endDate: todayEndISO
+        } 
+      }).catch(() => ({ data: { data: [] } }));
+
       const orders = ordersRes.data.data || [];
 
       setStats({
-        todaySales: sales.length,
-        todayRevenue: sales.reduce((sum, sale) => sum + (sale.total || 0), 0),
-        activeOrders: orders.length,
+        todaySales: orders.length,
+        todayRevenue: orders.reduce((sum, order) => sum + (order.total || 0), 0),
       });
     } catch (error) {
+      console.error('Error fetching POS stats:', error);
       // Silent error handling
     } finally {
       setLoading(false);
@@ -125,7 +135,7 @@ const POSDashboard = () => {
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="card">
           <div className="flex items-center justify-between">
             <div>
@@ -146,17 +156,6 @@ const POSDashboard = () => {
               </p>
             </div>
             <TrendingUp className="text-gold-500" size={32} />
-          </div>
-        </div>
-        <div className="card">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">الطلبات الجارية</p>
-              <p className="text-2xl font-bold mt-2 text-gray-900 dark:text-gray-100">
-                {stats.activeOrders}
-              </p>
-            </div>
-            <Package className="text-gold-500" size={32} />
           </div>
         </div>
       </div>

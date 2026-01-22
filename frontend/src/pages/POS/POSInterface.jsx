@@ -778,10 +778,8 @@ const POSInterface = () => {
           </button>
           <button
             onClick={() => {
-              const backPath = getBackPath(user?.role);
-              if (backPath && backPath !== window.location.pathname) {
-                navigate(backPath, { replace: true });
-              }
+              // Return to POS dashboard by navigating to /pos
+              navigate('/pos', { replace: true });
             }}
             className="px-3 md:px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-lg transition-colors flex items-center gap-2 text-gray-900 dark:text-white"
           >

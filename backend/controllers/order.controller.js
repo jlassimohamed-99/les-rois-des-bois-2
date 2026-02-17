@@ -11,6 +11,7 @@ export const getOrders = async (req, res, next) => {
       clientId,
       storeId,
       commercialId,
+      cashierId,
       source,
       startDate,
       endDate,
@@ -25,6 +26,7 @@ export const getOrders = async (req, res, next) => {
     if (clientId) query.clientId = clientId;
     if (storeId) query.storeId = storeId;
     if (commercialId) query.commercialId = commercialId;
+    if (cashierId) query.cashierId = cashierId;
     if (source) query.source = source;
     
     // Handle date filtering

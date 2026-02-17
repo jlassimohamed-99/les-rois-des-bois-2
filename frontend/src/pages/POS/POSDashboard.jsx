@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../../utils/axios';
 import toast from 'react-hot-toast';
-import { ShoppingCart, Package, TrendingUp, Play, BarChart3 } from 'lucide-react';
+import { ShoppingCart, Package, TrendingUp, Play, BarChart3, ArrowLeft, Calendar, Receipt } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import POSInterface from './POSInterface';
 
@@ -15,6 +15,8 @@ const POSDashboard = () => {
   });
   const [showInterface, setShowInterface] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [todayOrders, setTodayOrders] = useState([]);
+  const [loadingOrders, setLoadingOrders] = useState(true);
 
   // Protect POS route - redirect if not authenticated or not a cashier
   useEffect(() => {
@@ -85,6 +87,7 @@ const POSDashboard = () => {
   useEffect(() => {
     if (user && (authLoading === false)) {
       fetchStats();
+      fetchTodayOrders();
     }
   }, [user, authLoading]);
 
@@ -122,19 +125,52 @@ const POSDashboard = () => {
     }
   };
 
+  const fetchTodayOrders = async () => {
+    try {
+      setLoadingOrders(true);
+      // Get today's date range (start of day to end of day)
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const todayStart = today.toISOString();
+      const todayEnd = new Date(today);
+      todayEnd.setHours(23, 59, 59, 999);
+      const todayEndISO = todayEnd.toISOString();
+
+      // Fetch POS orders created today by this cashier
+      const ordersRes = await api.get('/orders', { 
+        params: { 
+          source: 'pos',
+          startDate: todayStart,
+          endDate: todayEndISO,
+          cashierId: user?._id || user?.id
+        } 
+      }).catch(() => ({ data: { data: [] } }));
+
+      const orders = ordersRes.data.data || [];
+      // Sort by creation date (newest first)
+      orders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      setTodayOrders(orders);
+    } catch (error) {
+      console.error('Error fetching today orders:', error);
+      setTodayOrders([]);
+    } finally {
+      setLoadingOrders(false);
+    }
+  };
+
   if (showInterface) {
     return <POSInterface />;
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-4 md:p-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">نقاط البيع</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">لوحة تحكم نقاط البيع</p>
         </div>
         <button
-          onClick={() => setShowInterface(true)}
+          onClick={() => navigate('/pos?view=interface')}
           className="btn-primary flex items-center gap-2"
         >
           <Play size={20} />
@@ -167,6 +203,84 @@ const POSDashboard = () => {
         </div>
       </div>
 
+      {/* Today's Orders Section */}
+      <div className="card">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <Calendar className="text-gold-500" size={24} />
+            <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">
+              طلبات اليوم
+            </h2>
+          </div>
+          <button
+            onClick={fetchTodayOrders}
+            className="text-sm text-gold-600 hover:text-gold-700 dark:text-gold-400 dark:hover:text-gold-300"
+          >
+            تحديث
+          </button>
+        </div>
+
+        {loadingOrders ? (
+          <div className="text-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gold-600 mx-auto"></div>
+            <p className="text-gray-500 dark:text-gray-400 mt-2">جاري التحميل...</p>
+          </div>
+        ) : todayOrders.length === 0 ? (
+          <div className="text-center py-8">
+            <Receipt className="mx-auto text-gray-400 mb-4" size={48} />
+            <p className="text-gray-500 dark:text-gray-400">لا توجد طلبات اليوم</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-gray-200 dark:border-gray-700">
+                  <th className="text-right py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">رقم الطلب</th>
+                  <th className="text-right py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">الوقت</th>
+                  <th className="text-right py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">عدد المنتجات</th>
+                  <th className="text-right py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">المجموع</th>
+                  <th className="text-right py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">الحالة</th>
+                </tr>
+              </thead>
+              <tbody>
+                {todayOrders.map((order) => (
+                  <tr key={order._id} className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800">
+                    <td className="py-3 px-4 text-sm text-gray-900 dark:text-gray-100 font-medium">
+                      {order.orderNumber || order._id?.slice(-8)}
+                    </td>
+                    <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">
+                      {new Date(order.createdAt).toLocaleTimeString('ar-TN', { 
+                        hour: '2-digit', 
+                        minute: '2-digit' 
+                      })}
+                    </td>
+                    <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">
+                      {order.items?.length || 0}
+                    </td>
+                    <td className="py-3 px-4 text-sm font-semibold text-gray-900 dark:text-gray-100">
+                      {order.total?.toFixed(2) || '0.00'} TND
+                    </td>
+                    <td className="py-3 px-4 text-sm">
+                      <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${
+                        order.status === 'completed' 
+                          ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                          : order.status === 'pending'
+                          ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+                          : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
+                      }`}>
+                        {order.status === 'completed' ? 'مكتمل' : 
+                         order.status === 'pending' ? 'قيد الانتظار' : 
+                         order.status || 'غير معروف'}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
       <div className="card">
         <div className="text-center py-8">
           <ShoppingCart className="mx-auto text-gray-400 mb-4" size={48} />
@@ -174,7 +288,7 @@ const POSDashboard = () => {
             اضغط على "فتح واجهة البيع" لبدء عملية البيع
           </p>
           <button
-            onClick={() => setShowInterface(true)}
+            onClick={() => navigate('/pos?view=interface')}
             className="btn-primary inline-flex items-center gap-2"
           >
             <Play size={20} />

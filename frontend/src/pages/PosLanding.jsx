@@ -1,12 +1,15 @@
 import { useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import POSInterface from './POS/POSInterface';
+import POSDashboard from './POS/POSDashboard';
 
 const PosLanding = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
+  const view = searchParams.get('view') || 'interface'; // 'dashboard' or 'interface'
 
   // Ensure we stay on /pos when refreshing
   useEffect(() => {
@@ -83,7 +86,12 @@ const PosLanding = () => {
     return null;
   }
 
-  // Directly show POS interface (no dashboard)
+  // Show dashboard or interface based on view parameter
+  if (view === 'dashboard') {
+    return <POSDashboard />;
+  }
+
+  // Default: show POS interface
   return <POSInterface />;
 };
 

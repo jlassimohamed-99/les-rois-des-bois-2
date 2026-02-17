@@ -21,7 +21,8 @@ export const AuthProvider = ({ children }) => {
     const cashierId = localStorage.getItem('cashierId');
     
     // For cashiers: use cashierId (no token, always logged in)
-    if (cashierId && !token) {
+    // Always try to fetch cashier if cashierId exists, even if we have a token
+    if (cashierId) {
       fetchCashier(cashierId);
     } else if (token) {
       fetchUser();

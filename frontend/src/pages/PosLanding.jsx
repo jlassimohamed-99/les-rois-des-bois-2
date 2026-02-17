@@ -49,8 +49,16 @@ const PosLanding = () => {
   useEffect(() => {
     if (!loading) {
       const token = localStorage.getItem('token');
+      const cashierId = localStorage.getItem('cashierId');
       
-      if (!token && !user) {
+      // For cashiers: check cashierId instead of token (they stay logged in)
+      if (cashierId && !token) {
+        // Cashier is logged in via ID - allow access
+        // If we don't have user data yet, it will be fetched by AuthContext
+        return;
+      }
+      
+      if (!token && !cashierId && !user) {
         navigate('/login', { replace: true });
         return;
       }
@@ -75,7 +83,7 @@ const PosLanding = () => {
     return null;
   }
 
-  // Directly show POS interface
+  // Directly show POS interface (no dashboard)
   return <POSInterface />;
 };
 

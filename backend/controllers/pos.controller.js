@@ -197,13 +197,40 @@ export const createPOSOrder = async (req, res, next) => {
       }
 
       if (productType === 'regular') {
-        if ((product.stock || 0) < item.quantity) {
+        // Check stock - if item has a variant, check variant stock; otherwise check product stock
+        let availableStock = 0;
+        
+        if (item.variant && product.variants && product.variants.length > 0) {
+          // Find the specific variant
+          const variant = product.variants.find(
+            v => v.value === item.variant.value || 
+                 v._id?.toString() === item.variant._id?.toString() ||
+                 (item.variant.name && v.name === item.variant.name && v.value === item.variant.value)
+          );
+          
+          if (variant) {
+            availableStock = variant.stock !== undefined ? variant.stock : 0;
+            console.log(`📦 [POS STOCK CHECK] Product: ${product.name}, Variant: ${variant.value}, Available: ${availableStock}, Requested: ${item.quantity}`);
+          } else {
+            // Variant not found, use product stock as fallback
+            availableStock = product.stock || 0;
+            console.log(`⚠️ [POS STOCK CHECK] Variant not found for product: ${product.name}, using product stock: ${availableStock}`);
+          }
+        } else {
+          // No variant specified, use product stock
+          availableStock = product.stock || 0;
+          console.log(`📦 [POS STOCK CHECK] Product: ${product.name} (no variant), Available: ${availableStock}, Requested: ${item.quantity}`);
+        }
+        
+        if (availableStock < item.quantity) {
+          console.error(`❌ [POS STOCK CHECK] Insufficient stock for ${product.name}: Available ${availableStock}, Requested ${item.quantity}`);
           stockIssues.push({
             productId: item.productId,
             productName: product.name,
             requested: item.quantity,
-            available: product.stock || 0,
+            available: availableStock,
             error: 'Insufficient stock',
+            variant: item.variant ? item.variant.value : undefined,
           });
         }
       } else {
@@ -315,14 +342,56 @@ export const createPOSOrder = async (req, res, next) => {
     // Deduct stock for each item
     for (const item of orderItems) {
       if (item.productType === 'regular') {
-        await adjustStock(
-          item.productId,
-          'regular',
-          -item.quantity,
-          'POS Sale',
-          req.user._id,
-          { orderId: order._id }
-        );
+        // If item has a variant, deduct from variant stock; otherwise deduct from product stock
+        if (item.variant) {
+          const product = await Product.findById(item.productId);
+          if (product && product.variants && product.variants.length > 0) {
+            // Find the specific variant
+            const variant = product.variants.find(
+              v => v.value === item.variant.value || 
+                   v._id?.toString() === item.variant._id?.toString() ||
+                   (item.variant.name && v.name === item.variant.name && v.value === item.variant.value)
+            );
+            
+            if (variant) {
+              // Deduct from variant stock
+              const stockBefore = variant.stock || 0;
+              variant.stock = Math.max(0, stockBefore - item.quantity);
+              await product.save();
+              console.log(`✅ [POS STOCK DEDUCT] Product: ${product.name}, Variant: ${variant.value}, Stock: ${stockBefore} → ${variant.stock} (deducted ${item.quantity})`);
+            } else {
+              // Variant not found, deduct from product stock as fallback
+              await adjustStock(
+                item.productId,
+                'regular',
+                -item.quantity,
+                'POS Sale',
+                req.user._id,
+                { orderId: order._id }
+              );
+            }
+          } else {
+            // No variants, deduct from product stock
+            await adjustStock(
+              item.productId,
+              'regular',
+              -item.quantity,
+              'POS Sale',
+              req.user._id,
+              { orderId: order._id }
+            );
+          }
+        } else {
+          // No variant specified, deduct from product stock
+          await adjustStock(
+            item.productId,
+            'regular',
+            -item.quantity,
+            'POS Sale',
+            req.user._id,
+            { orderId: order._id }
+          );
+        }
       } else if (item.productType === 'special') {
         // For special products, deduct from base products
         const specialProduct = await SpecialProduct.findById(item.productId);

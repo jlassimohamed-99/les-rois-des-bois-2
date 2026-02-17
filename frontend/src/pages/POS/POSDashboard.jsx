@@ -21,9 +21,17 @@ const POSDashboard = () => {
     // Only redirect after auth has finished loading
     if (!authLoading) {
       const token = localStorage.getItem('token');
+      const cashierId = localStorage.getItem('cashierId');
       
-      // If no token at all and no user, redirect to login
-      if (!token && !user) {
+      // For cashiers: check cashierId instead of token (they stay logged in)
+      if (cashierId && !token) {
+        // Cashier is logged in via ID - allow access
+        // If we don't have user data yet, it will be fetched by AuthContext
+        return;
+      }
+      
+      // If no token and no cashierId and no user, redirect to login
+      if (!token && !cashierId && !user) {
         navigate('/login', { replace: true });
         return;
       }
@@ -40,14 +48,13 @@ const POSDashboard = () => {
           }
         }
         // If user is a cashier, they're allowed - stay on POS
-      } else if (token) {
-        // We have a token but no user - backend might be down
-        // Don't redirect to login immediately - keep token and stay on POS
+      } else if (token || cashierId) {
+        // We have a token/cashierId but no user - backend might be down
+        // Don't redirect to login immediately - keep credentials and stay on POS
         // This allows user to continue working if backend comes back online
-        // Only redirect if we're absolutely sure the token is invalid
         return;
       }
-      // If no token and no user, redirect will happen above
+      // If no token/cashierId and no user, redirect will happen above
     }
     // If still loading, don't do anything
   }, [user, authLoading, navigate]);

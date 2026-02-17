@@ -148,3 +148,53 @@ export const changePassword = async (req, res, next) => {
     next(error);
   }
 };
+
+// Get cashier info by ID (no token required - for cashiers who stay logged in)
+export const getCashierById = async (req, res, next) => {
+  try {
+    const { cashierId } = req.params;
+
+    if (!cashierId) {
+      return res.status(400).json({
+        success: false,
+        message: 'معرف المستخدم مطلوب',
+      });
+    }
+
+    const user = await User.findById(cashierId).select('-password');
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'المستخدم غير موجود',
+      });
+    }
+
+    // Only allow cashier roles
+    const allowedRoles = ['admin', 'store_cashier', 'cashier', 'saler', 'store_manager', 'commercial'];
+    const userRole = user.role || (user.isAdmin ? 'admin' : null);
+
+    if (!userRole || !allowedRoles.includes(userRole)) {
+      return res.status(403).json({
+        success: false,
+        message: 'ليس لديك صلاحية للوصول',
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        phone: user.phone,
+        addresses: user.addresses || [],
+        isAdmin: user.isAdmin,
+        storeId: user.storeId,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};

@@ -21,6 +21,7 @@ import {
   Users,
   Search as SearchIcon,
   ArrowLeft,
+  LogOut,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -43,7 +44,7 @@ const getBackPath = (role) => {
 };
 
 const POSInterface = () => {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, logout } = useAuth();
   const { isDark } = useTheme();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -234,6 +235,38 @@ const POSInterface = () => {
     }
   };
 
+  // Helper function to calculate total stock for a product (sum of all variant stocks)
+  const calculateTotalStock = (product) => {
+    if (!product) return 0;
+    
+    // If product has variants, sum all variant stocks
+    if (product.variants && Array.isArray(product.variants) && product.variants.length > 0) {
+      return product.variants.reduce((total, variant) => {
+        const variantStock = variant.stock !== undefined ? variant.stock : 0;
+        return total + variantStock;
+      }, 0);
+    }
+    
+    // If no variants, return product stock
+    return product.stock || 0;
+  };
+
+  // Helper function to check if product has any available stock (at least one variant has stock)
+  const hasAvailableStock = (product) => {
+    if (!product) return false;
+    
+    // If product has variants, check if at least one variant has stock > 0
+    if (product.variants && Array.isArray(product.variants) && product.variants.length > 0) {
+      return product.variants.some((variant) => {
+        const variantStock = variant.stock !== undefined ? variant.stock : 0;
+        return variantStock > 0;
+      });
+    }
+    
+    // If no variants, check product stock
+    return (product.stock || 0) > 0;
+  };
+
   // Filter products
   const filteredRegularProducts = useMemo(() => {
     let filtered = products.regularProducts || [];
@@ -265,7 +298,8 @@ const POSInterface = () => {
 
   // Add regular product to cart
   const addRegularProductToCart = (product, variant = null, quantity = null) => {
-    if (!product.stock || product.stock <= 0) {
+    // Check if product has any available stock (at least one variant has stock)
+    if (!hasAvailableStock(product)) {
       toast.error('المنتج غير متوفر في المخزون');
       return;
     }
@@ -778,13 +812,14 @@ const POSInterface = () => {
           </button>
           <button
             onClick={() => {
-              // Return to POS dashboard by navigating to /pos
-              navigate('/pos', { replace: true });
+              if (window.confirm('هل أنت متأكد من تسجيل الخروج؟')) {
+                logout();
+              }
             }}
-            className="px-3 md:px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-lg transition-colors flex items-center gap-2 text-gray-900 dark:text-white"
+            className="px-3 md:px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg transition-colors flex items-center gap-2 text-white"
           >
-            <ArrowLeft size={18} className="md:w-5 md:h-5" />
-            <span className="hidden md:inline">العودة</span>
+            <LogOut size={18} className="md:w-5 md:h-5" />
+            <span className="hidden md:inline">تسجيل الخروج</span>
           </button>
         </div>
       </div>
@@ -902,73 +937,78 @@ const POSInterface = () => {
               <div className="text-center py-12 text-gray-600 dark:text-gray-400 text-sm md:text-base">جاري التحميل...</div>
             ) : activeTab === 'regular' ? (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 md:gap-4">
-                {filteredRegularProducts.map((product) => (
-                  <div
-                    key={product._id}
-                    onClick={() => {
-                      if (product.stock <= 0) {
-                        toast.error('المنتج غير متوفر في المخزون');
-                        return;
-                      }
-                      addRegularProductToCart(product);
-                    }}
-                    className={`bg-white dark:bg-gray-800 rounded-lg p-2 md:p-4 transition-colors border ${
-                      product.stock <= 0
-                        ? 'opacity-50 cursor-not-allowed border-red-300 dark:border-red-700'
-                        : 'cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 border-gray-200 dark:border-gray-700 hover:border-gold-600'
-                    }`}
-                  >
-                    {product.images?.[0] && (
-                      <div className="relative">
-                        <img
-                          src={withBase(product.images[0])}
-                          alt={product.name}
-                          className={`w-full h-24 md:h-40 object-cover rounded-lg mb-2 md:mb-3 ${
-                            product.stock <= 0 ? 'grayscale' : ''
-                          }`}
-                        />
-                        {product.stock <= 0 && (
-                          <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-lg">
-                            <span className="text-white font-bold text-lg">نفد</span>
-                          </div>
+                {filteredRegularProducts.map((product) => {
+                  const totalStock = calculateTotalStock(product);
+                  const isAvailable = hasAvailableStock(product);
+                  
+                  return (
+                    <div
+                      key={product._id}
+                      onClick={() => {
+                        if (!isAvailable) {
+                          toast.error('المنتج غير متوفر في المخزون');
+                          return;
+                        }
+                        addRegularProductToCart(product);
+                      }}
+                      className={`bg-white dark:bg-gray-800 rounded-lg p-2 md:p-4 transition-colors border ${
+                        !isAvailable
+                          ? 'opacity-50 cursor-not-allowed border-red-300 dark:border-red-700'
+                          : 'cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 border-gray-200 dark:border-gray-700 hover:border-gold-600'
+                      }`}
+                    >
+                      {product.images?.[0] && (
+                        <div className="relative">
+                          <img
+                            src={withBase(product.images[0])}
+                            alt={product.name}
+                            className={`w-full h-24 md:h-40 object-cover rounded-lg mb-2 md:mb-3 ${
+                              !isAvailable ? 'grayscale' : ''
+                            }`}
+                          />
+                          {!isAvailable && (
+                            <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-lg">
+                              <span className="text-white font-bold text-lg">نفد</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      <h3 className={`font-medium text-xs md:text-base mb-1 md:mb-2 line-clamp-2 ${
+                        !isAvailable
+                          ? 'text-gray-400 dark:text-gray-500 line-through'
+                          : 'text-gray-900 dark:text-white'
+                      }`}>
+                        {product.name}
+                      </h3>
+                      <p className="text-gold-500 font-bold text-sm md:text-base">
+                        {priceType === 'wholesale' && product.wholesalePrice > 0 
+                          ? product.wholesalePrice 
+                          : product.price} TND
+                        {priceType === 'wholesale' && product.wholesalePrice > 0 && (
+                          <span className="text-xs text-gray-600 dark:text-gray-400 block mt-0.5 md:mt-1">
+                            (جملة)
+                          </span>
                         )}
-                      </div>
-                    )}
-                    <h3 className={`font-medium text-xs md:text-base mb-1 md:mb-2 line-clamp-2 ${
-                      product.stock <= 0
-                        ? 'text-gray-400 dark:text-gray-500 line-through'
-                        : 'text-gray-900 dark:text-white'
-                    }`}>
-                      {product.name}
-                    </h3>
-                    <p className="text-gold-500 font-bold text-sm md:text-base">
-                      {priceType === 'wholesale' && product.wholesalePrice > 0 
-                        ? product.wholesalePrice 
-                        : product.price} TND
-                      {priceType === 'wholesale' && product.wholesalePrice > 0 && (
-                        <span className="text-xs text-gray-600 dark:text-gray-400 block mt-0.5 md:mt-1">
-                          (جملة)
-                        </span>
-                      )}
-                      {priceType === 'wholesale' && (!product.wholesalePrice || product.wholesalePrice === 0) && (
-                        <span className="text-xs text-gray-600 dark:text-gray-400 block mt-0.5 md:mt-1">
-                          (لا يوجد سعر جملة)
-                        </span>
-                      )}
-                    </p>
-                    <p className={`text-xs md:text-sm mt-1 md:mt-2 ${
-                      product.stock <= 0
-                        ? 'text-red-600 dark:text-red-400 font-semibold'
-                        : product.stock <= 10
-                        ? 'text-yellow-600 dark:text-yellow-400 font-semibold'
-                        : 'text-gray-600 dark:text-gray-400'
-                    }`}>
-                      المخزون: {product.stock || 0}
-                      {product.stock <= 0 && ' (نفد)'}
-                      {product.stock > 0 && product.stock <= 10 && ' (منخفض)'}
-                    </p>
-                  </div>
-                ))}
+                        {priceType === 'wholesale' && (!product.wholesalePrice || product.wholesalePrice === 0) && (
+                          <span className="text-xs text-gray-600 dark:text-gray-400 block mt-0.5 md:mt-1">
+                            (لا يوجد سعر جملة)
+                          </span>
+                        )}
+                      </p>
+                      <p className={`text-xs md:text-sm mt-1 md:mt-2 ${
+                        !isAvailable
+                          ? 'text-red-600 dark:text-red-400 font-semibold'
+                          : totalStock <= 10
+                          ? 'text-yellow-600 dark:text-yellow-400 font-semibold'
+                          : 'text-gray-600 dark:text-gray-400'
+                      }`}>
+                        المخزون: {totalStock}
+                        {!isAvailable && ' (نفد)'}
+                        {isAvailable && totalStock <= 10 && ' (منخفض)'}
+                      </p>
+                    </div>
+                  );
+                })}
                 {filteredRegularProducts.length === 0 && (
                   <div className="col-span-2 sm:col-span-3 text-center py-12 text-gray-600 dark:text-gray-400 text-sm md:text-base">
                     لا توجد منتجات
@@ -1677,7 +1717,11 @@ const POSInterface = () => {
                   }
                   addRegularProductToCart(selectedProductForVariant, selectedVariant, Math.min(quantityToAdd, variantStock));
                 }}
-                disabled={(selectedProductForVariant.variants?.length > 0 && !selectedVariant) || (selectedVariant && selectedVariant.stock !== undefined && selectedVariant.stock <= 0) || (selectedProductForVariant.stock <= 0)}
+                disabled={
+                  (selectedProductForVariant.variants?.length > 0 && !selectedVariant) || 
+                  (selectedVariant && selectedVariant.stock !== undefined && selectedVariant.stock <= 0) || 
+                  (!selectedProductForVariant.variants || selectedProductForVariant.variants.length === 0) && (selectedProductForVariant.stock <= 0)
+                }
                 className="flex-1 px-4 py-3 bg-gold-600 hover:bg-gold-700 disabled:bg-gray-300 dark:disabled:bg-gray-600 disabled:cursor-not-allowed disabled:text-gray-500 dark:disabled:text-gray-400 rounded-lg font-semibold flex items-center justify-center gap-2 text-white"
               >
                 <ShoppingCart size={20} />

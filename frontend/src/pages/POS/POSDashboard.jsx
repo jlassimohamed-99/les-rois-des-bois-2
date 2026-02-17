@@ -86,13 +86,22 @@ const POSDashboard = () => {
 
   useEffect(() => {
     if (user && (authLoading === false)) {
+      console.log('🔄 [POS Dashboard] User loaded, fetching data...', user);
       fetchStats();
       fetchTodayOrders();
+    } else if (!authLoading && !user) {
+      console.warn('⚠️ [POS Dashboard] No user data after auth loading');
     }
   }, [user, authLoading]);
 
   const fetchStats = async () => {
     try {
+      if (!user) {
+        console.warn('⚠️ [POS Dashboard] No user data, cannot fetch stats');
+        setLoading(false);
+        return;
+      }
+
       // Get today's date range (start of day to end of day)
       const today = new Date();
       today.setHours(0, 0, 0, 0);
@@ -101,25 +110,45 @@ const POSDashboard = () => {
       todayEnd.setHours(23, 59, 59, 999);
       const todayEndISO = todayEnd.toISOString();
 
-      // Fetch POS orders (source: 'pos' and status: 'completed') created today
+      // Get cashier ID (support both _id and id formats)
+      const cashierId = user._id || user.id;
+      if (!cashierId) {
+        console.error('❌ [POS Dashboard] No cashier ID found in user object:', user);
+        setLoading(false);
+        return;
+      }
+
+      console.log('📊 [POS Dashboard] Fetching stats for cashier:', cashierId);
+
+      // Fetch POS orders created today by this cashier (all statuses for stats)
       const ordersRes = await api.get('/orders', { 
         params: { 
           source: 'pos',
-          status: 'completed',
           startDate: todayStart,
-          endDate: todayEndISO
+          endDate: todayEndISO,
+          cashierId: cashierId
         } 
-      }).catch(() => ({ data: { data: [] } }));
+      }).catch((err) => {
+        console.error('❌ [POS Dashboard] Error fetching orders:', err);
+        return { data: { data: [] } };
+      });
 
       const orders = ordersRes.data.data || [];
+      console.log(`✅ [POS Dashboard] Found ${orders.length} orders for today`);
 
+      // Calculate stats from all orders (not just completed)
+      const completedOrders = orders.filter(order => order.status === 'completed');
+      
       setStats({
-        todaySales: orders.length,
-        todayRevenue: orders.reduce((sum, order) => sum + (order.total || 0), 0),
+        todaySales: completedOrders.length,
+        todayRevenue: completedOrders.reduce((sum, order) => sum + (order.total || 0), 0),
       });
     } catch (error) {
-      console.error('Error fetching POS stats:', error);
-      // Silent error handling
+      console.error('❌ [POS Dashboard] Error fetching stats:', error);
+      setStats({
+        todaySales: 0,
+        todayRevenue: 0,
+      });
     } finally {
       setLoading(false);
     }
@@ -128,6 +157,14 @@ const POSDashboard = () => {
   const fetchTodayOrders = async () => {
     try {
       setLoadingOrders(true);
+      
+      if (!user) {
+        console.warn('⚠️ [POS Dashboard] No user data, cannot fetch orders');
+        setTodayOrders([]);
+        setLoadingOrders(false);
+        return;
+      }
+
       // Get today's date range (start of day to end of day)
       const today = new Date();
       today.setHours(0, 0, 0, 0);
@@ -136,22 +173,38 @@ const POSDashboard = () => {
       todayEnd.setHours(23, 59, 59, 999);
       const todayEndISO = todayEnd.toISOString();
 
+      // Get cashier ID (support both _id and id formats)
+      const cashierId = user._id || user.id;
+      if (!cashierId) {
+        console.error('❌ [POS Dashboard] No cashier ID found in user object:', user);
+        setTodayOrders([]);
+        setLoadingOrders(false);
+        return;
+      }
+
+      console.log('📋 [POS Dashboard] Fetching orders for cashier:', cashierId);
+
       // Fetch POS orders created today by this cashier
       const ordersRes = await api.get('/orders', { 
         params: { 
           source: 'pos',
           startDate: todayStart,
           endDate: todayEndISO,
-          cashierId: user?._id || user?.id
+          cashierId: cashierId
         } 
-      }).catch(() => ({ data: { data: [] } }));
+      }).catch((err) => {
+        console.error('❌ [POS Dashboard] Error fetching orders:', err);
+        return { data: { data: [] } };
+      });
 
       const orders = ordersRes.data.data || [];
+      console.log(`✅ [POS Dashboard] Found ${orders.length} orders for today`);
+      
       // Sort by creation date (newest first)
       orders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
       setTodayOrders(orders);
     } catch (error) {
-      console.error('Error fetching today orders:', error);
+      console.error('❌ [POS Dashboard] Error fetching today orders:', error);
       setTodayOrders([]);
     } finally {
       setLoadingOrders(false);

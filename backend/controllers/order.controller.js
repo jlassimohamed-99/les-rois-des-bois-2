@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import Order from '../models/Order.model.js';
 import OrderActivity from '../models/OrderActivity.model.js';
 import { buildOrderItems, calculateOrderTotals } from '../utils/orderHelper.js';
@@ -26,7 +27,18 @@ export const getOrders = async (req, res, next) => {
     if (clientId) query.clientId = clientId;
     if (storeId) query.storeId = storeId;
     if (commercialId) query.commercialId = commercialId;
-    if (cashierId) query.cashierId = cashierId;
+    if (cashierId) {
+      // Ensure cashierId is properly formatted as ObjectId
+      try {
+        query.cashierId = mongoose.Types.ObjectId.isValid(cashierId) 
+          ? new mongoose.Types.ObjectId(cashierId) 
+          : cashierId;
+        console.log(`📊 [ORDERS] Filtering by cashierId: ${cashierId}`);
+      } catch (error) {
+        console.error('❌ [ORDERS] Error formatting cashierId:', error);
+        query.cashierId = cashierId;
+      }
+    }
     if (source) query.source = source;
     
     // Handle date filtering

@@ -5,7 +5,7 @@ import SpecialProduct from '../models/SpecialProduct.model.js';
 import Category from '../models/Category.model.js';
 import Setting from '../models/Setting.model.js';
 import Invoice from '../models/Invoice.model.js';
-import { adjustStock, validateStock } from '../utils/inventoryHelper.js';
+import { adjustStock, validateStock, calculateTotalStock } from '../utils/inventoryHelper.js';
 import { buildOrderItems, calculateOrderTotals } from '../utils/orderHelper.js';
 
 export const getStoreDashboard = async (req, res, next) => {
@@ -140,10 +140,20 @@ export const getPOSProducts = async (req, res, next) => {
       Category.find().sort({ name: 1 }),
     ]);
 
+    // Calculate total stock for products with variants
+    const regularProductsWithCalculatedStock = regularProducts.map(product => {
+      const productObj = product.toObject ? product.toObject() : product;
+      const totalStock = calculateTotalStock(productObj);
+      return {
+        ...productObj,
+        stock: totalStock, // Replace stock with calculated total stock
+      };
+    });
+
     res.json({
       success: true,
       data: {
-        regularProducts,
+        regularProducts: regularProductsWithCalculatedStock,
         specialProducts,
         categories,
       },

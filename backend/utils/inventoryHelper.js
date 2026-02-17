@@ -197,3 +197,46 @@ export const validateStock = async (items) => {
   return stockIssues;
 };
 
+/**
+ * Calculate total stock for a product
+ * If product has variants, sum all variant stocks
+ * Otherwise, return product stock
+ * @param {Object} product - Product object (can be plain object or Mongoose document)
+ * @returns {Number} Total stock
+ */
+export const calculateTotalStock = (product) => {
+  if (!product) return 0;
+  
+  // If product has variants, sum all variant stocks
+  if (product.variants && Array.isArray(product.variants) && product.variants.length > 0) {
+    return product.variants.reduce((total, variant) => {
+      const variantStock = variant.stock !== undefined ? variant.stock : 0;
+      return total + variantStock;
+    }, 0);
+  }
+  
+  // If no variants, return product stock
+  return product.stock || 0;
+};
+
+/**
+ * Check if product has any available stock
+ * For products with variants, checks if at least one variant has stock > 0
+ * @param {Object} product - Product object (can be plain object or Mongoose document)
+ * @returns {Boolean} True if product has available stock
+ */
+export const hasAvailableStock = (product) => {
+  if (!product) return false;
+  
+  // If product has variants, check if at least one variant has stock > 0
+  if (product.variants && Array.isArray(product.variants) && product.variants.length > 0) {
+    return product.variants.some((variant) => {
+      const variantStock = variant.stock !== undefined ? variant.stock : 0;
+      return variantStock > 0;
+    });
+  }
+  
+  // If no variants, check product stock
+  return (product.stock || 0) > 0;
+};
+

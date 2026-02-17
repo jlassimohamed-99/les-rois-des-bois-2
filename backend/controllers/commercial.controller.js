@@ -6,6 +6,7 @@ import OrderActivity from '../models/OrderActivity.model.js';
 import Product from '../models/Product.model.js';
 import SpecialProduct from '../models/SpecialProduct.model.js';
 import Category from '../models/Category.model.js';
+import { calculateTotalStock } from '../utils/inventoryHelper.js';
 
 // Get commercial dashboard statistics
 export const getDashboardStats = async (req, res, next) => {
@@ -912,10 +913,20 @@ export const getCommercialProducts = async (req, res, next) => {
       Category.find().sort({ name: 1 }),
     ]);
 
+    // Calculate total stock for products with variants
+    const regularProductsWithCalculatedStock = regularProducts.map(product => {
+      const productObj = product.toObject ? product.toObject() : product;
+      const totalStock = calculateTotalStock(productObj);
+      return {
+        ...productObj,
+        stock: totalStock, // Replace stock with calculated total stock
+      };
+    });
+
     res.status(200).json({
       success: true,
       data: {
-        regularProducts,
+        regularProducts: regularProductsWithCalculatedStock,
         specialProducts,
         categories,
       },

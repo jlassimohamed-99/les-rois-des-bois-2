@@ -1,4 +1,5 @@
 import Product from '../models/Product.model.js';
+import { calculateTotalStock } from '../utils/inventoryHelper.js';
 
 export const getProducts = async (req, res, next) => {
   try {
@@ -25,10 +26,20 @@ export const getProducts = async (req, res, next) => {
       .populate('supplierId', 'name code')
       .sort({ createdAt: -1 });
 
+    // Calculate total stock for products with variants
+    const productsWithCalculatedStock = products.map(product => {
+      const productObj = product.toObject ? product.toObject() : product;
+      const totalStock = calculateTotalStock(productObj);
+      return {
+        ...productObj,
+        stock: totalStock, // Replace stock with calculated total stock
+      };
+    });
+
     res.status(200).json({
       success: true,
-      count: products.length,
-      data: products,
+      count: productsWithCalculatedStock.length,
+      data: productsWithCalculatedStock,
     });
   } catch (error) {
     next(error);
@@ -48,9 +59,17 @@ export const getProduct = async (req, res, next) => {
       });
     }
 
+    // Calculate total stock for products with variants
+    const productObj = product.toObject ? product.toObject() : product;
+    const totalStock = calculateTotalStock(productObj);
+    const productWithCalculatedStock = {
+      ...productObj,
+      stock: totalStock, // Replace stock with calculated total stock
+    };
+
     res.status(200).json({
       success: true,
-      data: product,
+      data: productWithCalculatedStock,
     });
   } catch (error) {
     next(error);

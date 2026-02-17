@@ -795,7 +795,7 @@ const POSInterface = () => {
   const [showCartOnMobile, setShowCartOnMobile] = useState(false);
 
   return (
-    <div className="h-screen flex flex-col bg-white dark:bg-gray-900 text-gray-900 dark:text-white overflow-hidden">
+    <div className="h-screen flex flex-col bg-white dark:bg-gray-900 text-gray-900 dark:text-white overflow-hidden" style={{ touchAction: 'pan-y' }}>
       {/* Header */}
       <div className="bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-3 md:px-6 py-2 md:py-4 flex items-center justify-between flex-shrink-0">
         <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -842,11 +842,11 @@ const POSInterface = () => {
         </div>
       </div>
 
-      <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
+      <div className="flex-1 flex flex-col md:flex-row overflow-hidden min-h-0">
         {/* LEFT PANEL - Product Browser */}
-        <div className={`${showCartOnMobile ? 'hidden' : 'flex'} md:flex w-full md:w-2/3 flex-col border-r border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900`}>
+        <div className={`${showCartOnMobile ? 'hidden' : 'flex'} md:flex w-full md:w-2/3 flex-col border-r border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 min-h-0`}>
           {/* Search and Filters */}
-          <div className="p-2 md:p-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 space-y-2 md:space-y-4">
+          <div className="flex-shrink-0 p-2 md:p-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 space-y-2 md:space-y-4">
             <div className="relative">
               <Search className="absolute right-2 md:right-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500" size={18} />
               <input
@@ -950,7 +950,7 @@ const POSInterface = () => {
           </div>
 
           {/* Products List */}
-          <div className="flex-1 overflow-y-auto p-2 md:p-4">
+          <div className="flex-1 overflow-y-auto p-2 md:p-4 min-h-0" style={{ WebkitOverflowScrolling: 'touch' }}>
             {loadingProducts ? (
               <div className="text-center py-12 text-gray-600 dark:text-gray-400 text-sm md:text-base">جاري التحميل...</div>
             ) : activeTab === 'regular' ? (
@@ -1277,8 +1277,8 @@ const POSInterface = () => {
         </div>
 
         {/* RIGHT PANEL - Cart */}
-        <div className={`${showCartOnMobile ? 'flex' : 'hidden'} md:flex w-full md:w-1/3 flex-col bg-gray-100 dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700`}>
-          <div className="p-3 md:p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+        <div className={`${showCartOnMobile ? 'flex' : 'hidden'} md:flex w-full md:w-1/3 flex-col bg-gray-100 dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 min-h-0`}>
+          <div className="flex-shrink-0 p-3 md:p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
             <h2 className="text-lg md:text-xl font-bold flex items-center gap-2 text-gray-900 dark:text-white">
               <ShoppingCart size={20} className="md:w-6 md:h-6" />
               السلة ({cart.length})
@@ -1291,7 +1291,7 @@ const POSInterface = () => {
             </button>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-2 md:p-4 space-y-2 md:space-y-3">
+          <div className="flex-1 overflow-y-auto p-2 md:p-4 space-y-2 md:space-y-3 min-h-0" style={{ WebkitOverflowScrolling: 'touch' }}>
             {cart.length === 0 ? (
               <div className="text-center py-12 text-gray-500 dark:text-gray-400">
                 <ShoppingCart size={40} className="md:w-12 md:h-12 mx-auto mb-4 opacity-50" />

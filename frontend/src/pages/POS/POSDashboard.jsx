@@ -165,9 +165,19 @@ const POSDashboard = () => {
   return (
     <div className="space-y-6 p-4 md:p-6">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">نقاط البيع</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">لوحة تحكم نقاط البيع</p>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => navigate('/pos?view=interface')}
+            className="flex-shrink-0 px-3 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-lg transition-colors flex items-center gap-2 text-gray-700 dark:text-gray-300"
+            title="العودة إلى واجهة البيع"
+          >
+            <ArrowLeft size={18} />
+            <span className="hidden md:inline">واجهة البيع</span>
+          </button>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">نقاط البيع</h1>
+            <p className="text-gray-600 dark:text-gray-400 mt-1">لوحة تحكم نقاط البيع</p>
+          </div>
         </div>
         <button
           onClick={() => navigate('/pos?view=interface')}

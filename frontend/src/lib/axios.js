@@ -26,10 +26,13 @@ api.interceptors.request.use(
     const token = localStorage.getItem('token');
     const cashierId = localStorage.getItem('cashierId');
     
-    // For cashiers: use cashierId instead of token (no expiration)
-    if (cashierId && !token) {
-      config.headers['X-Cashier-Id'] = cashierId;
-    } else if (token) {
+    // For cashiers: send BOTH token (if available) and cashierId
+    // Token for authentication, cashierId for persistence
+    // Use lowercase header name (HTTP headers are case-insensitive but lowercase is standard)
+    if (cashierId) {
+      config.headers['x-cashier-id'] = cashierId;
+    }
+    if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
 
@@ -39,7 +42,7 @@ api.interceptors.request.use(
     console.log(`📤 [API REQUEST] Headers:`, {
       'Content-Type': config.headers['Content-Type'],
       'Authorization': config.headers.Authorization ? 'Bearer ***' : 'Not set',
-      'X-Cashier-Id': config.headers['X-Cashier-Id'] || 'Not set',
+      'x-cashier-id': config.headers['x-cashier-id'] || 'Not set',
       'withCredentials': config.withCredentials,
     });
     

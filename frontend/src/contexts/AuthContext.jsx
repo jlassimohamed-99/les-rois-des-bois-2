@@ -20,8 +20,8 @@ export const AuthProvider = ({ children }) => {
     const token = localStorage.getItem('token');
     const cashierId = localStorage.getItem('cashierId');
     
-    // For cashiers: use cashierId (no token, always logged in)
-    // Always try to fetch cashier if cashierId exists, even if we have a token
+    // For cashiers: if cashierId exists, try to fetch cashier first
+    // If that fails or cashierId doesn't exist, try token
     if (cashierId) {
       fetchCashier(cashierId);
     } else if (token) {
@@ -37,18 +37,31 @@ export const AuthProvider = ({ children }) => {
       setUser(response.data.user);
       // Ensure cashierId is stored
       localStorage.setItem('cashierId', cashierId);
+      console.log('✅ [AUTH] Cashier authenticated via ID:', cashierId);
     } catch (error) {
-      // If cashier not found or unauthorized, clear cashierId
+      // If cashier not found or unauthorized, try token as fallback
       if (error.response?.status === 404 || error.response?.status === 403) {
-        localStorage.removeItem('cashierId');
-        setUser(null);
-      } else if (error.code === 'ECONNREFUSED' || error.code === 'ERR_NETWORK' || !error.response) {
-        // Backend is not available - keep cashierId, keep trying
-        console.warn('Backend not available, keeping cashierId for retry');
-        // Don't clear user if we have a cashierId - might be temporary backend issue
-        const storedCashierId = localStorage.getItem('cashierId');
-        if (!storedCashierId) {
+        console.warn('⚠️ [AUTH] Cashier ID invalid, trying token fallback');
+        const token = localStorage.getItem('token');
+        if (token) {
+          // Try to fetch user with token
+          await fetchUser();
+        } else {
+          localStorage.removeItem('cashierId');
           setUser(null);
+        }
+      } else if (error.code === 'ECONNREFUSED' || error.code === 'ERR_NETWORK' || !error.response) {
+        // Backend is not available - keep cashierId, try token as fallback
+        console.warn('⚠️ [AUTH] Backend not available, trying token fallback');
+        const token = localStorage.getItem('token');
+        if (token) {
+          await fetchUser();
+        } else {
+          // Keep cashierId for retry when backend comes back
+          const storedCashierId = localStorage.getItem('cashierId');
+          if (!storedCashierId) {
+            setUser(null);
+          }
         }
       }
     } finally {
@@ -93,13 +106,14 @@ export const AuthProvider = ({ children }) => {
       const isCashier = cashierRoles.includes(loggedUser.role);
       
       if (isCashier) {
-        // For cashiers: store ID instead of token (no expiration, always logged in)
+        // For cashiers: store BOTH ID and token (token for API calls, ID for persistence)
+        // This ensures they stay logged in even if token expires
         localStorage.setItem('cashierId', loggedUser.id);
-        localStorage.removeItem('token'); // Remove token if exists
+        localStorage.setItem('token', token); // Keep token for API calls
         setUser(loggedUser);
         toast.success('تم تسجيل الدخول بنجاح - ستبقى متصلاً دائماً');
       } else {
-        // For other roles: use token
+        // For other roles: use token only
         localStorage.setItem('token', token);
         localStorage.removeItem('cashierId'); // Remove cashierId if exists
         setUser(loggedUser);

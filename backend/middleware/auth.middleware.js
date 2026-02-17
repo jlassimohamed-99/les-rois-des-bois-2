@@ -61,8 +61,11 @@ export const protectPOS = async (req, res, next) => {
     }
 
     // Check for cashierId header (for cashiers - no token needed)
+    // Check both lowercase and camelCase versions
     if (req.headers['x-cashier-id']) {
       cashierId = req.headers['x-cashier-id'];
+    } else if (req.headers['X-Cashier-Id']) {
+      cashierId = req.headers['X-Cashier-Id'];
     }
 
     // If we have a cashierId, use it directly (cashiers don't need tokens)

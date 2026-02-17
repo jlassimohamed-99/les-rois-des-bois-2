@@ -54,18 +54,22 @@ const PosLanding = () => {
       const token = localStorage.getItem('token');
       const cashierId = localStorage.getItem('cashierId');
       
-      // For cashiers: check cashierId instead of token (they stay logged in)
-      if (cashierId && !token) {
-        // Cashier is logged in via ID - allow access
-        // If we don't have user data yet, it will be fetched by AuthContext
+      // For cashiers: if we have cashierId OR token, allow access (they stay logged in)
+      // Don't redirect immediately - wait for AuthContext to fetch user
+      if (cashierId || token) {
+        // User has credentials - allow access, AuthContext will fetch user data
+        // Only redirect if we're absolutely sure there's no way to authenticate
         return;
       }
       
+      // Only redirect if we have NO credentials AND NO user
       if (!token && !cashierId && !user) {
+        console.log('❌ [POS] No credentials found, redirecting to login');
         navigate('/login', { replace: true });
         return;
       }
       
+      // If we have a user, check their role
       if (user) {
         const allowedRoles = ['cashier', 'store_cashier', 'saler', 'admin', 'commercial'];
         if (!allowedRoles.includes(user.role)) {
@@ -81,9 +85,23 @@ const PosLanding = () => {
     }
   }, [user, loading, navigate]);
 
-  // If not authenticated or not a cashier, don't render
-  if (!loading && (!user || !['cashier', 'store_cashier', 'saler', 'admin', 'commercial'].includes(user.role))) {
+  // If not authenticated or not a cashier, show loading or nothing
+  // Don't block rendering if we have credentials but user is still loading
+  const token = localStorage.getItem('token');
+  const cashierId = localStorage.getItem('cashierId');
+  const hasCredentials = token || cashierId;
+  
+  if (!loading && !hasCredentials && (!user || !['cashier', 'store_cashier', 'saler', 'admin', 'commercial'].includes(user.role))) {
     return null;
+  }
+  
+  // If still loading and we have credentials, show loading
+  if (loading && hasCredentials) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gold-600"></div>
+      </div>
+    );
   }
 
   // Show dashboard or interface based on view parameter

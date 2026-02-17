@@ -119,16 +119,69 @@ const POSInterface = () => {
 
   // State
   const [products, setProducts] = useState({ regularProducts: [], specialProducts: [], categories: [] });
-  const [cart, setCart] = useState([]);
+  
+  // Load cart from localStorage on mount
+  const loadCartFromStorage = () => {
+    try {
+      const savedCart = localStorage.getItem('posCart');
+      if (savedCart) {
+        return JSON.parse(savedCart);
+      }
+    } catch (error) {
+      console.error('Error loading cart from storage:', error);
+    }
+    return [];
+  };
+  
+  const [cart, setCart] = useState(loadCartFromStorage);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [activeTab, setActiveTab] = useState('regular'); // 'regular' or 'special'
-  const [discount, setDiscount] = useState(0);
-  const [notes, setNotes] = useState('');
+  
+  // Load discount and notes from localStorage
+  const loadDiscountFromStorage = () => {
+    try {
+      const saved = localStorage.getItem('posDiscount');
+      return saved ? parseFloat(saved) : 0;
+    } catch {
+      return 0;
+    }
+  };
+  
+  const loadNotesFromStorage = () => {
+    try {
+      return localStorage.getItem('posNotes') || '';
+    } catch {
+      return '';
+    }
+  };
+  
+  const [discount, setDiscount] = useState(loadDiscountFromStorage);
+  const [notes, setNotes] = useState(loadNotesFromStorage);
   const [vat, setVat] = useState(0);
   const [loading, setLoading] = useState(false);
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [priceType, setPriceType] = useState('retail'); // 'retail' or 'wholesale'
+  
+  // Save cart to localStorage whenever it changes
+  useEffect(() => {
+    try {
+      localStorage.setItem('posCart', JSON.stringify(cart));
+      console.log('💾 [POS] Cart saved to localStorage:', cart.length, 'items');
+    } catch (error) {
+      console.error('Error saving cart to storage:', error);
+    }
+  }, [cart]);
+  
+  // Save discount and notes to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('posDiscount', discount.toString());
+      localStorage.setItem('posNotes', notes);
+    } catch (error) {
+      console.error('Error saving discount/notes to storage:', error);
+    }
+  }, [discount, notes]);
   
   // Commercial/Admin mode - client selection
   const isCommercial = user?.role === 'commercial';
@@ -647,6 +700,10 @@ const POSInterface = () => {
       setCart([]);
       setDiscount(0);
       setNotes('');
+      // Clear from localStorage
+      localStorage.removeItem('posCart');
+      localStorage.removeItem('posDiscount');
+      localStorage.removeItem('posNotes');
     }
   };
 
@@ -761,6 +818,10 @@ const POSInterface = () => {
       setDiscount(0);
       setNotes('');
       setSearchTerm('');
+      // Clear from localStorage after successful order
+      localStorage.removeItem('posCart');
+      localStorage.removeItem('posDiscount');
+      localStorage.removeItem('posNotes');
       if (canSelectClient) {
         setSelectedClient(null);
       }

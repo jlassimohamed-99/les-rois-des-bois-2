@@ -86,11 +86,19 @@ const POSDashboard = () => {
 
   useEffect(() => {
     if (user && (authLoading === false)) {
-      console.log('🔄 [POS Dashboard] User loaded, fetching data...', user);
+      console.log('🔄 [POS Dashboard] User loaded, fetching data...');
+      console.log('👤 [POS Dashboard] User object:', user);
+      console.log('🆔 [POS Dashboard] User ID:', user._id || user.id);
+      console.log('📧 [POS Dashboard] User email:', user.email);
+      console.log('👔 [POS Dashboard] User role:', user.role);
       fetchStats();
       fetchTodayOrders();
     } else if (!authLoading && !user) {
       console.warn('⚠️ [POS Dashboard] No user data after auth loading');
+      const token = localStorage.getItem('token');
+      const cashierId = localStorage.getItem('cashierId');
+      console.log('🔑 [POS Dashboard] Token exists:', !!token);
+      console.log('🔑 [POS Dashboard] CashierId exists:', !!cashierId);
     }
   }, [user, authLoading]);
 
@@ -110,15 +118,23 @@ const POSDashboard = () => {
       todayEnd.setHours(23, 59, 59, 999);
       const todayEndISO = todayEnd.toISOString();
 
-      // Get cashier ID (support both _id and id formats)
-      const cashierId = user._id || user.id;
+      // Get cashier ID (API returns 'id' not '_id')
+      let cashierId = user.id || user._id;
+      if (cashierId && typeof cashierId === 'object') {
+        cashierId = cashierId.toString();
+      }
       if (!cashierId) {
-        console.error('❌ [POS Dashboard] No cashier ID found in user object:', user);
+        console.error('❌ [POS Dashboard] No cashier ID found in user object');
+        console.error('❌ [POS Dashboard] User object keys:', Object.keys(user));
+        console.error('❌ [POS Dashboard] User object:', JSON.stringify(user, null, 2));
         setLoading(false);
         return;
       }
 
+      // Ensure cashierId is a string
+      cashierId = String(cashierId);
       console.log('📊 [POS Dashboard] Fetching stats for cashier:', cashierId);
+      console.log('📊 [POS Dashboard] Cashier ID type:', typeof cashierId);
 
       // Fetch POS orders created today by this cashier (all statuses for stats)
       const ordersRes = await api.get('/orders', { 
@@ -173,16 +189,23 @@ const POSDashboard = () => {
       todayEnd.setHours(23, 59, 59, 999);
       const todayEndISO = todayEnd.toISOString();
 
-      // Get cashier ID (support both _id and id formats)
-      const cashierId = user._id || user.id;
+      // Get cashier ID (API returns 'id' not '_id')
+      let cashierId = user.id || user._id;
+      if (cashierId && typeof cashierId === 'object') {
+        cashierId = cashierId.toString();
+      }
       if (!cashierId) {
-        console.error('❌ [POS Dashboard] No cashier ID found in user object:', user);
+        console.error('❌ [POS Dashboard] No cashier ID found in user object');
+        console.error('❌ [POS Dashboard] User object keys:', Object.keys(user));
         setTodayOrders([]);
         setLoadingOrders(false);
         return;
       }
 
+      // Ensure cashierId is a string
+      cashierId = String(cashierId);
       console.log('📋 [POS Dashboard] Fetching orders for cashier:', cashierId);
+      console.log('📋 [POS Dashboard] Cashier ID type:', typeof cashierId);
 
       // Fetch POS orders created today by this cashier
       const ordersRes = await api.get('/orders', { 
@@ -199,6 +222,16 @@ const POSDashboard = () => {
 
       const orders = ordersRes.data.data || [];
       console.log(`✅ [POS Dashboard] Found ${orders.length} orders for today`);
+      if (orders.length > 0) {
+        console.log('📦 [POS Dashboard] Sample order:', {
+          _id: orders[0]._id,
+          orderNumber: orders[0].orderNumber,
+          cashierId: orders[0].cashierId,
+          createdAt: orders[0].createdAt,
+          total: orders[0].total,
+          status: orders[0].status
+        });
+      }
       
       // Sort by creation date (newest first)
       orders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));

@@ -66,6 +66,8 @@ export const getOrders = async (req, res, next) => {
       ];
     }
 
+    console.log('🔍 [ORDERS] Query:', JSON.stringify(query, null, 2));
+    
     const [orders, total] = await Promise.all([
       Order.find(query)
         .populate('clientId', 'name email phone')
@@ -78,6 +80,13 @@ export const getOrders = async (req, res, next) => {
         .limit(parseInt(limit)),
       Order.countDocuments(query),
     ]);
+    
+    console.log(`✅ [ORDERS] Found ${orders.length} orders (total: ${total})`);
+    if (orders.length > 0 && query.cashierId) {
+      console.log('👤 [ORDERS] Sample order cashierId:', orders[0].cashierId);
+      console.log('👤 [ORDERS] Query cashierId:', query.cashierId);
+      console.log('👤 [ORDERS] Match:', orders[0].cashierId?.toString() === query.cashierId.toString());
+    }
 
     res.status(200).json({
       success: true,

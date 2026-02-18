@@ -890,7 +890,14 @@ export const generateBonCommande = async (req, res, next) => {
       }
     });
   } catch (error) {
-    console.error('Error generating Bon de Commande PDF:', error);
+    console.error('❌ [BON COMMANDE CONTROLLER] Error:', error);
+    console.error('❌ [BON COMMANDE CONTROLLER] Error stack:', error.stack);
+    if (!res.headersSent) {
+      return res.status(500).json({
+        success: false,
+        message: error.message || 'حدث خطأ أثناء إنشاء ملف PDF',
+      });
+    }
     next(error);
   }
 };

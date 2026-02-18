@@ -14,6 +14,13 @@ const __dirname = path.dirname(__filename);
 export const generateBonCommandePDF = async (order) => {
   let browser;
   try {
+    console.log('📄 [BON COMMANDE] Starting PDF generation for order:', order.orderNumber);
+    
+    // Validate order data
+    if (!order || !order.orderNumber) {
+      throw new Error('Order data is invalid');
+    }
+
     // Create uploads/bon-commande directory if it doesn't exist
     const bonCommandeDir = path.join(__dirname, '..', 'uploads', 'bon-commande');
     if (!fs.existsSync(bonCommandeDir)) {
@@ -23,7 +30,7 @@ export const generateBonCommandePDF = async (order) => {
     const pdfPath = path.join(bonCommandeDir, `bon-commande-${order.orderNumber}.pdf`);
 
     // Prepare order items data
-    const items = order.items.map(item => {
+    const items = (order.items || []).map(item => {
       const productName = typeof item.productId === 'object' && item.productId?.name
         ? item.productId.name
         : item.productName || 'N/A';
@@ -35,6 +42,8 @@ export const generateBonCommandePDF = async (order) => {
         amount: item.total ? item.total.toFixed(2) : '0.00', // Total of each product (quantity * unitPrice)
       };
     });
+
+    console.log('📄 [BON COMMANDE] Items count:', items.length);
 
     // Calculate total of the full order
     const orderTotal = order.total ? order.total.toFixed(2) : 
@@ -344,19 +353,33 @@ export const generateBonCommandePDF = async (order) => {
 </html>
     `;
 
+    console.log('📄 [BON COMMANDE] Launching Puppeteer...');
+    
     // Launch browser
     browser = await puppeteer.launch({
       headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-accelerated-2d-canvas',
+        '--no-first-run',
+        '--no-zygote',
+        '--single-process',
+      ],
     });
 
+    console.log('📄 [BON COMMANDE] Browser launched, creating page...');
     const page = await browser.newPage();
     
-    // Set content
+    console.log('📄 [BON COMMANDE] Setting HTML content...');
+    // Set content with timeout
     await page.setContent(html, {
       waitUntil: 'networkidle0',
+      timeout: 30000,
     });
 
+    console.log('📄 [BON COMMANDE] Generating PDF...');
     // Generate PDF with exact margins
     await page.pdf({
       path: pdfPath,
@@ -371,12 +394,22 @@ export const generateBonCommandePDF = async (order) => {
       },
     });
 
+    console.log('📄 [BON COMMANDE] PDF generated successfully:', pdfPath);
     await browser.close();
     
-    return `/uploads/bon-commande/bon-commande-${order.orderNumber}.pdf`;
+    const relativePath = `/uploads/bon-commande/bon-commande-${order.orderNumber}.pdf`;
+    console.log('📄 [BON COMMANDE] Returning path:', relativePath);
+    return relativePath;
   } catch (error) {
+    console.error('❌ [BON COMMANDE] Error generating PDF:', error);
+    console.error('❌ [BON COMMANDE] Error message:', error.message);
+    console.error('❌ [BON COMMANDE] Error stack:', error.stack);
     if (browser) {
-      await browser.close();
+      try {
+        await browser.close();
+      } catch (closeError) {
+        console.error('❌ [BON COMMANDE] Error closing browser:', closeError);
+      }
     }
     throw error;
   }

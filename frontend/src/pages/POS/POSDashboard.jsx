@@ -179,7 +179,12 @@ const POSDashboard = () => {
     try {
       // First, return the old product (restock)
       const oldItem = exchangeItem;
-      const oldProductRes = await api.get(`/products/${oldItem.productId}`);
+      // Handle both populated and non-populated productId
+      const oldProductId = typeof oldItem.productId === 'object' && oldItem.productId?._id 
+        ? oldItem.productId._id.toString() 
+        : oldItem.productId?.toString() || oldItem.productId;
+      
+      const oldProductRes = await api.get(`/products/${oldProductId}`);
       const oldProduct = oldProductRes.data.data;
       
       if (oldProduct.variants && Array.isArray(oldProduct.variants) && oldItem.variant) {
@@ -196,7 +201,7 @@ const POSDashboard = () => {
         });
       } else {
         // Update product stock
-        await api.put(`/products/${oldItem.productId}`, {
+        await api.put(`/products/${oldProductId}`, {
           stock: (oldProduct.stock || 0) + oldItem.quantity,
         });
       }
@@ -223,15 +228,28 @@ const POSDashboard = () => {
       }
 
       // Update order items
+      const oldItemProductId = typeof oldItem.productId === 'object' && oldItem.productId?._id 
+        ? oldItem.productId._id.toString() 
+        : oldItem.productId?.toString() || oldItem.productId;
+      
+      // Ensure newProduct._id is a string
+      const newProductId = typeof newProduct._id === 'object' && newProduct._id?.toString
+        ? newProduct._id.toString()
+        : newProduct._id?.toString() || newProduct._id;
+      
       const updatedItems = selectedOrder.items.map((item) => {
+        const itemProductId = typeof item.productId === 'object' && item.productId?._id 
+          ? item.productId._id.toString() 
+          : item.productId?.toString() || item.productId;
+        
         if (item._id?.toString() === oldItem._id?.toString() || 
-            (item.productId === oldItem.productId && JSON.stringify(item.variant) === JSON.stringify(oldItem.variant))) {
+            (itemProductId === oldItemProductId && JSON.stringify(item.variant) === JSON.stringify(oldItem.variant))) {
           const unitPrice = variant?.additionalPrice 
             ? (newProduct.price + variant.additionalPrice)
             : newProduct.price;
           return {
             ...item,
-            productId: newProduct._id,
+            productId: newProductId, // Use the string version
             productName: newProduct.name,
             variant: variant ? {
               value: variant.value,
@@ -243,7 +261,14 @@ const POSDashboard = () => {
             total: quantity * unitPrice,
           };
         }
-        return item;
+        // Ensure all productId are strings, not objects
+        const cleanProductId = typeof item.productId === 'object' && item.productId?._id 
+          ? item.productId._id.toString() 
+          : item.productId?.toString() || item.productId;
+        return {
+          ...item,
+          productId: cleanProductId,
+        };
       });
 
       // Recalculate totals
@@ -271,7 +296,12 @@ const POSDashboard = () => {
   const handleReturn = async (quantity, reason) => {
     try {
       const item = returnItem;
-      const productRes = await api.get(`/products/${item.productId}`);
+      // Handle both populated and non-populated productId
+      const productId = typeof item.productId === 'object' && item.productId?._id 
+        ? item.productId._id.toString() 
+        : item.productId?.toString() || item.productId;
+      
+      const productRes = await api.get(`/products/${productId}`);
       const product = productRes.data.data;
       
       // Restock the product
@@ -287,27 +317,40 @@ const POSDashboard = () => {
           variants: updatedVariants,
         });
       } else {
-        await api.put(`/products/${item.productId}`, {
+        await api.put(`/products/${productId}`, {
           stock: (product.stock || 0) + quantity,
         });
       }
 
       // Update order items - remove or reduce quantity
+      const returnProductId = typeof returnItem.productId === 'object' && returnItem.productId?._id 
+        ? returnItem.productId._id.toString() 
+        : returnItem.productId?.toString() || returnItem.productId;
+      
       const updatedItems = selectedOrder.items
         .map((item) => {
+          const itemProductId = typeof item.productId === 'object' && item.productId?._id 
+            ? item.productId._id.toString() 
+            : item.productId?.toString() || item.productId;
+          
           if (item._id?.toString() === returnItem._id?.toString() || 
-              (item.productId === returnItem.productId && JSON.stringify(item.variant) === JSON.stringify(returnItem.variant))) {
+              (itemProductId === returnProductId && JSON.stringify(item.variant) === JSON.stringify(returnItem.variant))) {
             const newQuantity = item.quantity - quantity;
             if (newQuantity <= 0) {
               return null; // Remove item
             }
             return {
               ...item,
+              productId: itemProductId, // Ensure productId is a string
               quantity: newQuantity,
               total: newQuantity * item.unitPrice,
             };
           }
-          return item;
+          // Ensure all productId are strings, not objects
+          return {
+            ...item,
+            productId: itemProductId,
+          };
         })
         .filter(Boolean);
 

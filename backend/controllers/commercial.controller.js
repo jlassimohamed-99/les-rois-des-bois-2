@@ -342,6 +342,7 @@ export const createClient = async (req, res, next) => {
       name,
       email,
       phone,
+      password,
       clientType,
       companyName,
       taxId,
@@ -354,6 +355,21 @@ export const createClient = async (req, res, next) => {
       return res.status(400).json({
         success: false,
         message: 'الاسم، البريد الإلكتروني، ورقم الهاتف مطلوبة',
+      });
+    }
+
+    // Password is required for new clients
+    if (!password) {
+      return res.status(400).json({
+        success: false,
+        message: 'كلمة المرور مطلوبة لإنشاء حساب للعميل',
+      });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: 'كلمة المرور يجب أن تكون 6 أحرف على الأقل',
       });
     }
 
@@ -370,6 +386,7 @@ export const createClient = async (req, res, next) => {
       name,
       email,
       phone,
+      password,
       role: 'client',
       commercialId: commercialId,
       clientType,

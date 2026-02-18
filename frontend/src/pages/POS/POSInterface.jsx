@@ -585,17 +585,92 @@ const POSInterface = () => {
       return;
     }
 
+    // Calculate final price with modifications
+    let basePrice = priceType === 'wholesale' && productForQuantity.wholesalePrice > 0 
+      ? productForQuantity.wholesalePrice 
+      : productForQuantity.price;
+    
+    let finalPrice = basePrice;
+    
+    if (priceType === 'wholesale') {
+      if (customPrice !== null && customPrice > 0) {
+        finalPrice = customPrice;
+      }
+    } else {
+      if (priceDiscount > 0) {
+        finalPrice = Math.max(0, basePrice - priceDiscount);
+      } else if (priceDiscountPercent > 0) {
+        const discountAmount = (basePrice * priceDiscountPercent) / 100;
+        finalPrice = Math.max(0, basePrice - discountAmount);
+      }
+    }
+
     // Save product and quantity before closing modal
     const productToAdd = productForQuantity;
     const qtyToAdd = quantityToAdd;
+    const customPriceToUse = priceType === 'wholesale' ? customPrice : null;
+    const discountToUse = priceType === 'retail' ? (priceDiscount > 0 ? priceDiscount : (priceDiscountPercent > 0 ? (basePrice * priceDiscountPercent) / 100 : 0)) : 0;
 
     // Close modal first
     setShowQuantityModal(false);
     setProductForQuantity(null);
     setQuantityToAdd(1);
+    setCustomPrice(null);
+    setPriceDiscount(0);
+    setPriceDiscountPercent(0);
 
-    // Then add to cart with the selected quantity
-    addRegularProductToCart(productToAdd, null, qtyToAdd);
+    // Then add to cart with modified price
+    addRegularProductToCartWithPrice(productToAdd, null, qtyToAdd, customPriceToUse, discountToUse);
+  };
+
+  // Handle confirming price modification and adding to cart
+  const confirmPriceAndAddToCart = () => {
+    if (!productForPrice) {
+      toast.error('لم يتم العثور على المنتج');
+      return;
+    }
+
+    // Calculate final price
+    const variantPrice = variantForPrice?.additionalPrice || 0;
+    let basePrice = priceType === 'wholesale' && productForPrice.wholesalePrice > 0 
+      ? productForPrice.wholesalePrice 
+      : productForPrice.price;
+    
+    let finalPrice = basePrice + variantPrice;
+    
+    if (priceType === 'wholesale') {
+      // For wholesale: use custom price if provided
+      if (customPrice !== null && customPrice > 0) {
+        finalPrice = customPrice + variantPrice;
+      }
+    } else {
+      // For retail: apply discount
+      if (priceDiscount > 0) {
+        finalPrice = Math.max(0, basePrice - priceDiscount) + variantPrice;
+      } else if (priceDiscountPercent > 0) {
+        const discountAmount = (basePrice * priceDiscountPercent) / 100;
+        finalPrice = Math.max(0, basePrice - discountAmount) + variantPrice;
+      }
+    }
+
+    // Close price modal
+    setShowPriceModal(false);
+    const productToAdd = productForPrice;
+    const variantToAdd = variantForPrice;
+    const qtyToAdd = quantityForPrice;
+    const customPriceToUse = priceType === 'wholesale' ? customPrice : null;
+    const discountToUse = priceType === 'retail' ? (priceDiscount > 0 ? priceDiscount : (priceDiscountPercent > 0 ? (basePrice * priceDiscountPercent) / 100 : 0)) : 0;
+
+    // Reset price modal state
+    setProductForPrice(null);
+    setVariantForPrice(null);
+    setQuantityForPrice(1);
+    setCustomPrice(null);
+    setPriceDiscount(0);
+    setPriceDiscountPercent(0);
+
+    // Add to cart with modified price
+    addRegularProductToCartWithPrice(productToAdd, variantToAdd, qtyToAdd, customPriceToUse, discountToUse);
   };
 
   // Helper function to get available variants from combinations
@@ -1794,8 +1869,8 @@ const POSInterface = () => {
               </div>
 
               {/* Price Display */}
-              <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-4">
-                <div className="flex justify-between items-center">
+              <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-4 mb-4">
+                <div className="flex justify-between items-center mb-2">
                   <span className="text-gray-600 dark:text-gray-400">السعر الأساسي:</span>
                   <span className="text-gray-900 dark:text-white font-medium">
                     {priceType === 'wholesale' && selectedProductForVariant.wholesalePrice > 0 
@@ -1816,21 +1891,134 @@ const POSInterface = () => {
                     </span>
                   </div>
                 )}
-                <div className="flex justify-between items-center pt-2 mt-2 border-t border-gray-300 dark:border-gray-600">
-                  <span className="text-lg font-bold text-gray-900 dark:text-white">السعر للقطعة الواحدة:</span>
+              </div>
+
+              {/* Price Modification Section */}
+              {priceType === 'retail' ? (
+                // Retail: Discount options
+                <div className="space-y-4 mb-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      خصم بالمبلغ (TND)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={priceDiscount || ''}
+                      onChange={(e) => {
+                        const discount = parseFloat(e.target.value) || 0;
+                        setPriceDiscount(discount);
+                        setPriceDiscountPercent(0);
+                      }}
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gold-500"
+                      placeholder="0.00"
+                    />
+                  </div>
+                  <div className="text-center text-gray-500 dark:text-gray-400">أو</div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      خصم بالنسبة المئوية (%)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.01"
+                      value={priceDiscountPercent || ''}
+                      onChange={(e) => {
+                        const percent = parseFloat(e.target.value) || 0;
+                        setPriceDiscountPercent(percent);
+                        setPriceDiscount(0);
+                      }}
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gold-500"
+                      placeholder="0.00"
+                    />
+                  </div>
+                </div>
+              ) : (
+                // Wholesale: Custom price
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    السعر المخصص للقطعة الواحدة (TND)
+                    {selectedVariant?.additionalPrice > 0 && (
+                      <span className="text-xs text-gray-500 dark:text-gray-400 block mt-1">
+                        (السعر الأساسي فقط، سيتم إضافة {selectedVariant.additionalPrice} TND للمتغير)
+                      </span>
+                    )}
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={customPrice !== null ? customPrice : ''}
+                    onChange={(e) => {
+                      const price = parseFloat(e.target.value);
+                      setCustomPrice(isNaN(price) ? null : price);
+                    }}
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gold-500"
+                    placeholder={(() => {
+                      const basePrice = selectedProductForVariant.wholesalePrice > 0 
+                        ? selectedProductForVariant.wholesalePrice 
+                        : selectedProductForVariant.price;
+                      return basePrice.toFixed(2);
+                    })()}
+                  />
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    اتركه فارغاً لاستخدام السعر الافتراضي
+                  </p>
+                </div>
+              )}
+
+              {/* Final Price Display */}
+              <div className="bg-gold-50 dark:bg-gold-900/20 rounded-lg p-4 mb-4">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-lg font-bold text-gray-900 dark:text-white">السعر النهائي للقطعة:</span>
                   <span className="text-xl font-bold text-gold-600 dark:text-gold-500">
-                    {(priceType === 'wholesale' && selectedProductForVariant.wholesalePrice > 0 
-                      ? selectedProductForVariant.wholesalePrice 
-                      : selectedProductForVariant.price) + (selectedVariant?.additionalPrice || 0)} TND
+                    {(() => {
+                      const variantPrice = selectedVariant?.additionalPrice || 0;
+                      let basePrice = priceType === 'wholesale' && selectedProductForVariant.wholesalePrice > 0 
+                        ? selectedProductForVariant.wholesalePrice 
+                        : selectedProductForVariant.price;
+                      
+                      if (priceType === 'wholesale' && customPrice !== null && customPrice > 0) {
+                        basePrice = customPrice;
+                      } else if (priceType === 'retail') {
+                        if (priceDiscount > 0) {
+                          basePrice = Math.max(0, basePrice - priceDiscount);
+                        } else if (priceDiscountPercent > 0) {
+                          const discountAmount = (basePrice * priceDiscountPercent) / 100;
+                          basePrice = Math.max(0, basePrice - discountAmount);
+                        }
+                      }
+                      
+                      return (basePrice + variantPrice).toFixed(2);
+                    })} TND
                   </span>
                 </div>
                 {quantityToAdd > 1 && (
                   <div className="flex justify-between items-center pt-2 mt-2 border-t border-gold-600 dark:border-gold-600">
                     <span className="text-lg font-bold text-gray-900 dark:text-white">الإجمالي ({quantityToAdd} {quantityToAdd > 1 ? 'قطعة' : 'قطعة'}):</span>
                     <span className="text-2xl font-bold text-gold-600 dark:text-gold-500">
-                      {((priceType === 'wholesale' && selectedProductForVariant.wholesalePrice > 0 
-                        ? selectedProductForVariant.wholesalePrice 
-                        : selectedProductForVariant.price) + (selectedVariant?.additionalPrice || 0)) * quantityToAdd} TND
+                      {(() => {
+                        const variantPrice = selectedVariant?.additionalPrice || 0;
+                        let basePrice = priceType === 'wholesale' && selectedProductForVariant.wholesalePrice > 0 
+                          ? selectedProductForVariant.wholesalePrice 
+                          : selectedProductForVariant.price;
+                        
+                        if (priceType === 'wholesale' && customPrice !== null && customPrice > 0) {
+                          basePrice = customPrice;
+                        } else if (priceType === 'retail') {
+                          if (priceDiscount > 0) {
+                            basePrice = Math.max(0, basePrice - priceDiscount);
+                          } else if (priceDiscountPercent > 0) {
+                            const discountAmount = (basePrice * priceDiscountPercent) / 100;
+                            basePrice = Math.max(0, basePrice - discountAmount);
+                          }
+                        }
+                        
+                        return ((basePrice + variantPrice) * quantityToAdd).toFixed(2);
+                      })} TND
                     </span>
                   </div>
                 )}
@@ -1844,6 +2032,9 @@ const POSInterface = () => {
                   setSelectedProductForVariant(null);
                   setSelectedVariant(null);
                   setQuantityToAdd(1);
+                  setCustomPrice(null);
+                  setPriceDiscount(0);
+                  setPriceDiscountPercent(0);
                 }}
                 className="flex-1 px-4 py-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-lg font-semibold text-gray-900 dark:text-white"
               >
@@ -1865,18 +2056,45 @@ const POSInterface = () => {
                     toast.warning(`الكمية المتاحة فقط: ${variantStock}. سيتم إضافة ${variantStock} فقط`);
                     setQuantityToAdd(variantStock);
                   }
-                  // Save values before closing modal
+                  
+                  // Calculate final price with modifications
+                  const variantPrice = selectedVariant?.additionalPrice || 0;
+                  let basePrice = priceType === 'wholesale' && selectedProductForVariant.wholesalePrice > 0 
+                    ? selectedProductForVariant.wholesalePrice 
+                    : selectedProductForVariant.price;
+                  
+                  let finalPrice = basePrice + variantPrice;
+                  
+                  if (priceType === 'wholesale') {
+                    if (customPrice !== null && customPrice > 0) {
+                      finalPrice = customPrice + variantPrice;
+                    }
+                  } else {
+                    if (priceDiscount > 0) {
+                      finalPrice = Math.max(0, basePrice - priceDiscount) + variantPrice;
+                    } else if (priceDiscountPercent > 0) {
+                      const discountAmount = (basePrice * priceDiscountPercent) / 100;
+                      finalPrice = Math.max(0, basePrice - discountAmount) + variantPrice;
+                    }
+                  }
+
+                  // Save values
                   const productToAdd = selectedProductForVariant;
                   const variantToAdd = selectedVariant;
                   const finalQty = Math.min(quantityToAdd, variantStock);
+                  const customPriceToUse = priceType === 'wholesale' ? customPrice : null;
+                  const discountToUse = priceType === 'retail' ? (priceDiscount > 0 ? priceDiscount : (priceDiscountPercent > 0 ? (basePrice * priceDiscountPercent) / 100 : 0)) : 0;
                   
                   // Close variant modal
                   setSelectedProductForVariant(null);
                   setSelectedVariant(null);
                   setQuantityToAdd(1);
+                  setCustomPrice(null);
+                  setPriceDiscount(0);
+                  setPriceDiscountPercent(0);
                   
-                  // Open price modal
-                  addRegularProductToCart(productToAdd, variantToAdd, finalQty);
+                  // Add to cart with modified price
+                  addRegularProductToCartWithPrice(productToAdd, variantToAdd, finalQty, customPriceToUse, discountToUse);
                 }}
                 disabled={
                   (selectedProductForVariant.variants?.length > 0 && !selectedVariant) || 
@@ -1962,10 +2180,10 @@ const POSInterface = () => {
               </div>
 
               {/* Price Display */}
-              <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600 dark:text-gray-400">السعر للقطعة:</span>
-                  <span className="text-gray-900 dark:text-white font-medium text-lg">
+              <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-4 mb-4">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-gray-600 dark:text-gray-400">السعر الأساسي:</span>
+                  <span className="text-gray-900 dark:text-white font-medium">
                     {priceType === 'wholesale' && productForQuantity.wholesalePrice > 0 
                       ? productForQuantity.wholesalePrice 
                       : productForQuantity.price} TND
@@ -1974,13 +2192,127 @@ const POSInterface = () => {
                     )}
                   </span>
                 </div>
+              </div>
+
+              {/* Price Modification Section */}
+              {priceType === 'retail' ? (
+                // Retail: Discount options
+                <div className="space-y-4 mb-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      خصم بالمبلغ (TND)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={priceDiscount || ''}
+                      onChange={(e) => {
+                        const discount = parseFloat(e.target.value) || 0;
+                        setPriceDiscount(discount);
+                        setPriceDiscountPercent(0);
+                      }}
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gold-500"
+                      placeholder="0.00"
+                    />
+                  </div>
+                  <div className="text-center text-gray-500 dark:text-gray-400">أو</div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      خصم بالنسبة المئوية (%)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.01"
+                      value={priceDiscountPercent || ''}
+                      onChange={(e) => {
+                        const percent = parseFloat(e.target.value) || 0;
+                        setPriceDiscountPercent(percent);
+                        setPriceDiscount(0);
+                      }}
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gold-500"
+                      placeholder="0.00"
+                    />
+                  </div>
+                </div>
+              ) : (
+                // Wholesale: Custom price
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    السعر المخصص للقطعة الواحدة (TND)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={customPrice !== null ? customPrice : ''}
+                    onChange={(e) => {
+                      const price = parseFloat(e.target.value);
+                      setCustomPrice(isNaN(price) ? null : price);
+                    }}
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-gold-500"
+                    placeholder={(() => {
+                      const basePrice = productForQuantity.wholesalePrice > 0 
+                        ? productForQuantity.wholesalePrice 
+                        : productForQuantity.price;
+                      return basePrice.toFixed(2);
+                    })()}
+                  />
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    اتركه فارغاً لاستخدام السعر الافتراضي
+                  </p>
+                </div>
+              )}
+
+              {/* Final Price Display */}
+              <div className="bg-gold-50 dark:bg-gold-900/20 rounded-lg p-4 mb-4">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-lg font-bold text-gray-900 dark:text-white">السعر النهائي للقطعة:</span>
+                  <span className="text-xl font-bold text-gold-600 dark:text-gold-500">
+                    {(() => {
+                      let basePrice = priceType === 'wholesale' && productForQuantity.wholesalePrice > 0 
+                        ? productForQuantity.wholesalePrice 
+                        : productForQuantity.price;
+                      
+                      if (priceType === 'wholesale' && customPrice !== null && customPrice > 0) {
+                        basePrice = customPrice;
+                      } else if (priceType === 'retail') {
+                        if (priceDiscount > 0) {
+                          basePrice = Math.max(0, basePrice - priceDiscount);
+                        } else if (priceDiscountPercent > 0) {
+                          const discountAmount = (basePrice * priceDiscountPercent) / 100;
+                          basePrice = Math.max(0, basePrice - discountAmount);
+                        }
+                      }
+                      
+                      return basePrice.toFixed(2);
+                    })()} TND
+                  </span>
+                </div>
                 {quantityToAdd > 1 && (
                   <div className="flex justify-between items-center pt-2 mt-2 border-t border-gold-600 dark:border-gold-600">
                     <span className="text-lg font-bold text-gray-900 dark:text-white">الإجمالي ({quantityToAdd} {quantityToAdd > 1 ? 'قطعة' : 'قطعة'}):</span>
                     <span className="text-2xl font-bold text-gold-600 dark:text-gold-500">
-                      {(priceType === 'wholesale' && productForQuantity.wholesalePrice > 0 
-                        ? productForQuantity.wholesalePrice 
-                        : productForQuantity.price) * quantityToAdd} TND
+                      {(() => {
+                        let basePrice = priceType === 'wholesale' && productForQuantity.wholesalePrice > 0 
+                          ? productForQuantity.wholesalePrice 
+                          : productForQuantity.price;
+                        
+                        if (priceType === 'wholesale' && customPrice !== null && customPrice > 0) {
+                          basePrice = customPrice;
+                        } else if (priceType === 'retail') {
+                          if (priceDiscount > 0) {
+                            basePrice = Math.max(0, basePrice - priceDiscount);
+                          } else if (priceDiscountPercent > 0) {
+                            const discountAmount = (basePrice * priceDiscountPercent) / 100;
+                            basePrice = Math.max(0, basePrice - discountAmount);
+                          }
+                        }
+                        
+                        return (basePrice * quantityToAdd).toFixed(2);
+                      })()} TND
                     </span>
                   </div>
                 )}
@@ -1994,6 +2326,9 @@ const POSInterface = () => {
                   setShowQuantityModal(false);
                   setProductForQuantity(null);
                   setQuantityToAdd(1);
+                  setCustomPrice(null);
+                  setPriceDiscount(0);
+                  setPriceDiscountPercent(0);
                 }}
                 className="flex-1 px-4 py-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-lg font-semibold text-gray-900 dark:text-white"
               >

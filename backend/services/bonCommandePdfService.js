@@ -145,128 +145,202 @@ export const generateBonCommandePDF = async (order) => {
           align: 'left'
         });
 
-      // Main table
-      const tableY = recipientY + 25;
-      const tableWidth = 595.28 - marginLeft - marginRight;
-      const tableHeight = 400; // Approximate height for rows
+      // Table dimensions
+      const headerRowHeight = 20;
+      const rowHeight = 16; // Row height for better visibility
+      const totalRowHeight = 25;
+      const maxRowsPerPage = 12; // Maximum rows per page (excluding header and total)
       
       // Column widths
+      const tableWidth = 595.28 - marginLeft - marginRight;
       const colQte = tableWidth * 0.12; // ~12%
       const colDesignation = tableWidth * 0.58; // ~58%
       const colPU = tableWidth * 0.15; // ~15%
       const colMontant = tableWidth * 0.15; // ~15%
       
-      // Table border with rounded corners (thicker black stroke)
-      const cornerRadius = 3;
-      doc.lineWidth(1.5)
-        .strokeColor('black')
-        .roundedRect(marginLeft, tableY, tableWidth, tableHeight, cornerRadius)
-        .stroke();
+      // Calculate number of pages needed
+      const totalItems = items.length;
+      const numPages = Math.max(1, Math.ceil(totalItems / maxRowsPerPage));
+      
+      console.log(`📄 [BON COMMANDE] Total items: ${totalItems}, Pages needed: ${numPages}`);
+      
+      // Process items in pages
+      for (let pageIndex = 0; pageIndex < numPages; pageIndex++) {
+        const startIndex = pageIndex * maxRowsPerPage;
+        const endIndex = Math.min(startIndex + maxRowsPerPage, totalItems);
+        const pageItems = items.slice(startIndex, endIndex);
+        const rowsOnThisPage = pageItems.length;
+        
+        // Add new page if not first page
+        if (pageIndex > 0) {
+          doc.addPage();
+          
+          // Redraw header on new page
+          const newHeaderY = marginTop + 5;
+          doc.fontSize(20)
+            .font('Helvetica-Bold')
+            .fillColor('black')
+            .text('LES ROIS DU BOIS', marginLeft, newHeaderY, {
+              width: 250,
+              align: 'left'
+            });
+          
+          doc.fontSize(9)
+            .font('Helvetica')
+            .text('Rte de Monastir 4070 M\'saken', marginLeft, newHeaderY + 25, {
+              width: 250,
+              align: 'left'
+            });
+          
+          doc.fontSize(9)
+            .text('Tél : 58 111 106 - 50 429 150 - 58 111 888', marginLeft, newHeaderY + 38, {
+              width: 250,
+              align: 'left'
+            });
+          
+          const newRightBlockX = 595.28 - marginRight - 200;
+          doc.fontSize(14)
+            .font('Helvetica-Bold')
+            .fillColor('black')
+            .text('Bon de Commande', newRightBlockX, newHeaderY, {
+              width: 200,
+              align: 'right'
+            });
+          
+          doc.fontSize(12)
+            .font('Helvetica-Bold')
+            .fillColor('red')
+            .text(`N° ${order.orderNumber}`, newRightBlockX, newHeaderY + 18, {
+              width: 200,
+              align: 'right'
+            });
+        }
+        
+        // Table position for this page
+        const tableY = pageIndex === 0 ? recipientY + 25 : marginTop + 70;
+        const tableHeight = headerRowHeight + (rowsOnThisPage * rowHeight) + (pageIndex === numPages - 1 ? totalRowHeight : 0);
+        
+        // Table border
+        doc.lineWidth(1.5)
+          .strokeColor('black')
+          .rect(marginLeft, tableY, tableWidth, tableHeight)
+          .stroke();
 
-      // Header row
-      const headerRowHeight = 20;
-      doc.fontSize(10)
-        .font('Helvetica-Bold')
-        .fillColor('black');
-      
-      // Column titles (centered)
-      const headerTextY = tableY + (headerRowHeight / 2) - 4;
-      doc.text('Qté', marginLeft + colQte / 2, headerTextY, { align: 'center', width: colQte });
-      doc.text('DESIGNATION', marginLeft + colQte + colDesignation / 2, headerTextY, { align: 'center', width: colDesignation });
-      doc.text('P.U.', marginLeft + colQte + colDesignation + colPU / 2, headerTextY, { align: 'center', width: colPU });
-      doc.text('MONTANT', marginLeft + colQte + colDesignation + colPU + colMontant / 2, headerTextY, { align: 'center', width: colMontant });
-      
-      // Header row borders
-      doc.lineWidth(1)
-        .moveTo(marginLeft, tableY + headerRowHeight)
-        .lineTo(marginLeft + tableWidth, tableY + headerRowHeight)
-        .stroke();
-      
-      // Vertical column separators
-      doc.lineWidth(1)
-        .moveTo(marginLeft + colQte, tableY)
-        .lineTo(marginLeft + colQte, tableY + tableHeight)
-        .stroke()
-        .moveTo(marginLeft + colQte + colDesignation, tableY)
-        .lineTo(marginLeft + colQte + colDesignation, tableY + tableHeight)
-        .stroke()
-        .moveTo(marginLeft + colQte + colDesignation + colPU, tableY)
-        .lineTo(marginLeft + colQte + colDesignation + colPU, tableY + tableHeight)
-        .stroke();
+        // Header row
+        doc.fontSize(10)
+          .font('Helvetica-Bold')
+          .fillColor('black');
+        
+        const headerTextY = tableY + (headerRowHeight / 2) - 4;
+        doc.text('Qté', marginLeft + colQte / 2, headerTextY, { align: 'center', width: colQte });
+        doc.text('DESIGNATION', marginLeft + colQte + colDesignation / 2, headerTextY, { align: 'center', width: colDesignation });
+        doc.text('P.U.', marginLeft + colQte + colDesignation + colPU / 2, headerTextY, { align: 'center', width: colPU });
+        doc.text('MONTANT', marginLeft + colQte + colDesignation + colPU + colMontant / 2, headerTextY, { align: 'center', width: colMontant });
+        
+        // Header row bottom border
+        doc.lineWidth(1)
+          .moveTo(marginLeft, tableY + headerRowHeight)
+          .lineTo(marginLeft + tableWidth, tableY + headerRowHeight)
+          .stroke();
+        
+        // Vertical column separators
+        doc.lineWidth(1)
+          .moveTo(marginLeft + colQte, tableY)
+          .lineTo(marginLeft + colQte, tableY + tableHeight)
+          .stroke()
+          .moveTo(marginLeft + colQte + colDesignation, tableY)
+          .lineTo(marginLeft + colQte + colDesignation, tableY + tableHeight)
+          .stroke()
+          .moveTo(marginLeft + colQte + colDesignation + colPU, tableY)
+          .lineTo(marginLeft + colQte + colDesignation + colPU, tableY + tableHeight)
+          .stroke();
 
-      // Body rows
-      const rowHeight = 12; // ~12mm per row
-      const numRows = 15; // 15 empty rows + items
-      let currentRow = 0;
-      
-      // Add order items
-      items.forEach((item, index) => {
-        if (currentRow >= numRows) return; // Don't exceed table height
-        
-        const rowY = tableY + headerRowHeight + (currentRow * rowHeight);
-        
-        // Item data
-        doc.fontSize(9)
-          .font('Helvetica')
-          .fillColor('black')
-          .text(String(item.quantity), marginLeft + colQte / 2, rowY + 2, { align: 'center', width: colQte });
-        
-        doc.text(item.designation, marginLeft + colQte + 2, rowY + 2, { 
-          width: colDesignation - 4,
-          align: 'left'
+        // Body rows - clear solid lines
+        pageItems.forEach((item, itemIndex) => {
+          const rowY = tableY + headerRowHeight + (itemIndex * rowHeight);
+          const cellPadding = 5;
+          const textY = rowY + cellPadding;
+          
+          // Item data
+          doc.fontSize(11)
+            .font('Helvetica')
+            .fillColor('black');
+          
+          // Quantity - centered
+          doc.text(String(item.quantity), marginLeft + colQte / 2, textY, { 
+            align: 'center', 
+            width: colQte - 6
+          });
+          
+          // Designation - left aligned
+          doc.text(item.designation, marginLeft + colQte + cellPadding, textY, { 
+            width: colDesignation - cellPadding * 2,
+            align: 'left'
+          });
+          
+          // Unit Price - centered
+          doc.text(item.unitPrice, marginLeft + colQte + colDesignation + colPU / 2, textY, { 
+            align: 'center', 
+            width: colPU - 6
+          });
+          
+          // Amount - centered
+          doc.text(item.amount, marginLeft + colQte + colDesignation + colPU + colMontant / 2, textY, { 
+            align: 'center', 
+            width: colMontant - 6
+          });
+          
+          // Solid horizontal line below the row (no dots)
+          doc.lineWidth(0.5)
+            .moveTo(marginLeft, rowY + rowHeight)
+            .lineTo(marginLeft + tableWidth, rowY + rowHeight)
+            .stroke();
         });
         
-        doc.text(item.unitPrice, marginLeft + colQte + colDesignation + colPU / 2, rowY + 2, { align: 'center', width: colPU });
-        
-        doc.text(item.amount, marginLeft + colQte + colDesignation + colPU + colMontant / 2, rowY + 2, { align: 'center', width: colMontant });
-        
-        // Dotted horizontal line
-        doc.dash(1, { space: 2 })
-          .lineWidth(0.5)
-          .moveTo(marginLeft, rowY + rowHeight)
-          .lineTo(marginLeft + tableWidth, rowY + rowHeight)
-          .stroke()
-          .undash();
-        
-        currentRow++;
-      });
-      
-      // Fill remaining rows with empty lines
-      for (let i = currentRow; i < numRows; i++) {
-        const rowY = tableY + headerRowHeight + (i * rowHeight);
-        
-        // Dotted horizontal line
-        doc.dash(1, { space: 2 })
-          .lineWidth(0.5)
-          .moveTo(marginLeft, rowY + rowHeight)
-          .lineTo(marginLeft + tableWidth, rowY + rowHeight)
-          .stroke()
-          .undash();
+        // Total row only on last page
+        if (pageIndex === numPages - 1) {
+          const totalRowY = tableY + headerRowHeight + (rowsOnThisPage * rowHeight);
+          
+          // Solid line above total
+          doc.lineWidth(2)
+            .moveTo(marginLeft, totalRowY)
+            .lineTo(marginLeft + tableWidth, totalRowY)
+            .stroke();
+          
+          // Total label and value
+          doc.fontSize(11)
+            .font('Helvetica-Bold')
+            .fillColor('black');
+          
+          const totalLabelX = marginLeft + colQte + colDesignation + colPU;
+          const totalLabelY = totalRowY + 8;
+          doc.text('TOTAL', totalLabelX, totalLabelY, {
+            width: colPU,
+            align: 'right'
+          });
+          
+          const totalValueX = marginLeft + colQte + colDesignation + colPU + colMontant / 2;
+          const totalValueY = totalRowY + 8;
+          doc.fontSize(12)
+            .text(`${orderTotal} TND`, totalValueX, totalValueY, {
+              width: colMontant,
+              align: 'center'
+            });
+          
+          // Bottom border of total row
+          doc.lineWidth(1.5)
+            .moveTo(marginLeft, totalRowY + totalRowHeight)
+            .lineTo(marginLeft + tableWidth, totalRowY + totalRowHeight)
+            .stroke();
+        }
       }
 
-      // Total row
-      const totalRowY = tableY + headerRowHeight + (numRows * rowHeight);
-      doc.lineWidth(2)
-        .moveTo(marginLeft, totalRowY)
-        .lineTo(marginLeft + tableWidth, totalRowY)
-        .stroke();
+      // Signature area (bottom-right) - only on last page
+      const lastPageTableY = numPages === 1 ? recipientY + 25 : marginTop + 70;
+      const lastPageRows = items.length % maxRowsPerPage || maxRowsPerPage;
+      const lastPageTableHeight = headerRowHeight + (lastPageRows * rowHeight) + totalRowHeight;
+      const signatureY = lastPageTableY + lastPageTableHeight + 30;
       
-      doc.fontSize(10)
-        .font('Helvetica-Bold')
-        .fillColor('black')
-        .text('TOTAL', marginLeft + colQte + colDesignation + colPU - 10, totalRowY + 8, {
-          width: colPU + colMontant,
-          align: 'right'
-        });
-      
-      doc.fontSize(11)
-        .text(`${orderTotal} TND`, marginLeft + colQte + colDesignation + colPU + colMontant / 2, totalRowY + 8, {
-          width: colMontant,
-          align: 'center'
-        });
-
-      // Signature area (bottom-right)
-      const signatureY = tableY + tableHeight + 30;
       doc.fontSize(9)
         .font('Helvetica')
         .fillColor('black')

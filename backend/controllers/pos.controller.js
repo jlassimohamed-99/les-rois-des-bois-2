@@ -684,3 +684,116 @@ export const generatePOSInvoice = async (req, res, next) => {
   }
 };
 
+// Update product stock for POS (for returns and exchanges)
+export const updatePOSProductStock = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { stock, variants } = req.body;
+
+    const product = await Product.findById(id);
+
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        message: 'المنتج غير موجود',
+      });
+    }
+
+    // Update stock if provided
+    if (stock !== undefined) {
+      product.stock = stock;
+    }
+
+    // Update variants if provided
+    if (variants && Array.isArray(variants)) {
+      product.variants = variants;
+    }
+
+    await product.save();
+
+    res.status(200).json({
+      success: true,
+      data: product,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Update POS order (for returns and exchanges)
+export const updatePOSOrder = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { items, discount, subtotal, total } = req.body;
+
+    const order = await Order.findById(id);
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: 'الطلب غير موجود',
+      });
+    }
+
+    // Verify order is a POS order
+    if (order.source !== 'pos') {
+      return res.status(403).json({
+        success: false,
+        message: 'هذا الطلب ليس طلب نقطة بيع',
+      });
+    }
+
+    // For non-admin users, verify they created the order
+    if (req.user.role !== 'admin' && order.cashierId?.toString() !== req.user._id.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: 'ليس لديك صلاحية لتحديث هذا الطلب',
+      });
+    }
+
+    // Update items if provided
+    if (items && Array.isArray(items)) {
+      // Ensure all productId are strings, not objects
+      const cleanItems = items.map(item => ({
+        ...item,
+        productId: typeof item.productId === 'object' && item.productId?._id
+          ? item.productId._id.toString()
+          : item.productId?.toString() || item.productId,
+      }));
+
+      // Rebuild order items with correct price type
+      const priceType = order.priceType || 'detail';
+      const orderItems = await buildOrderItems(cleanItems, priceType);
+      order.items = orderItems;
+
+      // Recalculate totals
+      const totals = calculateOrderTotals(orderItems, discount !== undefined ? discount : order.discount);
+      order.subtotal = totals.subtotal;
+      order.discount = totals.discount;
+      order.tax = totals.tax;
+      order.total = totals.total;
+      order.cost = totals.cost;
+      order.profit = totals.profit;
+    } else {
+      // If only totals are provided, update them directly
+      if (subtotal !== undefined) order.subtotal = subtotal;
+      if (discount !== undefined) order.discount = discount;
+      if (total !== undefined) order.total = total;
+    }
+
+    await order.save();
+
+    const populatedOrder = await Order.findById(order._id)
+      .populate('items.productId', 'name price wholesalePrice facebookPrice cost')
+      .populate('clientId', 'name email')
+      .populate('cashierId', 'name email');
+
+    res.status(200).json({
+      success: true,
+      data: populatedOrder,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+

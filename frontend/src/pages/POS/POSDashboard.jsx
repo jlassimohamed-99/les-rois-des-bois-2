@@ -195,13 +195,12 @@ const POSDashboard = () => {
           }
           return v;
         });
-        await api.put(`/products/${oldProduct._id}`, {
-          ...oldProduct,
+        await api.put(`/pos/products/${oldProduct._id}/stock`, {
           variants: updatedVariants,
         });
       } else {
         // Update product stock
-        await api.put(`/products/${oldProductId}`, {
+        await api.put(`/pos/products/${oldProductId}/stock`, {
           stock: (oldProduct.stock || 0) + oldItem.quantity,
         });
       }
@@ -217,12 +216,11 @@ const POSDashboard = () => {
           }
           return v;
         });
-        await api.put(`/products/${newProductData._id}`, {
-          ...newProductData,
+        await api.put(`/pos/products/${newProductData._id}/stock`, {
           variants: updatedVariants,
         });
       } else {
-        await api.put(`/products/${newProduct._id}`, {
+        await api.put(`/pos/products/${newProduct._id}/stock`, {
           stock: Math.max(0, (newProductData.stock || 0) - quantity),
         });
       }
@@ -276,7 +274,7 @@ const POSDashboard = () => {
       const total = subtotal - (selectedOrder.discount || 0);
 
       // Update order
-      await api.put(`/orders/${selectedOrder._id}`, {
+      await api.put(`/pos/orders/${selectedOrder._id}`, {
         items: updatedItems,
         subtotal,
         total,
@@ -312,12 +310,11 @@ const POSDashboard = () => {
           }
           return v;
         });
-        await api.put(`/products/${product._id}`, {
-          ...product,
+        await api.put(`/pos/products/${product._id}/stock`, {
           variants: updatedVariants,
         });
       } else {
-        await api.put(`/products/${productId}`, {
+        await api.put(`/pos/products/${productId}/stock`, {
           stock: (product.stock || 0) + quantity,
         });
       }
@@ -359,7 +356,7 @@ const POSDashboard = () => {
       const total = subtotal - (selectedOrder.discount || 0);
 
       // Update order
-      await api.put(`/orders/${selectedOrder._id}`, {
+      await api.put(`/pos/orders/${selectedOrder._id}`, {
         items: updatedItems,
         subtotal,
         total,

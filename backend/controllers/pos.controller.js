@@ -829,12 +829,36 @@ export const generateBonCommande = async (req, res, next) => {
       });
     }
 
-    // For non-admin users, verify they created the order
-    if (req.user.role !== 'admin' && order.cashierId?.toString() !== req.user._id.toString()) {
+    // For non-admin users, allow access if:
+    // 1. They created the order (cashierId matches), OR
+    // 2. They are a POS role (store_cashier, saler, commercial) - they can access any POS order
+    const allowedRoles = ['admin', 'store_cashier', 'saler', 'commercial', 'cashier'];
+    const userRole = req.user.role || (req.user.isAdmin ? 'admin' : null);
+    
+    if (userRole !== 'admin' && !allowedRoles.includes(userRole)) {
       return res.status(403).json({
         success: false,
         message: 'ليس لديك صلاحية لتحميل هذا البون',
       });
+    }
+
+    // If not admin, check if user created the order OR is a POS role
+    if (userRole !== 'admin') {
+      // Handle both populated and non-populated cashierId
+      const cashierIdStr = order.cashierId 
+        ? (typeof order.cashierId === 'object' ? order.cashierId._id?.toString() : order.cashierId.toString())
+        : null;
+      
+      const createdOrder = cashierIdStr && cashierIdStr === req.user._id.toString();
+      const isPOSRole = ['store_cashier', 'saler', 'commercial', 'cashier'].includes(userRole);
+      
+      // Allow access if user created the order OR is a POS role (POS roles can access any POS order)
+      if (!createdOrder && !isPOSRole) {
+        return res.status(403).json({
+          success: false,
+          message: 'ليس لديك صلاحية لتحميل هذا البون',
+        });
+      }
     }
 
     // Generate PDF

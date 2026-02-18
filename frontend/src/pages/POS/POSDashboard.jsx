@@ -182,8 +182,17 @@ const POSDashboard = () => {
         responseType: 'blob',
       });
 
+      // Check if response is actually a PDF (blob) or an error (JSON)
+      if (response.data.type === 'application/json') {
+        // If it's JSON, it's an error - read it
+        const text = await response.data.text();
+        const errorData = JSON.parse(text);
+        toast.error(errorData.message || 'حدث خطأ أثناء تحميل البون');
+        return;
+      }
+
       // Create blob link to download
-      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
       const link = document.createElement('a');
       link.href = url;
       link.setAttribute('download', `bon-commande-${order.orderNumber}.pdf`);
@@ -195,7 +204,23 @@ const POSDashboard = () => {
       toast.success('تم تحميل البون بنجاح');
     } catch (error) {
       console.error('Error downloading bon de commande:', error);
-      toast.error('حدث خطأ أثناء تحميل البون');
+      
+      // Try to extract error message from response
+      if (error.response?.data) {
+        try {
+          if (error.response.data instanceof Blob) {
+            const text = await error.response.data.text();
+            const errorData = JSON.parse(text);
+            toast.error(errorData.message || 'حدث خطأ أثناء تحميل البون');
+          } else {
+            toast.error(error.response.data.message || 'حدث خطأ أثناء تحميل البون');
+          }
+        } catch (parseError) {
+          toast.error('حدث خطأ أثناء تحميل البون');
+        }
+      } else {
+        toast.error('حدث خطأ أثناء تحميل البون');
+      }
     }
   };
 

@@ -891,11 +891,17 @@ export const generateBonCommande = async (req, res, next) => {
     });
   } catch (error) {
     console.error('❌ [BON COMMANDE CONTROLLER] Error:', error);
+    console.error('❌ [BON COMMANDE CONTROLLER] Error message:', error.message);
     console.error('❌ [BON COMMANDE CONTROLLER] Error stack:', error.stack);
+    
     if (!res.headersSent) {
+      // Return detailed error message
+      const errorMessage = error.message || 'حدث خطأ أثناء إنشاء ملف PDF';
+      console.error('❌ [BON COMMANDE CONTROLLER] Sending error response:', errorMessage);
       return res.status(500).json({
         success: false,
-        message: error.message || 'حدث خطأ أثناء إنشاء ملف PDF',
+        message: errorMessage,
+        error: process.env.NODE_ENV === 'development' ? error.stack : undefined,
       });
     }
     next(error);

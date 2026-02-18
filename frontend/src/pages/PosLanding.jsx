@@ -1,16 +1,17 @@
 import { useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Routes, Route, Outlet } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import POSInterface from './POS/POSInterface';
+import POSDashboard from './POS/POSDashboard';
 
 const PosLanding = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Ensure we stay on /pos when refreshing
+  // Allow navigation between /pos and /pos/dashboard
   useEffect(() => {
-    if (location.pathname !== '/pos') {
+    if (location.pathname !== '/pos' && !location.pathname.startsWith('/pos/')) {
       navigate('/pos', { replace: true });
     }
   }, [location.pathname, navigate]);
@@ -26,9 +27,6 @@ const PosLanding = () => {
       }
     };
 
-    // Push current route to history to have control
-    window.history.pushState(null, '', '/pos');
-    
     window.addEventListener('popstate', handlePopState);
     
     return () => {
@@ -75,8 +73,13 @@ const PosLanding = () => {
     return null;
   }
 
-  // Directly show POS interface
-  return <POSInterface />;
+  // Route between POS interface and dashboard
+  return (
+    <Routes>
+      <Route index element={<POSInterface />} />
+      <Route path="dashboard" element={<POSDashboard />} />
+    </Routes>
+  );
 };
 
 export default PosLanding;

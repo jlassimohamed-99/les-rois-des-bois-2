@@ -249,9 +249,9 @@ function App() {
                 
                 {/* POS Routes for Cashiers */}
                 <Route
-                  path="/pos"
+                  path="/pos/*"
                   element={
-                    <RoleProtectedRoute allowedRoles={['saler', 'store_cashier', 'cashier', 'admin']}>
+                    <RoleProtectedRoute allowedRoles={['saler', 'store_cashier', 'cashier', 'admin', 'commercial']}>
                       <PosLanding />
                     </RoleProtectedRoute>
                   }

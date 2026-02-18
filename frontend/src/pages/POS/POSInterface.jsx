@@ -22,6 +22,7 @@ import {
   Search as SearchIcon,
   ArrowLeft,
   LogOut,
+  BarChart3,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -798,6 +799,15 @@ const POSInterface = () => {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          {/* Dashboard Button */}
+          <button
+            onClick={() => navigate('/pos/dashboard')}
+            className="px-3 md:px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors flex items-center gap-2 text-white"
+            title="لوحة التحكم"
+          >
+            <BarChart3 size={18} className="md:w-5 md:h-5" />
+            <span className="hidden md:inline">لوحة التحكم</span>
+          </button>
           {/* Mobile Cart Toggle Button */}
           <button
             onClick={() => setShowCartOnMobile(!showCartOnMobile)}

@@ -24,7 +24,14 @@ api.interceptors.request.use(
   (config) => {
     const timestamp = new Date().toISOString();
     const token = localStorage.getItem('token');
+    const cashierId = localStorage.getItem('cashierId');
     
+    // For cashiers: send BOTH token (if available) and cashierId
+    // Token for authentication, cashierId for persistence
+    // Use lowercase header name (HTTP headers are case-insensitive but lowercase is standard)
+    if (cashierId) {
+      config.headers['x-cashier-id'] = cashierId;
+    }
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -35,6 +42,7 @@ api.interceptors.request.use(
     console.log(`📤 [API REQUEST] Headers:`, {
       'Content-Type': config.headers['Content-Type'],
       'Authorization': config.headers.Authorization ? 'Bearer ***' : 'Not set',
+      'x-cashier-id': config.headers['x-cashier-id'] || 'Not set',
       'withCredentials': config.withCredentials,
     });
     
@@ -109,9 +117,15 @@ api.interceptors.response.use(
 
       // Handle 401 Unauthorized
       if (error.response.status === 401) {
-        console.warn('⚠️ [API RESPONSE ERROR] 401 Unauthorized - Removing token and redirecting to login');
-        localStorage.removeItem('token');
-        window.location.href = '/login';
+        const cashierId = localStorage.getItem('cashierId');
+        // Don't redirect cashiers - they stay logged in
+        if (!cashierId) {
+          console.warn('⚠️ [API RESPONSE ERROR] 401 Unauthorized - Removing token and redirecting to login');
+          localStorage.removeItem('token');
+          window.location.href = '/login';
+        } else {
+          console.warn('⚠️ [API RESPONSE ERROR] 401 Unauthorized - Cashier stays logged in');
+        }
       }
     } else if (error.request) {
       // Request was made but no response received

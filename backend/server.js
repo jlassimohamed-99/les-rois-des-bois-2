@@ -150,7 +150,8 @@ app.use(
       'Accept',
       'Origin',
       'Access-Control-Request-Method',
-      'Access-Control-Request-Headers'
+      'Access-Control-Request-Headers',
+      'X-Cashier-Id'
     ],
     exposedHeaders: ['Authorization'],
     optionsSuccessStatus: 200, // Some legacy browsers (IE11) choke on 204

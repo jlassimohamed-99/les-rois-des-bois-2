@@ -55,9 +55,17 @@ const POSInterface = () => {
     // Only redirect after auth has finished loading
     if (!authLoading) {
       const token = localStorage.getItem('token');
+      const cashierId = localStorage.getItem('cashierId');
       
-      // If no token at all and no user, redirect to login
-      if (!token && !user) {
+      // For cashiers: check cashierId instead of token (they stay logged in)
+      if (cashierId && !token) {
+        // Cashier is logged in via ID - allow access
+        // If we don't have user data yet, it will be fetched by AuthContext
+        return;
+      }
+      
+      // If no token and no cashierId and no user, redirect to login
+      if (!token && !cashierId && !user) {
         navigate('/login', { replace: true });
         return;
       }
@@ -76,14 +84,13 @@ const POSInterface = () => {
           }
         }
         // If user is authorized, they're allowed - stay on POS
-      } else if (token) {
-        // We have a token but no user - backend might be down
-        // Don't redirect to login immediately - keep token and stay on POS
+      } else if (token || cashierId) {
+        // We have a token/cashierId but no user - backend might be down
+        // Don't redirect to login immediately - keep credentials and stay on POS
         // This allows user to continue working if backend comes back online
-        // Only redirect if we're absolutely sure the token is invalid
         return;
       }
-      // If no token and no user, redirect will happen above
+      // If no token/cashierId and no user, redirect will happen above
     }
     // If still loading, don't do anything
   }, [user, authLoading, navigate]);
@@ -113,16 +120,69 @@ const POSInterface = () => {
 
   // State
   const [products, setProducts] = useState({ regularProducts: [], specialProducts: [], categories: [] });
-  const [cart, setCart] = useState([]);
+  
+  // Load cart from localStorage on mount
+  const loadCartFromStorage = () => {
+    try {
+      const savedCart = localStorage.getItem('posCart');
+      if (savedCart) {
+        return JSON.parse(savedCart);
+      }
+    } catch (error) {
+      console.error('Error loading cart from storage:', error);
+    }
+    return [];
+  };
+  
+  const [cart, setCart] = useState(loadCartFromStorage);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [activeTab, setActiveTab] = useState('regular'); // 'regular' or 'special'
-  const [discount, setDiscount] = useState(0);
-  const [notes, setNotes] = useState('');
+  
+  // Load discount and notes from localStorage
+  const loadDiscountFromStorage = () => {
+    try {
+      const saved = localStorage.getItem('posDiscount');
+      return saved ? parseFloat(saved) : 0;
+    } catch {
+      return 0;
+    }
+  };
+  
+  const loadNotesFromStorage = () => {
+    try {
+      return localStorage.getItem('posNotes') || '';
+    } catch {
+      return '';
+    }
+  };
+  
+  const [discount, setDiscount] = useState(loadDiscountFromStorage);
+  const [notes, setNotes] = useState(loadNotesFromStorage);
   const [vat, setVat] = useState(0);
   const [loading, setLoading] = useState(false);
   const [loadingProducts, setLoadingProducts] = useState(true);
   const [priceType, setPriceType] = useState('retail'); // 'retail' or 'wholesale'
+  
+  // Save cart to localStorage whenever it changes
+  useEffect(() => {
+    try {
+      localStorage.setItem('posCart', JSON.stringify(cart));
+      console.log('💾 [POS] Cart saved to localStorage:', cart.length, 'items');
+    } catch (error) {
+      console.error('Error saving cart to storage:', error);
+    }
+  }, [cart]);
+  
+  // Save discount and notes to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('posDiscount', discount.toString());
+      localStorage.setItem('posNotes', notes);
+    } catch (error) {
+      console.error('Error saving discount/notes to storage:', error);
+    }
+  }, [discount, notes]);
   
   // Commercial/Admin mode - client selection
   const isCommercial = user?.role === 'commercial';
@@ -641,6 +701,10 @@ const POSInterface = () => {
       setCart([]);
       setDiscount(0);
       setNotes('');
+      // Clear from localStorage
+      localStorage.removeItem('posCart');
+      localStorage.removeItem('posDiscount');
+      localStorage.removeItem('posNotes');
     }
   };
 
@@ -755,6 +819,10 @@ const POSInterface = () => {
       setDiscount(0);
       setNotes('');
       setSearchTerm('');
+      // Clear from localStorage after successful order
+      localStorage.removeItem('posCart');
+      localStorage.removeItem('posDiscount');
+      localStorage.removeItem('posNotes');
       if (canSelectClient) {
         setSelectedClient(null);
       }
@@ -789,14 +857,25 @@ const POSInterface = () => {
   const [showCartOnMobile, setShowCartOnMobile] = useState(false);
 
   return (
-    <div className="h-screen flex flex-col bg-white dark:bg-gray-900 text-gray-900 dark:text-white overflow-hidden">
+    <div className="h-screen flex flex-col bg-white dark:bg-gray-900 text-gray-900 dark:text-white overflow-hidden" style={{ touchAction: 'pan-y' }}>
       {/* Header */}
       <div className="bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-3 md:px-6 py-2 md:py-4 flex items-center justify-between flex-shrink-0">
-        <div className="flex-1 min-w-0">
-          <h1 className="text-lg md:text-2xl font-bold text-gray-900 dark:text-white truncate">نقطة البيع (POS)</h1>
-          <p className="text-gray-600 dark:text-gray-400 text-xs md:text-sm mt-1 truncate">
-            {user?.name || 'Caissier'} • {new Date().toLocaleDateString('ar-TN')}
-          </p>
+        <div className="flex items-center gap-3 flex-1 min-w-0">
+          {/* Back Button to Dashboard */}
+          <button
+            onClick={() => navigate('/pos?view=dashboard')}
+            className="flex-shrink-0 px-3 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-lg transition-colors flex items-center gap-2 text-gray-700 dark:text-gray-300"
+            title="العودة إلى لوحة التحكم"
+          >
+            <ArrowLeft size={18} />
+            <span className="hidden md:inline">لوحة التحكم</span>
+          </button>
+          <div className="flex-1 min-w-0">
+            <h1 className="text-lg md:text-2xl font-bold text-gray-900 dark:text-white truncate">نقطة البيع (POS)</h1>
+            <p className="text-gray-600 dark:text-gray-400 text-xs md:text-sm mt-1 truncate">
+              {user?.name || 'Caissier'} • {new Date().toLocaleDateString('ar-TN')}
+            </p>
+          </div>
         </div>
         <div className="flex items-center gap-2">
           {/* Dashboard Button */}
@@ -834,11 +913,11 @@ const POSInterface = () => {
         </div>
       </div>
 
-      <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
+      <div className="flex-1 flex flex-col md:flex-row overflow-hidden min-h-0">
         {/* LEFT PANEL - Product Browser */}
-        <div className={`${showCartOnMobile ? 'hidden' : 'flex'} md:flex w-full md:w-2/3 flex-col border-r border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900`}>
+        <div className={`${showCartOnMobile ? 'hidden' : 'flex'} md:flex w-full md:w-2/3 flex-col border-r border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 min-h-0`}>
           {/* Search and Filters */}
-          <div className="p-2 md:p-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 space-y-2 md:space-y-4">
+          <div className="flex-shrink-0 p-2 md:p-4 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 space-y-2 md:space-y-4">
             <div className="relative">
               <Search className="absolute right-2 md:right-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500" size={18} />
               <input
@@ -942,7 +1021,7 @@ const POSInterface = () => {
           </div>
 
           {/* Products List */}
-          <div className="flex-1 overflow-y-auto p-2 md:p-4">
+          <div className="flex-1 overflow-y-auto p-2 md:p-4 min-h-0" style={{ WebkitOverflowScrolling: 'touch' }}>
             {loadingProducts ? (
               <div className="text-center py-12 text-gray-600 dark:text-gray-400 text-sm md:text-base">جاري التحميل...</div>
             ) : activeTab === 'regular' ? (
@@ -1269,8 +1348,8 @@ const POSInterface = () => {
         </div>
 
         {/* RIGHT PANEL - Cart */}
-        <div className={`${showCartOnMobile ? 'flex' : 'hidden'} md:flex w-full md:w-1/3 flex-col bg-gray-100 dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700`}>
-          <div className="p-3 md:p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+        <div className={`${showCartOnMobile ? 'flex' : 'hidden'} md:flex w-full md:w-1/3 flex-col bg-gray-100 dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 min-h-0`}>
+          <div className="flex-shrink-0 p-3 md:p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
             <h2 className="text-lg md:text-xl font-bold flex items-center gap-2 text-gray-900 dark:text-white">
               <ShoppingCart size={20} className="md:w-6 md:h-6" />
               السلة ({cart.length})
@@ -1283,7 +1362,7 @@ const POSInterface = () => {
             </button>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-2 md:p-4 space-y-2 md:space-y-3">
+          <div className="flex-1 overflow-y-auto p-2 md:p-4 space-y-2 md:space-y-3 min-h-0" style={{ WebkitOverflowScrolling: 'touch' }}>
             {cart.length === 0 ? (
               <div className="text-center py-12 text-gray-500 dark:text-gray-400">
                 <ShoppingCart size={40} className="md:w-12 md:h-12 mx-auto mb-4 opacity-50" />

@@ -54,8 +54,17 @@ const POSDashboard = () => {
   useEffect(() => {
     if (!authLoading) {
       const token = localStorage.getItem('token');
+      const cashierId = localStorage.getItem('cashierId');
       
-      if (!token && !user) {
+      // For cashiers: check cashierId instead of token (they stay logged in)
+      if (cashierId && !token) {
+        // Cashier is logged in via ID - allow access
+        // If we don't have user data yet, it will be fetched by AuthContext
+        return;
+      }
+      
+      // If no token and no cashierId and no user, redirect to login
+      if (!token && !cashierId && !user) {
         navigate('/login', { replace: true });
         return;
       }
@@ -69,9 +78,14 @@ const POSDashboard = () => {
             navigate('/login', { replace: true });
           }
         }
-      } else if (token) {
+        // If user is a cashier, they're allowed - stay on POS
+      } else if (token || cashierId) {
+        // We have a token/cashierId but no user - backend might be down
+        // Don't redirect to login immediately - keep credentials and stay on POS
+        // This allows user to continue working if backend comes back online
         return;
       }
+      // If no token/cashierId and no user, redirect will happen above
     }
   }, [user, authLoading, navigate]);
 
@@ -358,8 +372,19 @@ const POSDashboard = () => {
             >
               <RefreshCw size={18} />
             </button>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">نقاط البيع</h1>
+            <p className="text-gray-600 dark:text-gray-400 mt-1">لوحة تحكم نقاط البيع</p>
           </div>
         </div>
+        <button
+          onClick={() => navigate('/pos?view=interface')}
+          className="btn-primary flex items-center gap-2"
+        >
+          <Play size={20} />
+          <span>فتح واجهة البيع</span>
+        </button>
+      </div>
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">

@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import Order from '../models/Order.model.js';
 import OrderActivity from '../models/OrderActivity.model.js';
 import { buildOrderItems, calculateOrderTotals } from '../utils/orderHelper.js';
@@ -11,6 +12,7 @@ export const getOrders = async (req, res, next) => {
       clientId,
       storeId,
       commercialId,
+      cashierId,
       source,
       startDate,
       endDate,
@@ -25,6 +27,18 @@ export const getOrders = async (req, res, next) => {
     if (clientId) query.clientId = clientId;
     if (storeId) query.storeId = storeId;
     if (commercialId) query.commercialId = commercialId;
+    if (cashierId) {
+      // Ensure cashierId is properly formatted as ObjectId
+      try {
+        query.cashierId = mongoose.Types.ObjectId.isValid(cashierId) 
+          ? new mongoose.Types.ObjectId(cashierId) 
+          : cashierId;
+        console.log(`📊 [ORDERS] Filtering by cashierId: ${cashierId}`);
+      } catch (error) {
+        console.error('❌ [ORDERS] Error formatting cashierId:', error);
+        query.cashierId = cashierId;
+      }
+    }
     if (source) query.source = source;
     
     // Handle date filtering
@@ -52,6 +66,8 @@ export const getOrders = async (req, res, next) => {
       ];
     }
 
+    console.log('🔍 [ORDERS] Query:', JSON.stringify(query, null, 2));
+    
     const [orders, total] = await Promise.all([
       Order.find(query)
         .populate('clientId', 'name email phone')
@@ -64,6 +80,13 @@ export const getOrders = async (req, res, next) => {
         .limit(parseInt(limit)),
       Order.countDocuments(query),
     ]);
+    
+    console.log(`✅ [ORDERS] Found ${orders.length} orders (total: ${total})`);
+    if (orders.length > 0 && query.cashierId) {
+      console.log('👤 [ORDERS] Sample order cashierId:', orders[0].cashierId);
+      console.log('👤 [ORDERS] Query cashierId:', query.cashierId);
+      console.log('👤 [ORDERS] Match:', orders[0].cashierId?.toString() === query.cashierId.toString());
+    }
 
     res.status(200).json({
       success: true,

@@ -6,6 +6,7 @@ import {
   getPOSProducts,
   createPOSOrder,
   generatePOSInvoice,
+  getPOSOrders,
 } from '../controllers/pos.controller.js';
 import { protect, protectPOS } from '../middleware/auth.middleware.js';
 
@@ -17,6 +18,7 @@ router.post('/sales', protectPOS, createSale);
 
 // New POS routes - accessible by admin and cashiers
 router.get('/products', protectPOS, getPOSProducts);
+router.get('/orders', protectPOS, getPOSOrders);
 router.post('/order', protectPOS, createPOSOrder);
 router.post('/invoice/:orderId', protectPOS, generatePOSInvoice);
 

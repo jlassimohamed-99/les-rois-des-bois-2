@@ -104,9 +104,9 @@ const POSDashboard = () => {
       const endDate = new Date(dateFilter.endDate);
       endDate.setHours(23, 59, 59, 999);
 
-      const ordersRes = await api.get('/orders', {
+      // Use POS-specific endpoint that allows cashiers
+      const ordersRes = await api.get('/pos/orders', {
         params: {
-          source: 'pos',
           status: 'completed',
           startDate: startDate.toISOString(),
           endDate: endDate.toISOString(),

@@ -529,6 +529,88 @@ export const createPOSOrder = async (req, res, next) => {
 };
 
 // Generate invoice PDF for POS order
+// Get POS orders - accessible by cashiers and admins
+export const getPOSOrders = async (req, res, next) => {
+  try {
+    const {
+      status,
+      startDate,
+      endDate,
+      search,
+      page = 1,
+      limit = 1000,
+    } = req.query;
+    
+    const skip = (page - 1) * limit;
+    const user = req.user;
+    const isAdmin = user.role === 'admin';
+    
+    // Build query - filter by source and cashier
+    const query = {
+      source: 'pos', // Only POS orders
+    };
+    
+    // If not admin, only show orders created by this cashier
+    if (!isAdmin && user._id) {
+      query.cashierId = user._id;
+    } else if (req.query.cashierId && isAdmin) {
+      // Admin can filter by specific cashier
+      query.cashierId = req.query.cashierId;
+    }
+    
+    // Status filter
+    if (status) {
+      query.status = status;
+    }
+    
+    // Date filter
+    if (startDate || endDate) {
+      query.createdAt = {};
+      if (startDate) {
+        const start = new Date(startDate);
+        start.setHours(0, 0, 0, 0);
+        query.createdAt.$gte = start;
+      }
+      if (endDate) {
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        query.createdAt.$lte = end;
+      }
+    }
+    
+    // Search filter
+    if (search) {
+      query.$or = [
+        { orderNumber: { $regex: search, $options: 'i' } },
+        { clientName: { $regex: search, $options: 'i' } },
+        { clientPhone: { $regex: search, $options: 'i' } },
+      ];
+    }
+    
+    const [orders, total] = await Promise.all([
+      Order.find(query)
+        .populate('items.productId', 'name price')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(parseInt(limit)),
+      Order.countDocuments(query),
+    ]);
+    
+    res.json({
+      success: true,
+      data: orders,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        pages: Math.ceil(total / limit),
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const generatePOSInvoice = async (req, res, next) => {
   try {
     const { orderId } = req.params;

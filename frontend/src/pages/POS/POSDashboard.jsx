@@ -105,9 +105,9 @@ const POSDashboard = () => {
       endDate.setHours(23, 59, 59, 999);
 
       // Use POS-specific endpoint that allows cashiers
+      // Don't filter by status - get all orders for the selected period
       const ordersRes = await api.get('/pos/orders', {
         params: {
-          status: 'completed',
           startDate: startDate.toISOString(),
           endDate: endDate.toISOString(),
           limit: 1000,
@@ -115,15 +115,19 @@ const POSDashboard = () => {
       });
 
       const ordersData = ordersRes.data.data || [];
-      setOrders(ordersData);
+      
+      // Filter only completed orders for display and stats
+      const completedOrders = ordersData.filter(order => order.status === 'completed');
+      setOrders(completedOrders);
 
-      const totalItems = ordersData.reduce((sum, order) => {
+      // Calculate stats from completed orders only
+      const totalItems = completedOrders.reduce((sum, order) => {
         return sum + (order.items?.reduce((itemSum, item) => itemSum + item.quantity, 0) || 0);
       }, 0);
 
       setStats({
-        todaySales: ordersData.length,
-        todayRevenue: ordersData.reduce((sum, order) => sum + (order.total || 0), 0),
+        todaySales: completedOrders.length,
+        todayRevenue: completedOrders.reduce((sum, order) => sum + (order.total || 0), 0),
         totalItems,
       });
     } catch (error) {
@@ -354,7 +358,10 @@ const POSDashboard = () => {
               لوحة تحكم نقطة البيع
             </h1>
             <p className="text-gray-600 dark:text-gray-400 mt-1">
-              {user?.name || 'Caissier'} • {new Date().toLocaleDateString('ar-TN')}
+              {user?.name || 'Caissier'} • {dateFilter.startDate === dateFilter.endDate 
+                ? new Date(dateFilter.startDate).toLocaleDateString('ar-TN')
+                : `${new Date(dateFilter.startDate).toLocaleDateString('ar-TN')} - ${new Date(dateFilter.endDate).toLocaleDateString('ar-TN')}`
+              }
             </p>
           </div>
           <div className="flex gap-2">
@@ -372,19 +379,8 @@ const POSDashboard = () => {
             >
               <RefreshCw size={18} />
             </button>
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">نقاط البيع</h1>
-            <p className="text-gray-600 dark:text-gray-400 mt-1">لوحة تحكم نقاط البيع</p>
           </div>
         </div>
-        <button
-          onClick={() => navigate('/pos?view=interface')}
-          className="btn-primary flex items-center gap-2"
-        >
-          <Play size={20} />
-          <span>فتح واجهة البيع</span>
-        </button>
-      </div>
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">

@@ -861,15 +861,6 @@ const POSInterface = () => {
       {/* Header */}
       <div className="bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-3 md:px-6 py-2 md:py-4 flex items-center justify-between flex-shrink-0">
         <div className="flex items-center gap-3 flex-1 min-w-0">
-          {/* Back Button to Dashboard */}
-          <button
-            onClick={() => navigate('/pos?view=dashboard')}
-            className="flex-shrink-0 px-3 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-lg transition-colors flex items-center gap-2 text-gray-700 dark:text-gray-300"
-            title="العودة إلى لوحة التحكم"
-          >
-            <ArrowLeft size={18} />
-            <span className="hidden md:inline">لوحة التحكم</span>
-          </button>
           <div className="flex-1 min-w-0">
             <h1 className="text-lg md:text-2xl font-bold text-gray-900 dark:text-white truncate">نقطة البيع (POS)</h1>
             <p className="text-gray-600 dark:text-gray-400 text-xs md:text-sm mt-1 truncate">

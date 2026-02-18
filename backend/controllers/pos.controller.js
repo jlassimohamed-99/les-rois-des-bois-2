@@ -7,6 +7,13 @@ import Setting from '../models/Setting.model.js';
 import Invoice from '../models/Invoice.model.js';
 import { adjustStock, validateStock, calculateTotalStock } from '../utils/inventoryHelper.js';
 import { buildOrderItems, calculateOrderTotals } from '../utils/orderHelper.js';
+import { generateBonCommandePDF } from '../services/bonCommandePdfService.js';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import fs from 'fs';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export const getStoreDashboard = async (req, res, next) => {
   try {
@@ -793,6 +800,73 @@ export const updatePOSOrder = async (req, res, next) => {
       data: populatedOrder,
     });
   } catch (error) {
+    next(error);
+  }
+};
+
+// Generate Bon de Commande PDF for POS order
+export const generateBonCommande = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const order = await Order.findById(id)
+      .populate('items.productId', 'name price')
+      .populate('clientId', 'name email')
+      .populate('cashierId', 'name email');
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: 'الطلب غير موجود',
+      });
+    }
+
+    // Verify order is a POS order
+    if (order.source !== 'pos') {
+      return res.status(403).json({
+        success: false,
+        message: 'هذا الطلب ليس طلب نقطة بيع',
+      });
+    }
+
+    // For non-admin users, verify they created the order
+    if (req.user.role !== 'admin' && order.cashierId?.toString() !== req.user._id.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: 'ليس لديك صلاحية لتحميل هذا البون',
+      });
+    }
+
+    // Generate PDF
+    const pdfPath = await generateBonCommandePDF(order);
+
+    // Send PDF file
+    const fullPath = path.join(__dirname, '..', pdfPath);
+    
+    if (!fs.existsSync(fullPath)) {
+      return res.status(500).json({
+        success: false,
+        message: 'خطأ في إنشاء ملف PDF',
+      });
+    }
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="bon-commande-${order.orderNumber}.pdf"`);
+
+    const fileStream = fs.createReadStream(fullPath);
+    fileStream.pipe(res);
+
+    fileStream.on('error', (err) => {
+      console.error('Error streaming PDF file:', err);
+      if (!res.headersSent) {
+        res.status(500).json({
+          success: false,
+          message: 'خطأ في إرسال ملف PDF',
+        });
+      }
+    });
+  } catch (error) {
+    console.error('Error generating Bon de Commande PDF:', error);
     next(error);
   }
 };

@@ -9,6 +9,7 @@ import {
   getPOSOrders,
   updatePOSProductStock,
   updatePOSOrder,
+  generateBonCommande,
 } from '../controllers/pos.controller.js';
 import { protect, protectPOS } from '../middleware/auth.middleware.js';
 
@@ -25,6 +26,7 @@ router.post('/order', protectPOS, createPOSOrder);
 router.post('/invoice/:orderId', protectPOS, generatePOSInvoice);
 router.put('/products/:id/stock', protectPOS, updatePOSProductStock);
 router.put('/orders/:id', protectPOS, updatePOSOrder);
+router.get('/orders/:id/bon-commande', protectPOS, generateBonCommande);
 
 export default router;
 

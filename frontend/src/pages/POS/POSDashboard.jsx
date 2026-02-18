@@ -19,6 +19,7 @@ import {
   Trash2,
   Check,
   AlertCircle,
+  Download,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -173,6 +174,29 @@ const POSDashboard = () => {
     setSelectedOrder(order);
     setReturnItem(item);
     setShowReturnModal(true);
+  };
+
+  const handleDownloadBonCommande = async (order) => {
+    try {
+      const response = await api.get(`/pos/orders/${order._id}/bon-commande`, {
+        responseType: 'blob',
+      });
+
+      // Create blob link to download
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `bon-commande-${order.orderNumber}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+      toast.success('تم تحميل البون بنجاح');
+    } catch (error) {
+      console.error('Error downloading bon de commande:', error);
+      toast.error('حدث خطأ أثناء تحميل البون');
+    }
   };
 
   const handleExchange = async (newProduct, variant, quantity) => {
@@ -567,12 +591,22 @@ const POSDashboard = () => {
                         {order.total?.toFixed(2) || '0.00'} TND
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap text-sm">
-                        <button
-                          onClick={() => handleViewOrder(order)}
-                          className="text-gold-600 dark:text-gold-400 hover:text-gold-700 dark:hover:text-gold-300 mr-3"
-                        >
-                          <Edit size={16} />
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => handleViewOrder(order)}
+                            className="text-gold-600 dark:text-gold-400 hover:text-gold-700 dark:hover:text-gold-300"
+                            title="عرض التفاصيل"
+                          >
+                            <Edit size={16} />
+                          </button>
+                          <button
+                            onClick={() => handleDownloadBonCommande(order)}
+                            className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
+                            title="تحميل بون الأمر"
+                          >
+                            <Download size={16} />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))

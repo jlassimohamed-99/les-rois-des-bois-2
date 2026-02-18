@@ -7,6 +7,49 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 /**
+ * Helper function to draw a table cell with borders
+ */
+const drawCell = (doc, x, y, width, height, content, options = {}) => {
+  const {
+    align = 'left',
+    fontSize = 11,
+    font = 'Helvetica',
+    bold = false,
+    padding = 5
+  } = options;
+
+  // Draw cell border
+  doc.lineWidth(1)
+    .rect(x, y, width, height)
+    .stroke();
+
+  // Draw content - PDFKit text positioning
+  const textWidth = width - (padding * 2);
+  const textY = y + padding;
+
+  doc.fontSize(fontSize)
+    .font(bold ? 'Helvetica-Bold' : font)
+    .fillColor('black');
+
+  if (align === 'center') {
+    doc.text(content, x + padding, textY, {
+      width: textWidth,
+      align: 'center'
+    });
+  } else if (align === 'right') {
+    doc.text(content, x + padding, textY, {
+      width: textWidth,
+      align: 'right'
+    });
+  } else {
+    doc.text(content, x + padding, textY, {
+      width: textWidth,
+      align: 'left'
+    });
+  }
+};
+
+/**
  * Generate Bon de Commande PDF for an order using PDFKit
  * @param {Object} order - Order document from database
  * @returns {Promise<string>} - Path to generated PDF file
@@ -51,8 +94,7 @@ export const generateBonCommandePDF = async (order) => {
 
       // A4 portrait: 210 × 297 mm
       // Margins: 12-15mm left/right, 10-12mm top, 12-15mm bottom
-      // Convert mm to points: 1mm = 2.83465 points
-      const marginLeft = 42.52; // 15mm
+      const marginLeft = 42.52; // 15mm in points
       const marginRight = 42.52;
       const marginTop = 34.02; // 12mm
       const marginBottom = 42.52;
@@ -73,7 +115,7 @@ export const generateBonCommandePDF = async (order) => {
 
       // Perforation/tear line at the very top (thin dotted line)
       doc.moveTo(marginLeft, marginTop - 5)
-        .lineTo(595.28 - marginRight, marginTop - 5) // A4 width - right margin
+        .lineTo(595.28 - marginRight, marginTop - 5)
         .dash(2, { space: 2 })
         .strokeColor('black')
         .lineWidth(0.5)
@@ -106,7 +148,7 @@ export const generateBonCommandePDF = async (order) => {
         });
 
       // Right block: Document title + number + date
-      const rightBlockX = 595.28 - marginRight - 200; // Right aligned, 200pt width
+      const rightBlockX = 595.28 - marginRight - 200;
       
       doc.fontSize(14)
         .font('Helvetica-Bold')
@@ -146,17 +188,18 @@ export const generateBonCommandePDF = async (order) => {
         });
 
       // Table dimensions
-      const headerRowHeight = 20;
-      const rowHeight = 16; // Row height for better visibility
-      const totalRowHeight = 25;
-      const maxRowsPerPage = 12; // Maximum rows per page (excluding header and total)
-      
-      // Column widths
+      const tableY = recipientY + 25;
       const tableWidth = 595.28 - marginLeft - marginRight;
-      const colQte = tableWidth * 0.12; // ~12%
-      const colDesignation = tableWidth * 0.58; // ~58%
-      const colPU = tableWidth * 0.15; // ~15%
-      const colMontant = tableWidth * 0.15; // ~15%
+      const headerRowHeight = 20;
+      const rowHeight = 16;
+      const totalRowHeight = 25;
+      const maxRowsPerPage = 12;
+      
+      // Column widths (4 columns)
+      const colQte = tableWidth * 0.12;      // 12% - Qté
+      const colDesignation = tableWidth * 0.58; // 58% - DESIGNATION
+      const colPU = tableWidth * 0.15;        // 15% - P.U.
+      const colMontant = tableWidth * 0.15;   // 15% - MONTANT
       
       // Calculate number of pages needed
       const totalItems = items.length;
@@ -217,126 +260,108 @@ export const generateBonCommandePDF = async (order) => {
         }
         
         // Table position for this page
-        const tableY = pageIndex === 0 ? recipientY + 25 : marginTop + 70;
+        const currentTableY = pageIndex === 0 ? tableY : marginTop + 70;
         const tableHeight = headerRowHeight + (rowsOnThisPage * rowHeight) + (pageIndex === numPages - 1 ? totalRowHeight : 0);
         
-        // Table border
+        // Draw table outer border (thicker)
         doc.lineWidth(1.5)
-          .strokeColor('black')
-          .rect(marginLeft, tableY, tableWidth, tableHeight)
+          .rect(marginLeft, currentTableY, tableWidth, tableHeight)
           .stroke();
 
-        // Header row
-        doc.fontSize(10)
-          .font('Helvetica-Bold')
-          .fillColor('black');
+        // Draw header row cells
+        const headerCellY = currentTableY;
+        drawCell(doc, marginLeft, headerCellY, colQte, headerRowHeight, 'Qté', {
+          align: 'center',
+          fontSize: 10,
+          bold: true,
+          padding: 4
+        });
         
-        const headerTextY = tableY + (headerRowHeight / 2) - 4;
-        doc.text('Qté', marginLeft + colQte / 2, headerTextY, { align: 'center', width: colQte });
-        doc.text('DESIGNATION', marginLeft + colQte + colDesignation / 2, headerTextY, { align: 'center', width: colDesignation });
-        doc.text('P.U.', marginLeft + colQte + colDesignation + colPU / 2, headerTextY, { align: 'center', width: colPU });
-        doc.text('MONTANT', marginLeft + colQte + colDesignation + colPU + colMontant / 2, headerTextY, { align: 'center', width: colMontant });
+        drawCell(doc, marginLeft + colQte, headerCellY, colDesignation, headerRowHeight, 'DESIGNATION', {
+          align: 'center',
+          fontSize: 10,
+          bold: true,
+          padding: 4
+        });
         
-        // Header row bottom border
-        doc.lineWidth(1)
-          .moveTo(marginLeft, tableY + headerRowHeight)
-          .lineTo(marginLeft + tableWidth, tableY + headerRowHeight)
-          .stroke();
+        drawCell(doc, marginLeft + colQte + colDesignation, headerCellY, colPU, headerRowHeight, 'P.U.', {
+          align: 'center',
+          fontSize: 10,
+          bold: true,
+          padding: 4
+        });
         
-        // Vertical column separators
-        doc.lineWidth(1)
-          .moveTo(marginLeft + colQte, tableY)
-          .lineTo(marginLeft + colQte, tableY + tableHeight)
-          .stroke()
-          .moveTo(marginLeft + colQte + colDesignation, tableY)
-          .lineTo(marginLeft + colQte + colDesignation, tableY + tableHeight)
-          .stroke()
-          .moveTo(marginLeft + colQte + colDesignation + colPU, tableY)
-          .lineTo(marginLeft + colQte + colDesignation + colPU, tableY + tableHeight)
-          .stroke();
+        drawCell(doc, marginLeft + colQte + colDesignation + colPU, headerCellY, colMontant, headerRowHeight, 'MONTANT', {
+          align: 'center',
+          fontSize: 10,
+          bold: true,
+          padding: 4
+        });
 
-        // Body rows - clear solid lines
+        // Draw body rows with proper cells
         pageItems.forEach((item, itemIndex) => {
-          const rowY = tableY + headerRowHeight + (itemIndex * rowHeight);
-          const cellPadding = 5;
-          const textY = rowY + cellPadding;
+          const rowY = currentTableY + headerRowHeight + (itemIndex * rowHeight);
           
-          // Item data
-          doc.fontSize(11)
-            .font('Helvetica')
-            .fillColor('black');
-          
-          // Quantity - centered
-          doc.text(String(item.quantity), marginLeft + colQte / 2, textY, { 
-            align: 'center', 
-            width: colQte - 6
+          // Draw each cell individually
+          drawCell(doc, marginLeft, rowY, colQte, rowHeight, String(item.quantity), {
+            align: 'center',
+            fontSize: 11,
+            padding: 4
           });
           
-          // Designation - left aligned
-          doc.text(item.designation, marginLeft + colQte + cellPadding, textY, { 
-            width: colDesignation - cellPadding * 2,
-            align: 'left'
+          drawCell(doc, marginLeft + colQte, rowY, colDesignation, rowHeight, item.designation, {
+            align: 'left',
+            fontSize: 11,
+            padding: 4
           });
           
-          // Unit Price - centered
-          doc.text(item.unitPrice, marginLeft + colQte + colDesignation + colPU / 2, textY, { 
-            align: 'center', 
-            width: colPU - 6
+          drawCell(doc, marginLeft + colQte + colDesignation, rowY, colPU, rowHeight, item.unitPrice, {
+            align: 'center',
+            fontSize: 11,
+            padding: 4
           });
           
-          // Amount - centered
-          doc.text(item.amount, marginLeft + colQte + colDesignation + colPU + colMontant / 2, textY, { 
-            align: 'center', 
-            width: colMontant - 6
+          drawCell(doc, marginLeft + colQte + colDesignation + colPU, rowY, colMontant, rowHeight, item.amount, {
+            align: 'center',
+            fontSize: 11,
+            padding: 4
           });
-          
-          // Solid horizontal line below the row (no dots)
-          doc.lineWidth(0.5)
-            .moveTo(marginLeft, rowY + rowHeight)
-            .lineTo(marginLeft + tableWidth, rowY + rowHeight)
-            .stroke();
         });
         
         // Total row only on last page
         if (pageIndex === numPages - 1) {
-          const totalRowY = tableY + headerRowHeight + (rowsOnThisPage * rowHeight);
+          const totalRowY = currentTableY + headerRowHeight + (rowsOnThisPage * rowHeight);
           
-          // Solid line above total
-          doc.lineWidth(2)
-            .moveTo(marginLeft, totalRowY)
-            .lineTo(marginLeft + tableWidth, totalRowY)
-            .stroke();
-          
-          // Total label and value
-          doc.fontSize(11)
-            .font('Helvetica-Bold')
-            .fillColor('black');
-          
-          const totalLabelX = marginLeft + colQte + colDesignation + colPU;
-          const totalLabelY = totalRowY + 8;
-          doc.text('TOTAL', totalLabelX, totalLabelY, {
-            width: colPU,
-            align: 'right'
+          // Draw total row cells
+          // Empty cells for first two columns
+          drawCell(doc, marginLeft, totalRowY, colQte, totalRowHeight, '', {
+            padding: 4
           });
           
-          const totalValueX = marginLeft + colQte + colDesignation + colPU + colMontant / 2;
-          const totalValueY = totalRowY + 8;
-          doc.fontSize(12)
-            .text(`${orderTotal} TND`, totalValueX, totalValueY, {
-              width: colMontant,
-              align: 'center'
-            });
+          drawCell(doc, marginLeft + colQte, totalRowY, colDesignation, totalRowHeight, '', {
+            padding: 4
+          });
           
-          // Bottom border of total row
-          doc.lineWidth(1.5)
-            .moveTo(marginLeft, totalRowY + totalRowHeight)
-            .lineTo(marginLeft + tableWidth, totalRowY + totalRowHeight)
-            .stroke();
+          // TOTAL label in P.U. column
+          drawCell(doc, marginLeft + colQte + colDesignation, totalRowY, colPU, totalRowHeight, 'TOTAL', {
+            align: 'right',
+            fontSize: 11,
+            bold: true,
+            padding: 4
+          });
+          
+          // Total amount in MONTANT column
+          drawCell(doc, marginLeft + colQte + colDesignation + colPU, totalRowY, colMontant, totalRowHeight, `${orderTotal} TND`, {
+            align: 'center',
+            fontSize: 12,
+            bold: true,
+            padding: 4
+          });
         }
       }
 
       // Signature area (bottom-right) - only on last page
-      const lastPageTableY = numPages === 1 ? recipientY + 25 : marginTop + 70;
+      const lastPageTableY = numPages === 1 ? tableY : marginTop + 70;
       const lastPageRows = items.length % maxRowsPerPage || maxRowsPerPage;
       const lastPageTableHeight = headerRowHeight + (lastPageRows * rowHeight) + totalRowHeight;
       const signatureY = lastPageTableY + lastPageTableHeight + 30;
